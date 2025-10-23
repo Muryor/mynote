@@ -1,0 +1,29 @@
+% ========================= Exam main ============================
+% File: main-exam.tex
+% Role: Entry point for printable exams
+% Notes:
+% - Use \examvariant to switch variants: {teacher|student}
+%   Teacher: default; Student: pass \def\examvariant{student} in the compile cmd
+% - Formatting logic lives in styles/exam.sty
+
+\documentclass{styles/exam-zh}
+
+\usepackage{geometry}
+\geometry{a4paper, left=2cm, right=2cm, top=2.5cm, bottom=2.5cm}
+
+% Preamble must be loaded as a package (NOT \input{... .sty})
+\usepackage{settings/preamble}
+\usepackage{styles/examx}
+\input{settings/metadata.tex}
+
+\begin{document}
+\makeatletter
+\begingroup\centering
+{\heiti\zihao{2} \csname @title\endcsname\quad（试卷）\par}
+\endgroup
+\makeatother
+\vspace{1em}
+
+\input{content/exams/exam01.tex}
+
+\end{document}

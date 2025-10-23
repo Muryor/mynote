@@ -1,0 +1,133 @@
+% styles/examx.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesExplPackage
+  {examx}
+  {2025-10-16}
+  {1.1.0}
+  {Unified metadata & teacher/student answer rendering for exam-zh and ElegantBook}
+
+% ===== Dependencies =====
+\RequirePackage{expl3}
+\RequirePackage{xparse}
+\RequirePackage{etoolbox}
+\RequirePackage{l3keys2e}
+
+\ExplSyntaxOn
+
+% ===== Global state & defaults =====
+\bool_new:N \g_examx_teacher_bool
+\bool_new:N \g_examx_autoprint_bool
+\bool_new:N \g_examx_show_source_bool
+
+% defaults: student, autoprint on, hide source
+\bool_gset_false:N \g_examx_teacher_bool
+\bool_gset_true:N  \g_examx_autoprint_bool
+\bool_gset_false:N \g_examx_show_source_bool
+
+% ===== Package options (teacher|student, autoprint, show-source) =====
+% Allow: \PassOptionsToPackage{teacher,autoprint,show-source}{styles/examx}
+\keys_define:nn { examx }
+  {
+    teacher      .code:n = { \bool_gset_true:N  \g_examx_teacher_bool },
+    student      .code:n = { \bool_gset_false:N \g_examx_teacher_bool },
+    autoprint    .code:n = { \bool_gset_true:N  \g_examx_autoprint_bool },
+    no-autoprint .code:n = { \bool_gset_false:N \g_examx_autoprint_bool },
+    show-source  .code:n = { \bool_gset_true:N  \g_examx_show_source_bool },
+    hide-source  .code:n = { \bool_gset_false:N \g_examx_show_source_bool },
+  }
+\ProcessKeysOptions{examx}
+
+% ===== Per-item caches =====
+\tl_new:N \l_examx_topics_tl
+\tl_new:N \l_examx_source_tl
+\tl_new:N \l_examx_explain_tl
+\fp_new:N \l_examx_difficulty_fp
+
+\cs_new_protected:Npn \examx_reset_per_item:
+  {
+    \tl_clear:N \l_examx_topics_tl
+    \tl_clear:N \l_examx_source_tl
+    \tl_clear:N \l_examx_explain_tl
+    \fp_zero:N  \l_examx_difficulty_fp
+  }
+
+% ===== Public unified interfaces (四个统一接口) =====
+% 1) \topics{...}
+\NewDocumentCommand \topics { m }
+  { \tl_set:Nn \l_examx_topics_tl {#1} }
+
+% 2) \difficulty{<number or expression>}
+\NewDocumentCommand \difficulty { m }
+  { \fp_set:Nn \l_examx_difficulty_fp {#1} }
+
+% 3) \explain{...} (+m allows paragraphs/math)
+\NewDocumentCommand \explain { +m }
+  { \tl_set:Nn \l_examx_explain_tl {#1} }
+
+% 4) \source{...}
+\NewDocumentCommand \source { m }
+  { \tl_set:Nn \l_examx_source_tl {#1} }
+
+% --- Compatibility aliases (optional) ---
+% 让 \answer / \solution 自动等价于 \explain
+\cs_if_exist:NF \answer   { \NewDocumentCommand \answer   { +m } { \explain{#1} } }
+\cs_if_exist:NF \solution { \NewDocumentCommand \solution { +m } { \explain{#1} } }
+
+% ===== Rendering block for teacher version =====
+\cs_new_protected:Npn \examx_print_block:
+  {
+    \bool_if:NT \g_examx_autoprint_bool
+      {
+        \bool_if:NT \g_examx_teacher_bool
+          {
+            \par\vspace{.6\baselineskip}
+            \begingroup
+              \setlength{\parindent}{0pt}
+              \bfseries 详解/答案：\par
+              \normalfont
+              % explain
+              \tl_if_empty:NF \l_examx_explain_tl
+                { \l_examx_explain_tl \par }
+              % topics
+              \tl_if_empty:NF \l_examx_topics_tl
+                { \textit{考点：}\l_examx_topics_tl \par }
+              % difficulty (>0)
+              \fp_compare:nNnT { \l_examx_difficulty_fp } > { 0 }
+                { \textit{难度：}\fp_use:N \l_examx_difficulty_fp \par }
+              % source (toggleable)
+              \bool_if:NT \g_examx_show_source_bool
+                {
+                  \tl_if_empty:NF \l_examx_source_tl
+                    { \textit{来源：}\l_examx_source_tl \par }
+                }
+            \endgroup
+          }
+      }
+  }
+
+% ===== Hooks: exam-zh (question) & ElegantBook (problem) =====
+% Reset at begin, auto-print at end (teacher only)
+\AtBeginEnvironment{question}{\examx_reset_per_item:}
+\AtEndEnvironment  {question}{\examx_print_block:}
+
+\AtBeginEnvironment{problem}{\examx_reset_per_item:}
+\AtEndEnvironment  {problem}{\examx_print_block:}
+
+% ===== Optional helper environments/commands =====
+% Manual trigger if autoprint disabled:
+\NewDocumentEnvironment { teachernotes } { }
+  { \examx_print_block: }
+  { }
+
+% Simple answer space for students
+\NewDocumentEnvironment { fillblank } { O{2} O{0.9\linewidth} }
+  {
+    \par
+    \int_step_inline:nn {#1}
+      {
+        \noindent\makebox[#2][l]{\hrulefill}\par\vspace{0.8\baselineskip}
+      }
+  }
+  { \par }
+
+\ExplSyntaxOff

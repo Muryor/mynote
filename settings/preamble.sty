@@ -1,0 +1,138 @@
+%% settings/preamble.sty
+\ProvidesPackage{preamble}[2025/10/15 MyMathLectureNotes preamble]
+\RequirePackage{ifxetex}
+\RequirePackage{ifluatex}
+% --- Compatibility guard for exam-zh + XeLaTeX ---
+\makeatletter
+
+% 1) Avoid loading ctex when class is already ctexbook (exam-zh uses ctexbook)
+% If you have a line like \usepackage{ctex} later, this will neutralize it.
+\@ifclassloaded{ctexbook}{%
+  % redefine \usepackage{ctex} to no-op
+  \@ifpackageloaded{ctex}{}{%
+    \expandafter\let\csname ver@ctex.sty\endcsname\relax
+  }%
+}{}
+
+% 2) Avoid amssymb when unicode-math is present
+% unicode-math provides most AMS symbols; amssymb conflicts under XeLaTeX/unicode-math.
+\@ifpackageloaded{unicode-math}{%
+  \@ifpackageloaded{amssymb}{}{%
+    % prevent later \usepackage{amssymb} from loading
+    \expandafter\let\csname ver@amssymb.sty\endcsname\relax
+  }%
+}{}
+
+\makeatother
+
+%%-------------------------
+%% Engine guard: LuaLaTeX / XeLaTeX only
+%%-------------------------
+\ifxetex\else
+  \ifluatex\else
+    \PackageError{preamble}{This project must be compiled with XeLaTeX or LuaLaTeX}{Use lualatex or xelatex.}
+  \fi
+\fi
+
+%%-------------------------
+%% Core packages
+%%-------------------------
+\RequirePackage{fontspec}      % unified font selection
+%\RequirePackage[fontset=none,scheme=plain]{ctex} % minimal Chinese support; no layout/theme changes
+\RequirePackage{xcolor}
+\RequirePackage{amsmath}
+%\RequirePackage{amsmath,amssymb}
+\RequirePackage{enumitem}
+\RequirePackage{hyperref}
+\hypersetup{hidelinks}
+
+%%-------------------------
+%% Fonts: Times New Roman (Latin) + PingFang SC (CJK)
+%%   - If PingFang SC is missing, fall back to Noto Sans CJK SC
+%%-------------------------
+%\defaultfontfeatures{Ligatures=TeX,Renderer=Harfbuzz,Scale=MatchLowercase}
+\defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+% Western (Latin) main/sans/mono
+\setmainfont{TeX Gyre Termes}[
+  BoldFont       = * Bold,
+  ItalicFont     = * Italic,
+  BoldItalicFont = * Bold Italic,
+]
+
+\setsansfont{Arial}
+\setmonofont{Courier New}
+
+% CJK main/sans/mono with runtime fallback
+\IfFontExistsTF{PingFang SC}{
+  \setCJKmainfont{PingFang SC}[
+    Path        = /home/artin/.local/share/fonts/,
+    Extension   = .ttf,
+    UprightFont = PingFangSC-Regular,
+    BoldFont    = PingFangSC-Medium,
+    ItalicFont  = PingFangSC-Light % 如需斜体，可视情况保留
+  ]
+  \setCJKsansfont{PingFang SC}
+  \setCJKmonofont{PingFang SC}
+}{
+  \setCJKmainfont{Noto Sans CJK SC}[
+    UprightFont = * Regular,
+    BoldFont    = * Bold,
+  ]
+  \setCJKsansfont{Noto Sans CJK SC}
+  \setCJKmonofont{Noto Sans Mono CJK SC}
+}
+% Optional: Roman numeral fallback (Ⅱ, Ⅲ ...)
+\newfontfamily\RomanFallback{TeX Gyre Termes}
+\newcommand{\useRomanFallback}[1]{{\RomanFallback #1}}
+
+%%-------------------------
+%% Colors & math numbering
+%%-------------------------
+\definecolor{ExamGray}{gray}{0.35}
+\numberwithin{equation}{section}
+
+%%-------------------------
+%% Heiti alias (defensive)
+%%-------------------------
+\makeatletter
+\@ifundefined{heiti}{\newcommand\heiti{\bfseries}}{}
+\makeatother
+
+%%-------------------------
+%% \zihao fallback (keep this block)
+%% If the class/package already defines \zihao (e.g., ctex), this does nothing.
+%%-------------------------
+\makeatletter
+\@ifundefined{zihao}{%
+  \newcommand\zihao[1]{%
+    \begingroup
+      \def\Exam@v{#1}%
+      \def\Exam@pt{}%
+      \edef\Exam@vstr{\detokenize{#1}}%
+      \ifx\Exam@vstr\@empty
+        \let\Exam@pt\relax
+      \else
+        \ifnum#1=2\relax      \def\Exam@pt{22}%
+        \else\ifnum#1=3\relax \def\Exam@pt{16}%
+        \else\ifnum#1=4\relax \def\Exam@pt{14}%
+        \else\ifnum#1=5\relax \def\Exam@pt{10.5}%
+        \else                 \let\Exam@pt\relax
+        \fi\fi\fi\fi
+      \fi
+      \ifx\Exam@pt\relax
+        \normalsize
+      \else
+        \fontsize{\Exam@pt}{1.2\Exam@pt}\selectfont
+      \fi
+    \endgroup
+  }%
+}{}
+\makeatother
+
+
+% --- examx compatibility fallbacks (no-op if undefined) ---
+\makeatletter
+\@ifundefined{points}{\newcommand{\points}[1]{}}{}
+\@ifundefined{solutionbox}{\newenvironment{solutionbox}{}{}{}}{}
+\makeatother
+

@@ -1,0 +1,437 @@
+--- a/styles/examx.sty
++++ b/styles/examx.sty
+@@ -1,131 +1,111 @@
+-% styles/examx.sty
++
++% styles/examx.sty  —— 统一接口 & 教师/学生自动渲染
+ \NeedsTeXFormat{LaTeX2e}
+-\ProvidesExplPackage
+-  {examx}
+-  {2025-10-16}
+-  {1.1.0}
+-  {Unified metadata & teacher/student answer rendering for exam-zh and ElegantBook}
++\ProvidesExplPackage{examx}{2025/10/21}{1.3.0}
++  {Unified metadata + auto teacher/student rendering for exam-zh & ElegantBook}
+ 
+ % ===== Dependencies =====
+ \RequirePackage{expl3}
+ \RequirePackage{xparse}
+ \RequirePackage{etoolbox}
+-\RequirePackage{l3keys2e}
++\RequirePackage[most]{tcolorbox}
+ 
+ \ExplSyntaxOn
+ 
+-% ===== Global state & defaults =====
++% -------- variant detection: default teacher ----------
++\cs_if_exist:NF \examvariant { \cs_new:Npn \examvariant { teacher } }
+ \bool_new:N \g_examx_teacher_bool
+-\bool_new:N \g_examx_autoprint_bool
+-\bool_new:N \g_examx_show_source_bool
++\str_if_eq:eeTF {\examvariant}{student}
++  { \bool_gset_false:N \g_examx_teacher_bool }
++  { \bool_gset_true:N  \g_examx_teacher_bool }
+ 
+-% defaults: student, autoprint on, hide source
+-\bool_gset_false:N \g_examx_teacher_bool
+-\bool_gset_true:N  \g_examx_autoprint_bool
+-\bool_gset_false:N \g_examx_show_source_bool
+-
+-% ===== Package options (teacher|student, autoprint, show-source) =====
+-% Allow: \PassOptionsToPackage{teacher,autoprint,show-source}{styles/examx}
+-\keys_define:nn { examx }
+-  {
+-    teacher      .code:n = { \bool_gset_true:N  \g_examx_teacher_bool },
+-    student      .code:n = { \bool_gset_false:N \g_examx_teacher_bool },
+-    autoprint    .code:n = { \bool_gset_true:N  \g_examx_autoprint_bool },
+-    no-autoprint .code:n = { \bool_gset_false:N \g_examx_autoprint_bool },
+-    show-source  .code:n = { \bool_gset_true:N  \g_examx_show_source_bool },
+-    hide-source  .code:n = { \bool_gset_false:N \g_examx_show_source_bool },
+-  }
+-\ProcessKeysOptions{examx}
+-
+-% ===== Per-item caches =====
+-\tl_new:N \l_examx_topics_tl
+-\tl_new:N \l_examx_source_tl
+-\tl_new:N \l_examx_explain_tl
+-\fp_new:N \l_examx_difficulty_fp
++% -------- per-item metadata storage ----------
++\tl_new:N \g_examx_topics_tl
++\tl_new:N \g_examx_difficulty_tl
++\tl_new:N \g_examx_explain_tl
++\tl_new:N \g_examx_source_tl
+ 
+ \cs_new_protected:Npn \examx_reset_per_item:
+   {
+-    \tl_clear:N \l_examx_topics_tl
+-    \tl_clear:N \l_examx_source_tl
+-    \tl_clear:N \l_examx_explain_tl
+-    \fp_zero:N  \l_examx_difficulty_fp
++    \tl_gclear:N \g_examx_topics_tl
++    \tl_gclear:N \g_examx_difficulty_tl
++    \tl_gclear:N \g_examx_explain_tl
++    \tl_gclear:N \g_examx_source_tl
+   }
+ 
+ % ===== Public unified interfaces (四个统一接口) =====
+-% 1) \topics{...}
+-\NewDocumentCommand \topics { m }
+-  { \tl_set:Nn \l_examx_topics_tl {#1} }
++\NewDocumentCommand \topics     { m } { \tl_gset:Nn \g_examx_topics_tl     {#1} }
++\NewDocumentCommand \difficulty { m } { \tl_gset:Nn \g_examx_difficulty_tl {#1} }
++\NewDocumentCommand \explain    { +m }{ \tl_gset:Nn \g_examx_explain_tl    {#1} }
++\NewDocumentCommand \source     { m } { \tl_gset:Nn \g_examx_source_tl     {#1} }
+ 
+-% 2) \difficulty{<number or expression>}
+-\NewDocumentCommand \difficulty { m }
+-  { \fp_set:Nn \l_examx_difficulty_fp {#1} }
+-
+-% 3) \explain{...} (+m allows paragraphs/math)
+-\NewDocumentCommand \explain { +m }
+-  { \tl_set:Nn \l_examx_explain_tl {#1} }
+-
+-% 4) \source{...}
+-\NewDocumentCommand \source { m }
+-  { \tl_set:Nn \l_examx_source_tl {#1} }
+-
+-% --- Compatibility aliases (optional) ---
+-% 让 \answer / \solution 自动等价于 \explain
++% Backward-compatible aliases
+ \cs_if_exist:NF \answer   { \NewDocumentCommand \answer   { +m } { \explain{#1} } }
+ \cs_if_exist:NF \solution { \NewDocumentCommand \solution { +m } { \explain{#1} } }
+ 
+-% ===== Rendering block for teacher version =====
++% ===== Teacher box style (可被手动覆盖) =====
++\tcbset{
++  examx/teacherbox/.style={
++    enhanced, breakable,
++    colback=blue!2!white,
++    colframe=blue!60!black,
++    boxrule=0.5pt,
++    arc=1mm,
++    left=1.2mm, right=1.2mm, top=0.8mm, bottom=0.8mm,
++    title=参考（知识点·难度·详解）,
++    fonttitle=\bfseries,
++    attach boxed title to top left={yshift=-2mm,xshift=1mm},
++    boxed title style={colback=blue!15!white, boxrule=0pt}
++  }
++}
++\NewDocumentEnvironment{examxTeacherBox}{O{}}
++  {\begin{tcolorbox}[examx/teacherbox,#1]}
++  {\end{tcolorbox}}
++
++% ===== Rendering block =====
+ \cs_new_protected:Npn \examx_print_block:
+   {
+-    \bool_if:NT \g_examx_autoprint_bool
++    \bool_if:NT \g_examx_teacher_bool
+       {
+-        \bool_if:NT \g_examx_teacher_bool
++        \tl_if_blank:VTF \g_examx_explain_tl
++          { } % 没有详解就不渲染整个框
+           {
+-            \par\vspace{.6\baselineskip}
+-            \begingroup
+-              \setlength{\parindent}{0pt}
+-              \bfseries 详解/答案：\par
+-              \normalfont
+-              % explain
+-              \tl_if_empty:NF \l_examx_explain_tl
+-                { \l_examx_explain_tl \par }
+-              % topics
+-              \tl_if_empty:NF \l_examx_topics_tl
+-                { \textit{考点：}\l_examx_topics_tl \par }
+-              % difficulty (>0)
+-              \fp_compare:nNnT { \l_examx_difficulty_fp } > { 0 }
+-                { \textit{难度：}\fp_use:N \l_examx_difficulty_fp \par }
+-              % source (toggleable)
+-              \bool_if:NT \g_examx_show_source_bool
+-                {
+-                  \tl_if_empty:NF \l_examx_source_tl
+-                    { \textit{来源：}\l_examx_source_tl \par }
+-                }
+-            \endgroup
++            \par\smallskip
++            \begin{examxTeacherBox}
++              \tl_if_blank:VTF \g_examx_topics_tl
++                { }
++                { \textbf{知识点：} \tl_use:N \g_examx_topics_tl \par }
++              \tl_if_blank:VTF \g_examx_difficulty_tl
++                { }
++                { \textbf{难度：} \tl_use:N \g_examx_difficulty_tl \par }
++              \textbf{详解：}\par
++              \tl_use:N \g_examx_explain_tl
++              \tl_if_blank:VTF \g_examx_source_tl
++                { }
++                { \par\medskip \textbf{来源：} \tl_use:N \g_examx_source_tl }
++            \end{examxTeacherBox}
+           }
+       }
+   }
+ 
+-% ===== Hooks: exam-zh (question) & ElegantBook (problem) =====
+-% Reset at begin, auto-print at end (teacher only)
++% Auto reset/print for common environments
+ \AtBeginEnvironment{question}{\examx_reset_per_item:}
+ \AtEndEnvironment  {question}{\examx_print_block:}
+ 
+ \AtBeginEnvironment{problem}{\examx_reset_per_item:}
+ \AtEndEnvironment  {problem}{\examx_print_block:}
+ 
+-% ===== Optional helper environments/commands =====
+-% Manual trigger if autoprint disabled:
+-\NewDocumentEnvironment { teachernotes } { }
+-  { \examx_print_block: }
+-  { }
+-
+-% Simple answer space for students
++% Simple answer area for students
+ \NewDocumentEnvironment { fillblank } { O{2} O{0.9\linewidth} }
+   {
+-    \par
+-    \int_step_inline:nn {#1}
+-      {
+-        \noindent\makebox[#2][l]{\hrulefill}\par\vspace{0.8\baselineskip}
++    \bool_if:NTF \g_examx_teacher_bool
++      {}% teacher: 不渲染空白
++      { % student: 画横线
++        \par
++        \int_step_inline:nn {#1}
++         {
++           \noindent\makebox[#2][l]{\hrulefill}\par\vspace{0.9\baselineskip}
++         }
+       }
+   }
+   { \par }
+
+--- a/settings/preamble.sty
++++ b/settings/preamble.sty
+@@ -136,3 +136,37 @@
+ \@ifundefined{solutionbox}{\newenvironment{solutionbox}{}{}{}}{}
+ \makeatother
+ 
++
++
++% === examx: visual refinements for notes/handouts ===
++\RequirePackage[most]{tcolorbox}
++% Blue title box used by \begin{problem} in notes
++\makeatletter
++\@ifundefined{problem}{
++  \NewDocumentEnvironment{problem}{ O{} +m }%
++    {\begin{tcolorbox}[enhanced,breakable,sharp corners,
++        colback=white, colframe=black!40, boxrule=0.5pt, arc=0.6mm,
++        title={#1}, fonttitle=\bfseries, coltitle=black,
++        left=1.2mm,right=1.2mm,top=0.8mm,bottom=0.8mm,
++        borderline west={2pt}{0pt}{blue!60}
++      ]%
++      #2%
++    }{ \end{tcolorbox} }
++}{}
++\makeatother
++
++% Definition/Example boxes for handouts (used in ElegantBook)
++\newtcolorbox{defbox}[1][]{enhanced,breakable,sharp corners,
++  title=\textbf{定义}, colframe=green!60!black, colback=green!2!white,
++  borderline west={2.2pt}{0pt}{green!60!black},
++  boxrule=0.5pt, arc=0.6mm, #1}
++\newtcolorbox{exbox}[1][]{enhanced,breakable,sharp corners,
++  title=\textbf{例题}, colframe=blue!60!black, colback=blue!2!white,
++  borderline west={2.2pt}{0pt}{blue!60!black},
++  boxrule=0.5pt, arc=0.6mm, #1}
++
++% Tables nicer defaults
++\RequirePackage{booktabs}
++\RequirePackage{array}
++\RequirePackage{makecell}
++\renewcommand\theadfont{\bfseries}
+
+--- a/content/exams/exam01.tex
++++ b/content/exams/exam01.tex
+@@ -1,53 +1,54 @@
+-\section*{Ⅰ. 单选题}\begin{question}
++
++\section*{Ⅰ. 单选题}
++
++\begin{question}
+ 设复数 $(1+5i)i$ 的虚部为（ ）。
+-
+ \begin{choices}
+   \choice $-1$
+   \choice $0$
+   \choice $1$
+   \choice $5$
+ \end{choices}
+-
+-\topics{复数; 虚部计算}
+-\difficulty{0.3}
+-\explain{直接相乘：$(1+5i)i = i + 5i^2 = i - 5$，虚部为 $1$。}
++\topics{复数；虚部计算}
++\difficulty{0.30}
++\explain{直接相乘：$(1+5i)i=i+5i^2=i-5$，虚部为 $1$。}
+ \end{question}
+ 
+ \begin{question}
+-若指数函数 $f(x)=2^x$，则 $f(0)+f(1)$ 等于（ ）。 
+-
+-
+-\answer{ex2}{答案：$1+2=3$。}
+-
+-
+-
+-\section*{Ⅱ. 填空题}
+-
++已知集合 $A=\{x\mid -5<x^3<5\}$，$B=\{-3,-1,0,2,3\}$，则 $A\cap B$ 为（ ）。
+ \begin{choices}
+-  \choice $1$
+-  \choice $2$
+-  \choice $3$
+-  \choice $4$
++  \choice $\{-1,0,1\}$
++  \choice $\{2,3\}$
++  \choice $\{-3,-1,0\}$
++  \choice $\{-10,2\}$
+ \end{choices}
+-
+-\topics{指数函数; 基本运算}
+-\difficulty{0.2}
++\topics{集合；交集；函数单调性}
++\difficulty{0.40}
++\explain{$-5<x^3<5\iff -\sqrt[3]{5}<x<\sqrt[3]{5}\approx1.71$，与 $B$ 取交得 $\{-1,0,1\}$。}
+ \end{question}
+ 
+ \begin{question}
+-函数 $f(x)=x^2-4x+3$ 的最小值为（ ）。 
+-
+-
+-
+-
+-\begin{fillblank}
+-  % 学生版不显示本段；教师版会在题干下显示“详解/答案”块
+-\end{fillblank}
+-
+-
+-
+-\topics{二次函数; 顶点式}
+-\difficulty{0.4}
+-\explain{$f(x)=(x-2)^2-1$，最小值为 $-1$。}
++函数 $f(x)=(x-2)^2-1$ 的最小值为（ ）。
++\begin{choices}
++  \choice $-2$ \choice $-1$ \choice $0$ \choice $1$
++\end{choices}
++\topics{二次函数；顶点式}
++\difficulty{0.30}
++\explain{顶点式可知最小值为 $-1$。}
+ \end{question}
+ 
++\section*{Ⅱ. 解答题}
++
++\begin{question}
++已知抛物线 $y=ax^2+bx+c$ 过点 $(0,-1)$、$(1,0)$、$(2,3)$，求其解析式。
++\fillblank[6]  % 学生版留空；教师版见下框
++\topics{二次函数插值；解方程组}
++\difficulty{0.55}
++\explain{由三点代入得
++$\begin{cases}
++c=-1\\
++a+b+c=0\\
++4a+2b+c=3
++\end{cases}$，
++解得 $a=1,\,b=0,\,c=-1$，故 $y=x^2-1$。}
++\end{question}
+
+--- a/content/handouts/ch01.tex
++++ b/content/handouts/ch01.tex
+@@ -1,16 +1,23 @@
+-%% =================================================================
+-%% File: content/handouts/ch01.tex
+-%% Purpose: Semantic content only; do not modify layout here.
+-%% TODO: add tags with \points{} and knowledge labels if needed.
+-%% =================================================================
+ 
+ \chapter{椭圆及其标准方程}
+-\begin{problem}[考点：椭圆的定义]
+-平面内与两个定点 $F_1, F_2$ 的距离之和等于常数（大于 $|F_1F_2|$）的点的轨迹叫做椭圆。
++
++\begin{defbox}[title=椭圆的定义]
++平面内与两个定点 $F_1,F_2$ 的距离之和等于常数（且大于 $|F_1F_2|$）的点的轨迹叫做\textbf{椭圆}。
++设常数为 $2a$（$a>0$），焦距为 $2c$，则椭圆的标准方程为
++\[
++\frac{x^2}{a^2}+\frac{y^2}{b^2}=1,\qquad a>b>0,\quad c^2=a^2-b^2.
++\]
++\end{defbox}
++
++\begin{exbox}[title=例：求椭圆的参数]
++已知椭圆 $C:\dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1\,(a>b>0)$ 的左右焦点为 $F_1,F_2$，且过点 $A(\sqrt{3},2)$。
++求 $C$ 的标准方程。
++\explain{由 $A$ 在 $C$ 上，得 $\frac{3}{a^2}+\frac{4}{b^2}=1$；又 $c^2=a^2-b^2$，
++若 $|F_1F_2|=2c=2$，则可解得 $a^2=4,\,b^2=3$。
++因此 $C:\dfrac{x^2}{4}+\dfrac{y^2}{3}=1$。}
++\end{exbox}
++
++\begin{problem}[性质小结]
++焦点在$x$轴上：$ \dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1\ (a>b>0)$；焦点在$y$轴上：$ \dfrac{x^2}{b^2}+\dfrac{y^2}{a^2}=1$。
++对称轴分别为坐标轴。取点 $A_1(-a,0),B_1(0,b),A_2(a,0),B_2(0,-b)$，长轴为 $2a$，短轴为 $2b$。
+ \end{problem}
+-
+-\begin{problem}[例题]
+-已知椭圆 $C: \frac{x^2}{a^2} + \frac{y^2}{b^2} = 1 \ (a>b>0)$ 的左、右焦点分别为 $F_1, F_2$。求椭圆 $C$ 的方程。
+-
+-\explain{思路：略。}
+-\end{problem}
+--- a/build.sh
++++ b/build.sh
+@@ -15,32 +15,23 @@
+ 
+ ensure_output() { mkdir -p output; }
+ 
+-# latex_run() {
+-#   local job="$1"
+-#   local input="$2"
+-#   local pass="$3"  # teacher|student
+-#   ensure_output
+-#   xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" -output-directory=output "\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
+-#   xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" -output-directory=output "\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
+-# }
+-
+-latex_run() {
+-  local job="$1"
+-  local input="$2"
+-  local pass="$3"  # teacher|student
++latex_run () {
++  local job="$1" src="$2" var="$3"
+   ensure_output
+-  # 明确 jobname；同时把 exam 与 examx 的变体信号都传进引擎
+-  xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" "\\def\\examvariant{${pass}}\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
+-  xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" "\\def\\examvariant{${pass}}\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
++  local engine="${TEXENGINE:-xelatex}"
++  # Compile twice for refs
++  $engine -interaction=nonstopmode -halt-on-error -jobname="$job" -output-directory=output "\def\examvariant{$var}\input{$src}"
++  $engine -interaction=nonstopmode -halt-on-error -jobname="$job" -output-directory=output "\def\examvariant{$var}\input{$src}"
++  echo "> built output/${job}.pdf"
+ }
+ 
+ case "${cmd}" in
+   exam)
+     case "${variant}" in
+-      teacher) latex_run "main-exam-teacher"    "main-exam.tex"    "teacher" ;;
+-      student) latex_run "main-exam-student"    "main-exam.tex"    "student" ;;
+-      both)    latex_run "main-exam-teacher"    "main-exam.tex"    "teacher" ;
+-               latex_run "main-exam-student"    "main-exam.tex"    "student" ;;
++      teacher) latex_run "main-exam-teacher" "main-exam.tex" "teacher" ;;
++      student) latex_run "main-exam-student" "main-exam.tex" "student" ;;
++      both)    latex_run "main-exam-teacher" "main-exam.tex" "teacher" ;
++               latex_run "main-exam-student" "main-exam.tex" "student" ;;
+       *) usage; exit 1 ;;
+     esac
+     ;;
+@@ -54,8 +45,8 @@
+     esac
+     ;;
+   clean)
+-    rm -f output/*.{pdf,log,aux,out,toc,nav,snm,synctex*} 2>/dev/null || true
+-    find . -type f \( -name "*.aux" -o -name "*.log" -o -name "*.out" -o -name "*.toc" -o -name "*.synctex*" \) -delete
++    rm -f output/*.{pdf,log,aux,out,toc,bcf,run.xml,synctex*} 2>/dev/null || true
++    find . -type f \( -name "*.aux" -o -name "*.log" -o -name "*.out" -o -name "*.toc" -o -name "*.bcf" -o -name "*.run.xml" -o -name "*.synctex*" \) -delete
+     ;;
+   *)
+     usage; exit 1 ;;
