@@ -2,61 +2,65 @@
 set -euo pipefail
 
 usage() {
-  cat <<USAGE
+  cat <<'USAGE'
 Usage:
-  ./build.sh exam {teacher|student|both}
-  ./build.sh handout {teacher|student|both}
-  ./build.sh clean
+  ./build.sh {exam|handout} {teacher|student|both}
+
+Notes:
+  - Outputs PDFs into ./output
+  - Uses latexmk -xelatex (adds -shell-escape automatically if minted is used)
 USAGE
+  exit 1
 }
 
-cmd="${1:-}"
-variant="${2:-teacher}"
+TYPE="${1:-}"; MODE="${2:-}"
+[[ -z "${TYPE}" || -z "${MODE}" ]] && usage
 
-ensure_output() { mkdir -p output; }
-
-# latex_run() {
-#   local job="$1"
-#   local input="$2"
-#   local pass="$3"  # teacher|student
-#   ensure_output
-#   xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" -output-directory=output "\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
-#   xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" -output-directory=output "\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
-# }
-
-latex_run() {
-  local job="$1"
-  local input="$2"
-  local pass="$3"  # teacher|student
-  ensure_output
-  # 明确 jobname；同时把 exam 与 examx 的变体信号都传进引擎
-  xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" "\\def\\examvariant{${pass}}\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
-  xelatex -interaction=nonstopmode -halt-on-error -jobname="${job}" "\\def\\examvariant{${pass}}\\PassOptionsToPackage{${pass}}{styles/examx}\\input{${input}}"
-}
-
-case "${cmd}" in
-  exam)
-    case "${variant}" in
-      teacher) latex_run "main-exam-teacher"    "main-exam.tex"    "teacher" ;;
-      student) latex_run "main-exam-student"    "main-exam.tex"    "student" ;;
-      both)    latex_run "main-exam-teacher"    "main-exam.tex"    "teacher" ;
-               latex_run "main-exam-student"    "main-exam.tex"    "student" ;;
-      *) usage; exit 1 ;;
-    esac
-    ;;
-  handout)
-    case "${variant}" in
-      teacher) latex_run "main-handout-teacher" "main-handout.tex" "teacher" ;;
-      student) latex_run "main-handout-student" "main-handout.tex" "student" ;;
-      both)    latex_run "main-handout-teacher" "main-handout.tex" "teacher" ;
-               latex_run "main-handout-student" "main-handout.tex" "student" ;;
-      *) usage; exit 1 ;;
-    esac
-    ;;
-  clean)
-    rm -f output/*.{pdf,log,aux,out,toc,nav,snm,synctex*} 2>/dev/null || true
-    find . -type f \( -name "*.aux" -o -name "*.log" -o -name "*.out" -o -name "*.toc" -o -name "*.synctex*" \) -delete
-    ;;
-  *)
-    usage; exit 1 ;;
+case "${TYPE}" in
+  exam)    MAIN="main-exam.tex" ;;
+  handout) MAIN="main-handout.tex" ;;
+  *) usage ;;
 esac
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "${ROOT}"
+
+mkdir -p output
+
+# detect minted usage
+if grep -R --include="*.tex" -n "\\usepackage.*{minted}" "${ROOT}" >/dev/null 2>&1; then
+  SHELL_ESCAPE="-shell-escape"
+else
+  SHELL_ESCAPE=""
+fi
+
+LATEXMK_OPTS=(-xelatex -interaction=nonstopmode -file-line-error -quiet ${SHELL_ESCAPE})
+
+build_one() {
+  local role="$1"  # teacher | student
+  local tmptex
+  tmptex="$(mktemp -t mmln.XXXXXX).tex"
+
+  cat > "${tmptex}" <<EOF2
+\\PassOptionsToPackage{${role}}{styles/examx}
+\\input{${MAIN}}
+EOF2
+
+  latexmk "${LATEXMK_OPTS[@]}" -jobname="${TYPE}-${role}" "${tmptex}"
+
+  if [[ -f "${TYPE}-${role}.pdf" ]]; then
+    mv -f "${TYPE}-${role}.pdf" "output/${TYPE}-${role}.pdf"
+  fi
+
+  latexmk -c "${tmptex}" >/dev/null 2>&1 || true
+  rm -f "${tmptex}"
+}
+
+case "${MODE}" in
+  teacher) build_one teacher ;;
+  student) build_one student ;;
+  both)    build_one teacher; build_one student ;;
+  *) usage ;;
+esac
+
+echo "✅ Done. See ./output"

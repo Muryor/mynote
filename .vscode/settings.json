@@ -1,59 +1,8 @@
 {
-  "latex-workshop.showContextMenu": true,
-  "latex-workshop.latex.autoBuild.run": "onFileChange",
-  "latex-workshop.intellisense.package.enabled": true,
-  "latex-workshop.message.error.show": true,
-  "latex-workshop.message.warning.show": true,
-  "latex-workshop.latex.outDir": "out",
-  "latex-workshop.latex.tools": [
-    {
-      "name": "latexmk-lua",
-      "command": "latexmk",
-      "args": [
-        "-lualatex",
-        "-synctex=1",
-        "-interaction=nonstopmode",
-        "-file-line-error",
-        "-outdir=out",
-        "%DOC%"
-      ]
-    },
-    {
-      "name": "latexmk-xe",
-      "command": "latexmk",
-      "args": [
-        "-xelatex",
-        "-synctex=1",
-        "-interaction=nonstopmode",
-        "-file-line-error",
-        "-outdir=out",
-        "%DOC%"
-      ]
-    }
-  ],
-  "latex-workshop.latex.recipes": [
-    {
-      "name": "LuaLaTeX → latexmk",
-      "tools": [
-        "latexmk-lua"
-      ]
-    },
-    {
-      "name": "XeLaTeX → latexmk",
-      "tools": [
-        "latexmk-xe"
-      ]
-    }
-  ],
-  "latex-workshop.view.pdf.viewer": "tab",
-  "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
-  "latex-workshop.latex.search.rootFiles.include": [
-    "main*.tex",
-    "templates/*.tex",
-    "**/*.tex"
-  ],
-  "files.associations": {
-    "*.sty": "latex",
-    "*.cls": "latex"
+  "terminal.integrated.env.osx": {
+    "PATH": "/Library/TeX/texbin:${env:PATH}"
+  },
+  "files.watcherExclude": {
+    "**/output/**": true
   }
 }
