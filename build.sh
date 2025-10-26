@@ -7,8 +7,8 @@ Usage:
   ./build.sh {exam|handout} {teacher|student|both}
 
 Notes:
-  - Outputs PDFs into ./output
-  - Uses latexmk -xelatex (adds -shell-escape automatically if minted is used)
+  - All PDFs and aux files go to ./output
+  - Uses latexmk -xelatex; auto-add -shell-escape when minted is detected
 USAGE
   exit 1
 }
@@ -24,7 +24,6 @@ esac
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 cd "${ROOT}"
-
 mkdir -p output
 
 # detect minted usage
@@ -34,7 +33,8 @@ else
   SHELL_ESCAPE=""
 fi
 
-LATEXMK_OPTS=(-xelatex -interaction=nonstopmode -file-line-error -quiet ${SHELL_ESCAPE})
+# put EVERYTHING in ./output
+LATEXMK_OPTS=(-xelatex -interaction=nonstopmode -file-line-error -quiet -outdir=output ${SHELL_ESCAPE})
 
 build_one() {
   local role="$1"  # teacher | student
@@ -48,10 +48,7 @@ EOF2
 
   latexmk "${LATEXMK_OPTS[@]}" -jobname="${TYPE}-${role}" "${tmptex}"
 
-  if [[ -f "${TYPE}-${role}.pdf" ]]; then
-    mv -f "${TYPE}-${role}.pdf" "output/${TYPE}-${role}.pdf"
-  fi
-
+  # PDF 已经在 ./output 下，无需再移动
   latexmk -c "${tmptex}" >/dev/null 2>&1 || true
   rm -f "${tmptex}"
 }

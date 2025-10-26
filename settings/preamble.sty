@@ -67,9 +67,9 @@
   \setCJKmainfont{PingFang SC}[
     Path        = /home/artin/.local/share/fonts/,
     Extension   = .ttf,
-    UprightFont = PingFangSC-Regular,
-    BoldFont    = PingFangSC-Medium,
-    ItalicFont  = PingFangSC-Light % 如需斜体，可视情况保留
+    UprightFont = PingFang SC,
+    BoldFont    = PingFang SC Semibold,
+    ItalicFont  = PingFang SC % 如需斜体，可视情况保留
   ]
   \setCJKsansfont{PingFang SC}
   \setCJKmonofont{PingFang SC}
@@ -184,3 +184,21 @@
 }{}%
 \makeatother
 % ----------------------------------------------------------
+
+% --- macOS CJK font fallback ---
+\makeatletter
+\@ifundefined{setCJKmainfont}{}{%
+  \IfFontExistsTF{PingFang SC}{%
+    \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
+    \setCJKsansfont{PingFang SC}
+    \setCJKmonofont{PingFang SC}
+  }{%
+    \IfFontExistsTF{Noto Serif CJK SC}{%
+      \setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC SemiBold}]
+      \setCJKsansfont{Noto Sans CJK SC}
+      \setCJKmonofont{Noto Sans Mono CJK SC}
+    }{}
+  }%
+}
+\makeatother
+% --- end fallback ---
