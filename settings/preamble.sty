@@ -185,19 +185,28 @@
 \makeatother
 % ----------------------------------------------------------
 
-% --- macOS CJK font fallback ---
+
+% --- macOS CJK font fallback (clean, no Path/Extension) ---
 \makeatletter
 \@ifundefined{setCJKmainfont}{}{%
+  % 先试苹方
   \IfFontExistsTF{PingFang SC}{%
     \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
     \setCJKsansfont{PingFang SC}
     \setCJKmonofont{PingFang SC}
   }{%
-    \IfFontExistsTF{Noto Serif CJK SC}{%
-      \setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC SemiBold}]
-      \setCJKsansfont{Noto Sans CJK SC}
-      \setCJKmonofont{Noto Sans Mono CJK SC}
-    }{}
+    % 苹方没有时退到系统常见/可安装的字体
+    \IfFontExistsTF{Songti SC}{%
+      \setCJKmainfont{Songti SC}[BoldFont={Songti SC Bold}]
+      \setCJKsansfont{Heiti SC}
+      \setCJKmonofont{Heiti SC}
+    }{%
+      \IfFontExistsTF{Noto Serif CJK SC}{%
+        \setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC SemiBold}]
+        \setCJKsansfont{Noto Sans CJK SC}
+        \setCJKmonofont{Noto Sans Mono CJK SC}
+      }{}
+    }%
   }%
 }
 \makeatother
