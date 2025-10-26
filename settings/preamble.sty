@@ -1,28 +1,22 @@
-%% settings/preamble.sty
+%% settings/preamble.sty  (macOS-safe)
 \ProvidesPackage{preamble}[2025/10/15 MyMathLectureNotes preamble]
 \RequirePackage{ifxetex}
 \RequirePackage{ifluatex}
+
 % --- Compatibility guard for exam-zh + XeLaTeX ---
 \makeatletter
-
 % 1) Avoid loading ctex when class is already ctexbook (exam-zh uses ctexbook)
-% If you have a line like \usepackage{ctex} later, this will neutralize it.
 \@ifclassloaded{ctexbook}{%
-  % redefine \usepackage{ctex} to no-op
   \@ifpackageloaded{ctex}{}{%
     \expandafter\let\csname ver@ctex.sty\endcsname\relax
   }%
 }{}
-
 % 2) Avoid amssymb when unicode-math is present
-% unicode-math provides most AMS symbols; amssymb conflicts under XeLaTeX/unicode-math.
 \@ifpackageloaded{unicode-math}{%
   \@ifpackageloaded{amssymb}{}{%
-    % prevent later \usepackage{amssymb} from loading
     \expandafter\let\csname ver@amssymb.sty\endcsname\relax
   }%
 }{}
-
 \makeatother
 
 %%-------------------------
@@ -37,52 +31,81 @@
 %%-------------------------
 %% Core packages
 %%-------------------------
-\RequirePackage{fontspec}      % unified font selection
-%\RequirePackage[fontset=none,scheme=plain]{ctex} % minimal Chinese support; no layout/theme changes
+\RequirePackage{fontspec}
 \RequirePackage{xcolor}
 \RequirePackage{amsmath}
-%\RequirePackage{amsmath,amssymb}
 \RequirePackage{enumitem}
 \RequirePackage{hyperref}
 \hypersetup{hidelinks}
 
 %%-------------------------
-%% Fonts: Times New Roman (Latin) + PingFang SC (CJK)
-%%   - If PingFang SC is missing, fall back to Noto Sans CJK SC
+%% Fonts (Latin + CJK)
 %%-------------------------
-%\defaultfontfeatures{Ligatures=TeX,Renderer=Harfbuzz,Scale=1.0}
+% IMPORTANT: fix Scale to avoid MatchLowercase/Uppercase pitfalls on mixed CJK
 \defaultfontfeatures{Ligatures=TeX,Scale=1.0}
-% Western (Latin) main/sans/mono
-\setmainfont{Times New Roman}[
-  BoldFont       = * Bold,
-  ItalicFont     = * Italic,
-  BoldItalicFont = * Bold Italic,
-]
 
-\setsansfont{Arial}
-\setmonofont{Courier New}
-
-% CJK main/sans/mono with runtime fallback
-\IfFontExistsTF{PingFang SC}{
-  \setCJKmainfont{PingFang SC}[
-    Path        = /home/artin/.local/share/fonts/,
-    Extension   = .ttf,
-    UprightFont = PingFang SC,
-    BoldFont    = PingFang SC Semibold,
-    ItalicFont  = PingFang SC % 如需斜体，可视情况保留
-  ]
-  \setCJKsansfont{PingFang SC}
-  \setCJKmonofont{PingFang SC}
-}{
-  \setCJKmainfont{Noto Sans CJK SC}[
-    UprightFont = * Regular,
-    BoldFont    = * Bold,
-  ]
-  \setCJKsansfont{Noto Sans CJK SC}
-  \setCJKmonofont{Noto Sans Mono CJK SC}
+% Latin main/sans/mono with fallback
+\makeatletter
+\IfFontExistsTF{TeX Gyre Termes}{%
+  \setmainfont{TeX Gyre Termes}[
+    BoldFont       = * Bold,
+    ItalicFont     = * Italic,
+    BoldItalicFont = * Bold Italic,
+  ]%
+}{%
+  \IfFontExistsTF{Times New Roman}{%
+    \setmainfont{Times New Roman}[Ligatures=TeX]
+  }{%
+    \setmainfont{Times} % last-resort
+  }%
 }
+\IfFontExistsTF{Helvetica}{\setsansfont{Helvetica}}{\setsansfont{Arial}}
+\IfFontExistsTF{Menlo}{\setmonofont{Menlo}}{\setmonofont{Courier New}}
+\makeatother
+
+% CJK main/sans/mono using family names only (no Path/Extension)
+\makeatletter
+\@ifundefined{setCJKmainfont}{}{%
+  % 1) Preferred: PingFang SC (macOS)
+  \IfFontExistsTF{PingFang SC}{%
+    \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
+    \setCJKsansfont{PingFang SC}
+    \setCJKmonofont{PingFang SC}
+  }{%
+    % 2) Fallback: Noto CJK (installable via homebrew cask-fonts)
+    \IfFontExistsTF{Noto Serif CJK SC}{%
+      \setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC SemiBold}]
+      \setCJKsansfont{Noto Sans CJK SC}
+      \setCJKmonofont{Noto Sans Mono CJK SC}
+    }{%
+      % 3) Last resort: System Songti/Heiti (older macs)
+      \IfFontExistsTF{Songti SC}{%
+        \setCJKmainfont{Songti SC}[BoldFont={Songti SC Bold}]
+        \setCJKsansfont{Heiti SC}
+        \setCJKmonofont{Heiti SC}
+      }{}
+    }%
+  }%
+}
+\makeatother
+
+% Math font: only if unicode-math is loaded
+\makeatletter
+\@ifpackageloaded{unicode-math}{%
+  \IfFontExistsTF{STIX Two Math}{\setmathfont{STIX Two Math}}{%
+    \IfFontExistsTF{XITS Math}{\setmathfont{XITS Math}}{}%
+  }%
+}{}%
+\makeatother
+
 % Optional: Roman numeral fallback (Ⅱ, Ⅲ ...)
-\newfontfamily\RomanFallback{Times New Roman}
+\makeatletter
+\IfFontExistsTF{TeX Gyre Termes}{%
+  \newfontfamily\RomanFallback{TeX Gyre Termes}[Scale=1.0]
+}{%
+  \newfontfamily\RomanFallback{Times New Roman}[Scale=1.0]
+}
+\makeatother
 \newcommand{\useRomanFallback}[1]{{\RomanFallback #1}}
 
 %%-------------------------
@@ -100,7 +123,6 @@
 
 %%-------------------------
 %% \zihao fallback (keep this block)
-%% If the class/package already defines \zihao (e.g., ctex), this does nothing.
 %%-------------------------
 \makeatletter
 \@ifundefined{zihao}{%
@@ -129,85 +151,8 @@
 }{}
 \makeatother
 
-
 % --- examx compatibility fallbacks (no-op if undefined) ---
 \makeatletter
 \@ifundefined{points}{\newcommand{\points}[1]{}}{}
 \@ifundefined{solutionbox}{\newenvironment{solutionbox}{}{}{}}{}
 \makeatother
-
-
-% ===== macOS font overrides (safe & reversible) =====
-% Avoid automatic scaling on mixed CJK; pin Scale=1.0
-\makeatletter
-\@ifpackageloaded{fontspec}{}{%
-  \RequirePackage{fontspec}%
-}
-\makeatother
-
-% Latin fonts (macOS built-ins)
-\IfFontExistsTF{Times New Roman}{%
-  \setmainfont{Times New Roman}[Ligatures=TeX,Scale=1.0]%
-}{%
-  \IfFontExistsTF{Times}{\setmainfont{Times}[Scale=1.0]}{}%
-}
-\IfFontExistsTF{Helvetica}{\setsansfont{Helvetica}[Scale=1.0]}{}
-\IfFontExistsTF{Menlo}{\setmonofont{Menlo}[Scale=1.0]}{}
-
-% CJK (requires xeCJK/ctex)
-\makeatletter
-\@ifundefined{setCJKmainfont}{}{%
-  \IfFontExistsTF{PingFang SC}{%
-    \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
-    \setCJKsansfont{PingFang SC}
-    \setCJKmonofont{PingFang SC}
-  }{}%
-}
-\makeatother
-
-% Math font only if unicode-math is loaded (optional)
-\makeatletter
-\@ifpackageloaded{unicode-math}{%
-  \IfFontExistsTF{STIX Two Math}{\setmathfont{STIX Two Math}}{%
-    \IfFontExistsTF{XITS Math}{\setmathfont{XITS Math}}{}%
-  }%
-}{}%
-\makeatother
-% ===== end macOS overrides =====
-
-% ---- math font fallback (if STIX Two Math is missing) ----
-\makeatletter
-\@ifpackageloaded{unicode-math}{%
-  \IfFontExistsTF{STIX Two Math}{}{%
-    \IfFontExistsTF{XITS Math}{\setmathfont{XITS Math}}{}%
-  }%
-}{}%
-\makeatother
-% ----------------------------------------------------------
-
-
-% --- macOS CJK font fallback (clean, no Path/Extension) ---
-\makeatletter
-\@ifundefined{setCJKmainfont}{}{%
-  % 先试苹方
-  \IfFontExistsTF{PingFang SC}{%
-    \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
-    \setCJKsansfont{PingFang SC}
-    \setCJKmonofont{PingFang SC}
-  }{%
-    % 苹方没有时退到系统常见/可安装的字体
-    \IfFontExistsTF{Songti SC}{%
-      \setCJKmainfont{Songti SC}[BoldFont={Songti SC Bold}]
-      \setCJKsansfont{Heiti SC}
-      \setCJKmonofont{Heiti SC}
-    }{%
-      \IfFontExistsTF{Noto Serif CJK SC}{%
-        \setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC SemiBold}]
-        \setCJKsansfont{Noto Sans CJK SC}
-        \setCJKmonofont{Noto Sans Mono CJK SC}
-      }{}
-    }%
-  }%
-}
-\makeatother
-% --- end fallback ---
