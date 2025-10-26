@@ -50,10 +50,10 @@
 %% Fonts: Times New Roman (Latin) + PingFang SC (CJK)
 %%   - If PingFang SC is missing, fall back to Noto Sans CJK SC
 %%-------------------------
-%\defaultfontfeatures{Ligatures=TeX,Renderer=Harfbuzz,Scale=MatchLowercase}
-\defaultfontfeatures{Ligatures=TeX,Scale=MatchLowercase}
+%\defaultfontfeatures{Ligatures=TeX,Renderer=Harfbuzz,Scale=1.0}
+\defaultfontfeatures{Ligatures=TeX,Scale=1.0}
 % Western (Latin) main/sans/mono
-\setmainfont{TeX Gyre Termes}[
+\setmainfont{Times New Roman}[
   BoldFont       = * Bold,
   ItalicFont     = * Italic,
   BoldItalicFont = * Bold Italic,
@@ -82,7 +82,7 @@
   \setCJKmonofont{Noto Sans Mono CJK SC}
 }
 % Optional: Roman numeral fallback (Ⅱ, Ⅲ ...)
-\newfontfamily\RomanFallback{TeX Gyre Termes}
+\newfontfamily\RomanFallback{Times New Roman}
 \newcommand{\useRomanFallback}[1]{{\RomanFallback #1}}
 
 %%-------------------------
@@ -136,3 +136,51 @@
 \@ifundefined{solutionbox}{\newenvironment{solutionbox}{}{}{}}{}
 \makeatother
 
+
+% ===== macOS font overrides (safe & reversible) =====
+% Avoid automatic scaling on mixed CJK; pin Scale=1.0
+\makeatletter
+\@ifpackageloaded{fontspec}{}{%
+  \RequirePackage{fontspec}%
+}
+\makeatother
+
+% Latin fonts (macOS built-ins)
+\IfFontExistsTF{Times New Roman}{%
+  \setmainfont{Times New Roman}[Ligatures=TeX,Scale=1.0]%
+}{%
+  \IfFontExistsTF{Times}{\setmainfont{Times}[Scale=1.0]}{}%
+}
+\IfFontExistsTF{Helvetica}{\setsansfont{Helvetica}[Scale=1.0]}{}
+\IfFontExistsTF{Menlo}{\setmonofont{Menlo}[Scale=1.0]}{}
+
+% CJK (requires xeCJK/ctex)
+\makeatletter
+\@ifundefined{setCJKmainfont}{}{%
+  \IfFontExistsTF{PingFang SC}{%
+    \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
+    \setCJKsansfont{PingFang SC}
+    \setCJKmonofont{PingFang SC}
+  }{}%
+}
+\makeatother
+
+% Math font only if unicode-math is loaded (optional)
+\makeatletter
+\@ifpackageloaded{unicode-math}{%
+  \IfFontExistsTF{STIX Two Math}{\setmathfont{STIX Two Math}}{%
+    \IfFontExistsTF{XITS Math}{\setmathfont{XITS Math}}{}%
+  }%
+}{}%
+\makeatother
+% ===== end macOS overrides =====
+
+% ---- math font fallback (if STIX Two Math is missing) ----
+\makeatletter
+\@ifpackageloaded{unicode-math}{%
+  \IfFontExistsTF{STIX Two Math}{}{%
+    \IfFontExistsTF{XITS Math}{\setmathfont{XITS Math}}{}%
+  }%
+}{}%
+\makeatother
+% ----------------------------------------------------------
