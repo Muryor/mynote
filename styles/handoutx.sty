@@ -1,0 +1,46 @@
+% styles/handoutx.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{handoutx}[2025/10/16 v0.2 Handout boxes & tables]
+
+\RequirePackage{xparse}
+\RequirePackage{tcolorbox}
+\RequirePackage{tabularx}
+\RequirePackage{booktabs}
+\tcbuselibrary{skins,breakable}
+
+% brand colors（可在 preamble 中整体换色）
+\providecolor{BrandBlue}{HTML}{1663B7}
+\providecolor{AccentGreen}{HTML}{2E8540}
+\providecolor{AccentOrange}{HTML}{D17A00}
+\providecolor{AccentPurple}{HTML}{6F42C1}
+
+% 通用信息盒
+\NewDocumentEnvironment{infobox}{O{} m}{
+  \begin{tcolorbox}[enhanced,breakable,sharp corners,boxrule=0.8pt,
+    colframe=#2!70!black,colback=#2!2!white,
+    left=1.2mm,right=1.2mm,top=1mm,bottom=1mm,
+    fonttitle=\bfseries,title={#1}]
+}{\end{tcolorbox}}
+
+\NewDocumentEnvironment{defbox}    {O{定义}}{\begin{infobox}[#1]{BrandBlue}}{\end{infobox}}
+\NewDocumentEnvironment{theorybox} {O{性质}}{\begin{infobox}[#1]{AccentGreen}}{\end{infobox}}
+\NewDocumentEnvironment{examplebox}{O{例题}}{\begin{infobox}[#1]{AccentOrange}}{\end{infobox}}
+\NewDocumentEnvironment{notebox}   {O{注意}}{\begin{infobox}[#1]{AccentPurple}}{\end{infobox}}
+
+% 二列 Key-Value 表（图 1～4 的信息表格样式）
+\NewDocumentEnvironment{kvtable}{ O{\textwidth} O{@{}>{\bfseries}p{0.18\linewidth} X@{}} }{%
+  \renewcommand{\arraystretch}{1.25}
+  \begin{tabularx}{#1}{#2}\toprule
+}{\bottomrule\end{tabularx}}
+\newcommand{\kv}[2]{#1 & #2\\}
+
+% 椭圆总结三列表（自带左右“x/y 轴上”表头）
+\NewDocumentEnvironment{ellipsesummary}{ O{\textwidth} }{%
+  \renewcommand{\arraystretch}{1.25}
+  \setlength{\tabcolsep}{4pt}
+  \begin{tabularx}{#1}{@{}>{\bfseries}p{0.16\linewidth} >{\raggedright\arraybackslash}X >{\raggedright\arraybackslash}X@{}}
+  \toprule
+  & 在 $x$ 轴上 & 在 $y$ 轴上\\
+  \midrule
+}{\bottomrule\end{tabularx}}
+\newcommand{\ellrow}[3]{#1 & #2 & #3\\}

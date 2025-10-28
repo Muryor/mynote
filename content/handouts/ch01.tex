@@ -1,16 +1,43 @@
-%% =================================================================
-%% File: content/handouts/ch01.tex
-%% Purpose: Semantic content only; do not modify layout here.
-%% TODO: add tags with \points{} and knowledge labels if needed.
-%% =================================================================
-
 \chapter{椭圆及其标准方程}
-\begin{problem}[考点：椭圆的定义]
-平面内与两个定点 $F_1, F_2$ 的距离之和等于常数（大于 $|F_1F_2|$）的点的轨迹叫做椭圆。
-\end{problem}
 
-\begin{problem}[例题]
-已知椭圆 $C: \frac{x^2}{a^2} + \frac{y^2}{b^2} = 1 \ (a>b>0)$ 的左、右焦点分别为 $F_1, F_2$。求椭圆 $C$ 的方程。
+\begin{defbox}[椭圆（定义）]
+  平面内与两个定点 $F_1, F_2$ 的距离之和为常数（大于 $|F_1F_2|$）的点的轨迹叫做\textbf{椭圆}。
+\end{defbox}
 
-\explain{思路：略。}
-\end{problem}
+\begin{theorybox}[标准方程与几何性质（提要）]
+  \begin{ellipsesummary}
+    \ellrow{标准方程}{
+      $\dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1\ (a>b>0)$
+    }{
+      $\dfrac{x^2}{b^2}+\dfrac{y^2}{a^2}=1\ (a>b>0)$
+    }
+    \ellrow{焦点}{
+      $F_1(-c,0),\,F_2(c,0)$
+    }{
+      $F_1(0,-c),\,F_2(0,c)$
+    }
+    \ellrow{离心率}{
+      $e=\dfrac{c}{a},\ \ c^2=a^2-b^2$
+    }{
+      $e=\dfrac{c}{a},\ \ c^2=a^2-b^2$
+    }
+    \ellrow{对称性}{
+      关于 $x$ 轴、$y$ 轴及原点对称
+    }{
+      同左
+    }
+  \end{ellipsesummary}
+\end{theorybox}
+
+\begin{examplebox}[例题：求椭圆的方程]
+  已知椭圆 $C:\ \frac{x^2}{a^2}+\frac{y^2}{b^2}=1\ (a>b>0)$ 的左右焦点分别为 $F_1,F_2$，焦距为 $2c$。
+  \topics{椭圆；标准方程；焦距}
+  \difficulty{0.40}
+  \explain{由 $c^2=a^2-b^2$，若已知 $a$ 与 $c$，可得 $b=\sqrt{a^2-c^2}$，代入即得标准方程。}
+\end{examplebox}
+
+\begin{notebox}[易错点]
+  1) 离心率 $e=\dfrac{c}{a}$（不是 $c/b$）；
+  2) $a>b>0$ 的前提不能忽略；
+  3) 与双曲线的参数关系不要混淆。
+\end{notebox}

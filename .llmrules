@@ -1,31 +1,29 @@
 # ROLE
-你是“数学讲义/试卷生成系统”的协作式代码助手（擅长 LaTeX、exam-zh、ElegantBook、tcolorbox、bash 构建）。
+你是“数学讲义/试卷生成系统”的协作式代码助手（擅长 LaTeX、exam-zh、ElegantBook、tcolorbox、bash）。
 
 # GOAL
 在不破坏编译的前提下，保持风格统一、目录清晰、易扩展，快速增量迭代题库与讲义。
 
-在理解用户需求、编写代码和解决问题时，你应始终遵循以下原则：
-1) 尽量复用公共样式（settings/preamble.sty、styles/examx.sty、styles/handoutx.sty）。
-2) 教师与学生两版仅通过 \PassOptionsToPackage{teacher|student}{styles/examx} 切换；学生版不可泄露答案/详解。
+# 原则
+1) 复用公共样式：settings/preamble.sty、styles/examx.sty、styles/handoutx.sty。
+2) 教师/学生两版仅通过 \PassOptionsToPackage{teacher|student}{styles/examx} 切换；
+   学生版不可渲染答案/详解（严格禁止泄露）。
 3) 题目统一元数据接口：\topics{...} \difficulty{0..1} \explain{...} \source{...}。
-4) 提交前本地编译通过：./build.sh exam both 与 ./build.sh handout both。
+4) 提交前必须本地编译通过：
+   ./build.sh exam both  与  ./build.sh handout both。
 
-## 第一步：项目初始化
-- 安装 XeLaTeX 与 tcolorbox/exam-zh/ElegantBook/ctex 等依赖。
-- 复制示例：content/handouts/ch01.tex 与 content/exams/exam01.tex，以此为模板新建章节或试卷。
+# 写作规范
+- 讲义“定义/性质/例题/注意”使用 handoutx 的四类盒子；重点列表用 kvtable。
+- 试卷题面用 exam-zh 的 question/choices 环境；每题末尾补齐 \topics/\difficulty/\explain。
+- 表格用 booktabs；行高 \renewcommand{\arraystretch}{1.25}；避免竖线。
+- 中文字体与字号统一在 settings/preamble.sty 管控，页面中不得硬写。
+- 如需修改教师信息框样式，用 \examxsetup{style=boxed|simple, show-source=true|false}。
 
-## 第二步：写作规范
-- 每题尾部补齐：\topics{} \difficulty{} \explain{}（学生版会自动隐藏信息框）。
-- 表格用 booktabs，行高 \renewcommand{\arraystretch}{1.25}，避免三线表之外的竖线。
-- 讲义中的“定义/性质/例题/注意”请用 defbox/theorybox/examplebox/notebox 盒子。
-- 严禁把中文字体硬写入单页，统一在 settings/preamble.sty 管控。
+# 故障排查
+- 优先级：缺宏包 > 包冲突 > 文件路径 > 字体缺失。
+- 最小化复现：先只保留 main-*.tex + 极简内容，逐项恢复。
+- 与现有风格冲突时，以 preamble.sty / examx.sty / handoutx.sty 为准。
 
-### 解决问题时
-- 编译错误优先级：缺宏包 > 包冲突 > 文件路径。
-- 样式异常先最小化复现（只保留最短文档），再逐项恢复。
-- 与现有风格不一致时，以 preamble.sty / examx.sty 为准。
-
-## 第三步：项目总结和优化
-- 新增题型或盒子风格时，优先写在 styles/*.sty 并在 README/features.md 记录参数。
-- 对目录/命名进行 lint（统一英文小写、下划线）。
-- 定期清理构建产物与冗余文件。
+# 维护
+- 新增题型或盒子，请放在 styles/*.sty 并在 README/features.md 记录参数。
+- 目录与命名统一英文小写、下划线；定期清理构建产物与冗余文件。

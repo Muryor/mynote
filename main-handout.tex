@@ -1,16 +1,19 @@
 % ========================= Handout main =========================
-% File: main-handout.tex
-% Role: Entry point for lecture handouts (book-like layout)
-% Notes:
-% - Answers toggle: \def\WITHANSWERS{}  (teacher)  |  comment out (student)
-% - Fonts & colors are configured in settings/preamble.sty
-% TODO: unify brand colors and box styles with exam.sty
 \documentclass[lang=cn, color=blue, mode=fancy]{elegantbook}
+
+% 字体/颜色等基础预设
 \input{settings/preamble.sty}
-\usepackage{styles/examx}
+
+% 讲义盒子 + 题目统一接口
+\usepackage{styles/handoutx}
+\usepackage{styles/examx} % 让 problem 也能写 \topics/\difficulty/\explain
+
 \input{settings/metadata.tex}
+
 \begin{document}
-\frontmatter\maketitle\tableofcontents
-\mainmatter
-\input{content/handouts/ch01.tex}
+  \frontmatter
+  \maketitle
+  \tableofcontents
+  \mainmatter
+  \input{content/handouts/ch01.tex}
 \end{document}
