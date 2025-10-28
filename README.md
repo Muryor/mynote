@@ -1,77 +1,41 @@
-# MyMathLectureNotes – Exam System (exam-zh + examx)
 
-本项目已对接 **exam-zh** 题目环境，并统一题目元数据接口：
+# MyNote – Exam/Lecture LaTeX Notes
 
-```tex
-\topics{<考察的知识点>}
-\difficulty{<0..1>}
-\explain{<详解文本>}
-\source{<来源文本>}
-```
+> 基于 `exam-zh` + 自定义样式 `styles/examx.sty` 的中英混排试卷/讲义模板。
 
-- **教师版**：每题下方自动渲染（知识点 / 难度 / 详解；来源默认关闭）。
-- **学生版**：仅保留原试卷题目，不显示上述信息块。
-- `\topics{}` 为空自动隐藏整行；`\difficulty{}` 未设显示“—”；详解支持数学环境且可分页。
-
-## 目录结构（关键）
-- `styles/exam-zh.cls`：exam-zh 类（不改动）。
-- `styles/examx.sty`：桥接包，自动挂钩 `question` / `problem` 并渲染教师块。
-- `settings/preamble.sty`：字体与基础预设（保留原 PingFangSC 设置）。
-- `content/exams/exam01.tex`：示例试卷内容（已迁移到 `question` 环境）。
-- `content/handouts/ch01.tex`：示例讲义（`problem` 环境 + 复用同一接口）。
-- `main-exam.tex`：试卷入口（`exam-zh` 类 + `examx`）。
-- `main-handout.tex`：讲义入口（ElegantBook + `examx`）。
-
-## 编译
-
+## Build
 ```bash
-# 试卷
-./build.sh exam teacher   # 教师版
-./build.sh exam student   # 学生版
-./build.sh exam both      # 两者都编译
-
-# 讲义
-./build.sh handout teacher
-./build.sh handout student
-./build.sh handout both
+./build.sh exam teacher   # 教师版（含详解/考点/来源）
+./build.sh exam student   # 学生版（隐藏详解）
 ```
 
-> 构建脚本通过 `\PassOptionsToPackage{teacher|student}{styles/examx}` 切换渲染；
-> 字体与版面沿用 `settings/preamble.sty`（例如 PingFangSC），本补丁不改动。
+## Metadata
+- `\topics{...}`  题目考点
+- `\difficulty{<0..1>}` 难度（小数）；模板会显示为百分比（四舍五入）
+- `\explain{...}` 详解
+- `\source{...}`  来源（可通过 `show-source=true` 控制是否展示）
 
-## 在内容中写题（对齐 exam-zh）
-
-**选择题**：
+> 自定义难度格式：
 ```tex
-\begin{question}
-设复数 $(1+5i)i$ 的虚部为（ ）。
-\begin{choices}
-  \choice $-1$
-  \choice $0$
-  \choice $1$
-  \choice $5$
-\end{choices}
-\topics{复数；虚部计算}
-\difficulty{0.30}
-\explain{$(1+5i)i = i + 5i^2 = i - 5$，虚部为 $1$。}
-\end{question}
+\RenewDocumentCommand\ExamDifficultyFormat{m}
+  { \fp_eval:n { round((#1)*100,1) } \% } % 显示一位小数
 ```
 
-**解答题/讲义中的习题**：
+## Runtime setup
 ```tex
-\begin{problem}[例题]
-已知椭圆 $C:\ \frac{x^2}{a^2}+\frac{y^2}{b^2}=1\ (a>b>0)$。
-\topics{椭圆；标准方程}
-\difficulty{0.40}
-\explain{略。}
-\end{problem}
+\examxsetup{
+  autoprint=true,     % 每题结束自动打印教师块
+  show-source=false,  % 默认不展示来源
+  boxed=true          % 教师块使用 tcolorbox 风格
+}
 ```
 
-## 自定义
+## Troubleshooting
+- **Runaway argument / File ended while scanning use of ...**：通常是 `}` 被 `%` 注释吃掉；检查最近改动。
+- **一串 expl3 命令未定义**：不要在 `styles/examx.sty` 中途 `\ExplSyntaxOff`。
 
-- 显示“来源”：`\\examxsetup{show-source=true}`
-- 修改“难度”格式：
-  ```tex
-  \renewcommand\ExamDifficultyFormat[1]{\number\numexpr#1*100\relax\%%}
-  ```
-- 局部关闭教师块自动渲染：`\\examxsetup{autoprint=false}`（再用 `true` 重新开启）。
+## Requirements
+- TeX Live 2024+（推荐 2025）
+- `exam-zh` 0.2.5+
+
+License: MIT

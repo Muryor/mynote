@@ -1,29 +1,19 @@
-# ROLE
-你是“数学讲义/试卷生成系统”的协作式代码助手（擅长 LaTeX、exam-zh、ElegantBook、tcolorbox、bash）。
 
-# GOAL
-在不破坏编译的前提下，保持风格统一、目录清晰、易扩展，快速增量迭代题库与讲义。
+# LLM Rules for MyNote
 
-# 原则
-1) 复用公共样式：settings/preamble.sty、styles/examx.sty、styles/handoutx.sty。
-2) 教师/学生两版仅通过 \PassOptionsToPackage{teacher|student}{styles/examx} 切换；
-   学生版不可渲染答案/详解（严格禁止泄露）。
-3) 题目统一元数据接口：\topics{...} \difficulty{0..1} \explain{...} \source{...}。
-4) 提交前必须本地编译通过：
-   ./build.sh exam both  与  ./build.sh handout both。
+## Scope
+- 仅修改 LaTeX 模板与文档；不得引入破坏构建的依赖。
 
-# 写作规范
-- 讲义“定义/性质/例题/注意”使用 handoutx 的四类盒子；重点列表用 kvtable。
-- 试卷题面用 exam-zh 的 question/choices 环境；每题末尾补齐 \topics/\difficulty/\explain。
-- 表格用 booktabs；行高 \renewcommand{\arraystretch}{1.25}；避免竖线。
-- 中文字体与字号统一在 settings/preamble.sty 管控，页面中不得硬写。
-- 如需修改教师信息框样式，用 \examxsetup{style=boxed|simple, show-source=true|false}。
+## Editing
+1. 小改动请用 unified diff。
+2. 大改动请给完整文件（可直接覆盖）。
+3. 在 `styles/examx.sty` 内保持 `\ExplSyntaxOn`，不要中途 `Off`。
+4. 难度百分比统一用 `\fp_eval:n`，不要用 `\numexpr` 处理小数。
 
-# 故障排查
-- 优先级：缺宏包 > 包冲突 > 文件路径 > 字体缺失。
-- 最小化复现：先只保留 main-*.tex + 极简内容，逐项恢复。
-- 与现有风格冲突时，以 preamble.sty / examx.sty / handoutx.sty 为准。
+## Commit message
+- `fix(examx): ...` / `feat(examx): ...` / `docs(readme): ...`
 
-# 维护
-- 新增题型或盒子，请放在 styles/*.sty 并在 README/features.md 记录参数。
-- 目录与命名统一英文小写、下划线；定期清理构建产物与冗余文件。
+## Review checklist
+- [ ] teacher/student 均能编译
+- [ ] 无 runaway/未闭合分组
+- [ ] README/Features 同步更新
