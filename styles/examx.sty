@@ -67,8 +67,10 @@
 \cs_if_exist:NF \solution { \NewDocumentCommand \solution { +m } { \explain{#1} } }
 
 % difficulty format (overrideable)
-\NewDocumentCommand \ExamDifficultyFormat { m }
-  { \number\numexpr#1*100\relax\%% }
+\ExplSyntaxOn
+\RenewDocumentCommand\ExamDifficultyFormat{m}
+  { \fp_eval:n { round((#1)*100,0) } \% }
+\ExplSyntaxOff
 
 % ---- rendering ----
 \cs_new_protected:Npn \examx_print_block:
