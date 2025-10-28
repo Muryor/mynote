@@ -13,4 +13,5 @@ output/
 *.fls
 *.xdv
 .DS_Store
-
+*.patch
+*.diff
