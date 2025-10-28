@@ -1,0 +1,500 @@
+diff --git a/.gitignore b/.gitignore
+index 4b825dc..0f7a1f1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,0 +1,28 @@
++# LaTeX build artifacts
++*.aux
++*.bbl
++*.bcf
++*.blg
++*.fdb_latexmk
++*.fls
++*.log
++*.out
++*.run.xml
++*.synctex.gz
++*.toc
++*.xdv
++_minted*
++build/
++dist/
++*.pdf
++
++# OS junk
++.DS_Store
++Thumbs.db
++
++# VSCode
++.vscode/*
++!.vscode/settings.json
++
++# Python virtual env (tools 使用时)
++.venv/
+diff --git a/.llmrules b/.llmrules
+new file mode 100644
+index 0000000..8f7b1b3
+--- /dev/null
++++ b/.llmrules
+@@ -0,0 +1,39 @@
++# ROLE
++你是“数学讲义/试卷生成系统”的协作式代码助手（擅长 LaTeX、exam-zh、ElegantBook、tcolorbox、bash 构建）。
++
++# GOLE
++在不破坏编译的前提下，保持风格统一、目录清晰、易扩展，快速增量迭代题库与讲义。
++
++在理解用户需求、编写代码和解决问题时，你应始终遵循以下原则：
++1) 尽量复用公共样式（`settings/preamble.sty`、`styles/examx.sty`、`styles/handoutx.sty`）。
++2) 教师与学生两版仅通过 `\PassOptionsToPackage{teacher|student}{styles/examx}` 切换；学生版不可泄露答案/详解。
++3) 题目统一元数据接口：`\topics{...}` `\difficulty{0..1}` `\explain{...}` `\source{...}`。
++4) 提交前本地编译通过：`./build.sh exam both` 与 `./build.sh handout both`。
++
++## 第一步：项目初始化
++- 安装 XeLaTeX 与 `tcolorbox/exam-zh/ElegantBook/ctex` 等依赖。
++- 复制示例：`content/handouts/ch01.tex` 与 `content/exams/exam01.tex`，以此为模板新建章节或试卷。
++- 所有图片放 `content/assets/`，相对路径引用。
++
++## 第二步：需求分析和开发
++### 理解用户需求时：
++- 明确这是**讲义**还是**试卷**；是否需要**教师版**信息框。
++- 确认题型（选择/填空/解答）与版面（A4，页边距，题号、分值说明）。
++- 明确颜色/字体是否沿用默认（浅绿/蓝、PingFang SC）。
++
++### 编写代码时：
++- 只在内容文件中写题，**不要**重复定义样式。
++- 每题尾部补齐：`\topics{}` `\difficulty{}` `\explain{}`（学生版会自动隐藏信息框）。
++- 表格用 `booktabs`，行高 `\renewcommand{\arraystretch}{1.25}`，避免三线表之外的竖线。
++- 讲义中的“定义/性质/例题/注意”请用 `defbox/theorybox/examplebox/notebox` 盒子。
++- 严禁把中文字体硬写入单页，统一在 `settings/preamble.sty` 管控。
++
++### 解决问题时：
++- 编译错误优先级：缺宏包 > 包冲突 > 文件路径。
++- 样式异常先最小化复现（只保留最短文档），再逐项恢复。
++- 与现有风格不一致时，以 `preamble.sty`/`examx.sty` 为准。
++
++## 第三步：项目总结和优化
++- 新增题型或盒子风格时，优先写在 `styles/*.sty` 并在 README/`features.md` 记录参数。
++- 对目录/命名进行 lint（统一英文小写、下划线）。
++- 定期清理构建产物与冗余文件。
+diff --git a/features.md b/features.md
+new file mode 100644
+index 0000000..a3b3c3a
+--- /dev/null
++++ b/features.md
+@@ -0,0 +1,83 @@
++# Features
++
++本仓库是“数学讲义 + 试卷”双引擎：
++
++## 1. 模块与实现
++- **Exam（试卷）**
++  - 类：`exam-zh`
++  - 桥接包：`styles/examx.sty`（自动在题目尾部渲染教师信息框）
++  - 内容：`content/exams/*.tex`（示例：`exam01.tex`）
++  - 入口：`main-exam.tex`
++- **Handout（讲义）**
++  - 类：`elegantbook.cls`
++  - 公共预设：`settings/preamble.sty`
++  - 讲义风格：`styles/handoutx.sty`（定义/性质/例题/注意盒子）
++  - 内容：`content/handouts/*.tex`（示例：`ch01.tex`）
++  - 入口：`main-handout.tex`
++- **Build**
++  - 脚本：`build.sh`，命令：
++    - `./build.sh exam teacher|student|both`
++    - `./build.sh handout teacher|student|both`
++
++## 2. 题目元数据接口（统一）
++```tex
++\topics{<知识点>}
++\difficulty{<0..1>}
++\explain{<详解，允许数学环境且自动分页>}
++\source{<来源，可选>}
++```
++> 学生版：信息框隐藏；教师版：自动渲染在题目尾部的 tcolorbox 中。
++
++## 3. UI / 样式（对齐图片风格）
++- **字体**：中文 `PingFang SC`（preamble 管理）；英文字体随系统，数学 `amsmath`/`mathtools`。
++- **色板**：
++  - 主色：`MainGreen = RGB(36,158,108)`
++  - 淡绿底：`LightGreen`，淡蓝底：`LightBlue`
++- **盒子**（`styles/handoutx.sty`）：
++  - `defbox`（定义，淡蓝底、绿边）
++  - `theorybox`（性质，淡绿底、绿边）
++  - `examplebox`（例题，白底、绿边）
++  - `notebox`（注意，浅黄底、绿边）
++- **表格**：`booktabs + \arraystretch=1.25`，粗横线，默认无竖线。
++- **章节标题**：`section` 加粗加大，符合图片中层级对比。
++
++## 4. 参数与扩展
++- `\examxsetup{show-source=true|false, autoprint=true|false}`
++- 自定义难度显示：
++  ```tex
++  \renewcommand\ExamDifficultyFormat[1]{\number\numexpr#1*100\relax\%%}
++  ```
++
++## 5. 目录规范
++```
++content/
++  handouts/   <- 讲义章节
++  exams/      <- 试卷题面
++  assets/     <- 图片/示意图
++settings/
++  preamble.sty
++styles/
++  examx.sty
++  handoutx.sty
++  exam-zh.cls (如需本地拷贝)
++tools/
++  ...
++```
++
++## 6. 编译
++```
++# 试卷
++./build.sh exam teacher
++./build.sh exam student
++./build.sh exam both
++
++# 讲义
++./build.sh handout teacher
++./build.sh handout student
++./build.sh handout both
++```
++
++## 7. 约定与注意
++- 任何样式修改**只改** `preamble.sty` / `styles/*.sty`。
++- 内容文件必须补齐元数据（至少 `\topics{}` & `\difficulty{}`）。
++- 不要把 PDF/构建产物入库。
+diff --git a/settings/preamble.sty b/settings/preamble.sty
+new file mode 100644
+index 0000000..b6a4a1c
+--- /dev/null
++++ b/settings/preamble.sty
+@@ -0,0 +1,62 @@
++\NeedsTeXFormat{LaTeX2e}
++\ProvidesPackage{settings/preamble}[2025/10/27 v1.0 Common preamble]
++
++\RequirePackage[UTF8]{ctex}
++\setCJKmainfont{PingFang SC}
++\setCJKsansfont{PingFang SC}
++\setCJKmonofont{PingFang SC}
++
++\RequirePackage{geometry}
++\geometry{a4paper, left=23mm, right=23mm, top=22mm, bottom=22mm, headsep=8mm}
++
++\RequirePackage{amsmath,amssymb,mathtools}
++\RequirePackage{graphicx}
++\RequirePackage{xcolor}
++\RequirePackage{booktabs}
++\RequirePackage{array}
++\RequirePackage{enumitem}
++\RequirePackage{tcolorbox}
++\RequirePackage{hyperref}
++\hypersetup{hidelinks}
++
++% color palette
++\definecolor{MainGreen}{RGB}{36, 158, 108}
++\definecolor{LightGreen}{RGB}{233, 248, 241}
++\definecolor{LightBlue}{RGB}{240, 246, 255}
++\definecolor{GrayLine}{gray}{0.85}
++
++% tables
++\newcommand{\rowhead}[1]{\textbf{#1}}
++\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
++\newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
++\newcolumntype{R}[1]{>{\raggedleft\arraybackslash}p{#1}}
++\setlength{\arrayrulewidth}{0.6pt}
++\renewcommand{\arraystretch}{1.25}
++
++% common tcolorbox styles for handout
++\tcbset{common/.style={
++  enhanced, breakable, boxrule=.6pt, arc=1mm,
++  left=2mm, right=2mm, top=1mm, bottom=1mm,
++}}
++\newtcolorbox{defbox}[1][]{common,
++  colback=LightBlue, colframe=MainGreen,
++  title={\textbf{定义}}, #1}
++\newtcolorbox{theorybox}[1][]{common,
++  colback=LightGreen, colframe=MainGreen,
++  title={\textbf{性质}}, #1}
++\newtcolorbox{examplebox}[1][]{common,
++  colback=white, colframe=MainGreen, title={\textbf{例题}}, #1}
++\newtcolorbox{notebox}[1][]{common,
++  colback=yellow!5, colframe=MainGreen, title={\textbf{注意}}, #1}
++
++% headings
++\ctexset{
++  section = {format+={\Large\bfseries}, name={第,章}, number=\chinese{section}},
++  subsection = {format+={\large\bfseries}, name={,}, number=\arabic{subsection}}
++}
++
++\setlist[itemize]{nosep}
++\setlist[enumerate]{nosep}
++\numberwithin{equation}{section}
++
++\endinput
+diff --git a/styles/handoutx.sty b/styles/handoutx.sty
+new file mode 100644
+index 0000000..c6a4b1a
+--- /dev/null
++++ b/styles/handoutx.sty
+@@ -0,0 +1,5 @@
++\NeedsTeXFormat{LaTeX2e}
++\ProvidesPackage{styles/handoutx}[2025/10/27 v1.0 handout style helpers]
++\RequirePackage{settings/preamble}
++% 本包目前仅作为手动 include 的别名，便于后续扩展（如统一图例/页眉）
++\endinput
+diff --git a/styles/examx.sty b/styles/examx.sty
+new file mode 100644
+index 0000000..8d1c2a1
+--- /dev/null
++++ b/styles/examx.sty
+@@ -0,0 +1,73 @@
++\NeedsTeXFormat{LaTeX2e}
++\ProvidesPackage{styles/examx}[2025/10/27 v1.0 Teacher/Student meta rendering]
++
++\RequirePackage{kvoptions}
++\RequirePackage{etoolbox}
++\RequirePackage{tcolorbox}
++\RequirePackage{xparse}
++
++% ---- options ----
++\SetupKeyvalOptions{family=examx,prefix=examx@}
++\newif\ifexamx@teacher
++\DeclareBoolOption[true]{autoprint}
++\DeclareBoolOption[false]{show-source}
++\DeclareVoidOption{teacher}{\examx@teachertrue}
++\DeclareVoidOption{student}{\examx@teacherfalse}
++\ProcessKeyvalOptions*\relax
++
++% ---- meta holders ----
++\newcommand\ExamTopics{}
++\newcommand\ExamDifficulty{}
++\newcommand\ExamExplain{}
++\newcommand\ExamSource{}
++
++\newcommand\topics[1]{\gdef\ExamTopics{#1}}
++\newcommand\difficulty[1]{\gdef\ExamDifficulty{#1}}
++\newcommand\explain[1]{\gdef\ExamExplain{#1}}
++\newcommand\source[1]{\gdef\ExamSource{#1}}
++
++% difficulty display (override if needed)
++\newcommand\ExamDifficultyFormat[1]{#1}
++
++% ---- box style ----
++\tcbset{examx/box/.style={
++  enhanced, breakable,
++  colback=blue!1, colframe=blue!50!black,
++  boxrule=.6pt, arc=1mm,
++  left=1.2mm, right=1.2mm, top=.8mm, bottom=.8mm,
++  fonttitle=\bfseries, title={教师信息}
++}}
++
++\newcommand\ExamPrintTeacherBlock{%
++  \ifexamx@teacher
++  \begin{tcolorbox}[examx/box]
++    \ifstrempty{\ExamTopics}{}{%
++      \textbf{知识点：}\ExamTopics\par
++    }
++    \textbf{难度：}%
++    \ifstrempty{\ExamDifficulty}{---}{\ExamDifficultyFormat{\ExamDifficulty}}\par
++    \ifstrempty{\ExamExplain}{}{%
++      \textbf{详解：}\par \vspace{0.2em}\ExamExplain\par
++    }
++    \ifexamx@show-source
++      \ifstrempty{\ExamSource}{}{%
++        \textbf{来源：}\ExamSource\par
++      }
++    \fi
++  \end{tcolorbox}
++  \fi
++  % reset
++  \global\let\ExamTopics\@empty
++  \global\let\ExamDifficulty\@empty
++  \global\let\ExamExplain\@empty
++  \global\let\ExamSource\@empty
++}
++
++% ---- environment hooks ----
++\AtEndEnvironment{question}{\ifexamx@autoprint\ExamPrintTeacherBlock\fi}
++\AtEndEnvironment{problem}{\ifexamx@autoprint\ExamPrintTeacherBlock\fi}
++
++% user API
++\newcommand\examxsetup[1]{\setkeys{examx}{#1}}
++
++\endinput
+diff --git a/content/handouts/ch01.tex b/content/handouts/ch01.tex
+new file mode 100644
+index 0000000..5c9a7d1
+--- /dev/null
++++ b/content/handouts/ch01.tex
+@@ -0,0 +1,51 @@
++% 第3章 椭圆（讲义示例，对齐图片风格）
++\section{椭圆}
++
++\begin{defbox}
++设到两定点 $F_1,F_2$ 的距离之和为常数 $2a(a>b>0)$ 的点的轨迹叫\textbf{椭圆}。
++标准方程（焦点在 $x$ 轴上）：
++\[
++  \frac{x^2}{a^2} + \frac{y^2}{b^2} = 1,\qquad c^2 = a^2 - b^2,\quad |F_1F_2| = 2c.
++\]
++\end{defbox}
++
++\begin{theorybox}
++\textbf{几何性质与参数}
++\begin{itemize}
++  \item 顶点：$(\pm a,0),\ (0,\pm b)$；焦点：$F_1(-c,0),F_2(c,0)$。
++  \item 离心率：$e=c/a\in(0,1)$；长轴 $2a$，短轴 $2b$。
++  \item 对称性：关于 $x$ 轴、$y$ 轴与原点对称。
++\end{itemize}
++\end{theorybox}
++
++\begin{examplebox}
++\textbf{例 3.1} 已知椭圆 $C:\ \dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1\ (a>b>0)$ 的两个焦点为 $F_1,F_2$。
++过 $F_1$ 作直线与 $C$ 相交于 $D,E$，若 $|DE|=6$，求椭圆 $C$ 的 $a,b$ 的关系式。
++
++\topics{椭圆；弦长；参数关系}
++\difficulty{0.45}
++\explain{利用弦长公式与焦点性质，设直线为 $y=k(x+c)$，代入椭圆方程得二次方程，
++用根与系数关系求解 $|DE|$，再由 $|DE|=6$ 解出 $a,b,c$ 的约束。}
++\end{examplebox}
++
++\begin{notebox}
++解题建议：\textbf{先图形后代数}，注意 $c^2=a^2-b^2$ 与离心率 $e=c/a$ 的替换，复杂根式优先平方化简。
++\end{notebox}
++
++\subsection{习题（自动兼容教师信息框）}
++\begin{problem}[基础题]
++已知椭圆 $C:\ \dfrac{x^2}{4}+\dfrac{y^2}{1}=1$ 的下焦点为 $F_1$。若点 $P$ 在椭圆上，且
++$|PF_1|$ 的最小值为 $m$，求 $m$。
++\topics{椭圆；最短距离}
++\difficulty{0.30}
++\explain{利用焦点到曲线的最小距离在顶点处取得，$\min |PF_1|=a-c=2- \sqrt{3}$。}
++\end{problem}
++
++\begin{problem}[提升题]
++设椭圆 $C:\ \dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1(a>b>0)$ 的右焦点为 $F_2$，点 $P$ 在第一象限的 $C$ 上。
++若 $\angle F_1PF_2=\theta$，证明 $|PF_1|+|PF_2|=2a$ 与 $\dfrac{|PF_1|\cdot |PF_2|}{b^2-c^2}$ 关于 $\theta$ 的关系式。
++\topics{椭圆；焦点三角形；角度关系}
++\difficulty{0.60}
++\explain{由余弦定理与焦点三角形性质：$|PF_1|^2+|PF_2|^2=2(a^2+b^2)-2|PF_1||PF_2|\cos\theta$，
++再联立 $|PF_1|+|PF_2|=2a$ 消元得到所求。}
++\end{problem}
+diff --git a/content/exams/exam01.tex b/content/exams/exam01.tex
+new file mode 100644
+index 0000000..8d3a8ac
+--- /dev/null
++++ b/content/exams/exam01.tex
+@@ -0,0 +1,34 @@
++% 第3章 圆锥曲线的方程 · 3.1 椭圆（试卷示例，含教师信息框）
++\begin{questions}
++\question 设复数 $(1+5i)i$ 的虚部为（　）。
++\begin{choices}
++  \choice $-1$
++  \choice $0$
++  \choice $1$
++  \choice $5$
++\end{choices}
++\topics{复数；虚部计算}
++\difficulty{0.30}
++\explain{$(1+5i)i=i+5i^2=i-5$，虚部为 $1$。}
++
++\question 已知椭圆 $C:\ \dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1\ (a>b>0)$，
++其焦点为 $F_1(-c,0),F_2(c,0)$，点 $P$ 在 $C$ 上且 $\angle F_1PF_2=\dfrac{\pi}{3}$。
++若 $a=2$，则 $b$ 的取值为（　）。
++\begin{choices}
++  \choice $1$
++  \choice $\sqrt{2}$
++  \choice $\sqrt{3}$
++  \choice $2$
++\end{choices}
++\topics{椭圆；焦点三角形；参数求解}
++\difficulty{0.45}
++\explain{由余弦定理：$|PF_1|^2+|PF_2|^2=2(a^2+b^2)-|F_1F_2|\cdot|PF_1|\cos\theta$，
++并结合 $|PF_1|+|PF_2|=2a=4$ 消元可得 $b=\sqrt{3}$。}
++
++\question[解答题] 已知椭圆 $C:\ \dfrac{x^2}{4}+\dfrac{y^2}{1}=1$ 的下焦点为 $F_1$。
++过 $F_1$ 的直线与 $C$ 交于 $D,E$ 两点，若 $|DE|=6$，求该直线的斜率。
++\topics{椭圆；过焦点的弦；弦长公式}
++\difficulty{0.60}
++\explain{设直线 $y=k(x+c)$，代入方程得关于 $x$ 的二次式，弦长
++$|DE|=\sqrt{(x_1-x_2)^2+(y_1-y_2)^2}$。由根与系数关系化简，联立 $|DE|=6$ 解 $k$。}
++\end{questions}
+diff --git a/main-handout.tex b/main-handout.tex
+index e69de29..90a7d11 100644
+--- a/main-handout.tex
++++ b/main-handout.tex
+@@ -1,0 +1,17 @@
++\documentclass[cn,12pt]{elegantbook}
++\usepackage{settings/preamble}
++\usepackage[student]{styles/examx} % 手册默认学生版；教师版在构建时覆盖
++\usepackage{styles/handoutx}
++
++\title{圆锥曲线讲义示例}
++\author{数学组}
++\date{\today}
++
++\begin{document}
++\maketitle
++\tableofcontents
++
++\chapter{椭圆}
++\input{content/handouts/ch01.tex}
++
++\end{document}
+diff --git a/main-exam.tex b/main-exam.tex
+index e69de29..ab2b112 100644
+--- a/main-exam.tex
++++ b/main-exam.tex
+@@ -1,0 +1,14 @@
++\documentclass[UTF8,zihao=-4]{exam-zh}
++\usepackage{settings/preamble}
++\usepackage[student]{styles/examx} % 构建时用 \PassOptionsToPackage 切到 teacher
++
++\begin{document}
++\begin{center}
++  {\LARGE 第3章\ 圆锥曲线的方程}\\[2pt]
++  {\large 3.1\ 椭圆}\\[4pt]
++  \normalsize 总分：100 分 \quad 时间：90 分钟
++\end{center}
++
++\input{content/exams/exam01.tex}
++
++\end{document}
+diff --git a/build.sh b/build.sh
+index e69de29..2a9b4c1 100755
+--- a/build.sh
++++ b/build.sh
+@@ -1,0 +1,32 @@
++#!/usr/bin/env bash
++set -euo pipefail
++
++# Usage:
++#   ./build.sh exam   teacher|student|both
++#   ./build.sh handout teacher|student|both
++
++TARGET=${1:-exam}
++AUD=${2:-both}
++
++case "$TARGET" in
++  exam)    TEX="main-exam.tex" ;;
++  handout) TEX="main-handout.tex" ;;
++  *) echo "Usage: $0 <exam|handout> <teacher|student|both>"; exit 1 ;;
++esac
++
++compile_one () {
++  local mode="$1"
++  local job="${TARGET}-${mode}"
++  echo "[build] $TARGET ($mode) -> ${job}.pdf"
++  latexmk -xelatex -shell-escape -f -jobname="${job}" \
++    -pdflatex="xelatex %O '\PassOptionsToPackage{${mode}}{styles/examx}\input{${TEX}}'"
++}
++
++case "$AUD" in
++  teacher) compile_one teacher ;;
++  student) compile_one student ;;
++  both)    compile_one teacher; compile_one student ;;
++  *) echo "Usage: $0 <exam|handout> <teacher|student|both>"; exit 1 ;;
++esac
++
++echo "[done]"

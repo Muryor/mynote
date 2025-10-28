@@ -1,0 +1,93 @@
+diff --git a/.llmrules b/.llmrules
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/.llmrules
+@@ -0,0 +1,31 @@
++# ROLE
++你是“数学讲义/试卷生成系统”的协作式代码助手（擅长 LaTeX、exam-zh、ElegantBook、tcolorbox、bash 构建）。
++
++# GOLE
++在不破坏编译的前提下，保持风格统一、目录清晰、易扩展，快速增量迭代题库与讲义。
++
++在理解用户需求、编写代码和解决问题时，你应始终遵循以下原则：
++1) 尽量复用公共样式（`settings/preamble.sty`、`styles/examx.sty`、`styles/handoutx.sty`）。
++2) 教师与学生两版仅通过 `\PassOptionsToPackage{teacher|student}{styles/examx}` 切换；学生版不可泄露答案/详解。
++3) 题目统一元数据接口：`\topics{...}` `\difficulty{0..1}` `\explain{...}` `\source{...}`。
++4) 提交前本地编译通过：`./build.sh exam both` 与 `./build.sh handout both`。
++
++## 第一步：项目初始化
++- 安装 XeLaTeX 与 `tcolorbox/exam-zh/ElegantBook/ctex` 等依赖。
++- 复制示例：`content/handouts/ch01.tex` 与 `content/exams/exam01.tex`，以此为模板新建章节或试卷。
++
++## 第二步：写作规范
++- 每题尾部补齐：`\topics{}` `\difficulty{}` `\explain{}`（学生版会自动隐藏信息框）。
++- 表格用 `booktabs`，行高 `\renewcommand{\arraystretch}{1.25}`，避免三线表之外的竖线。
++- 讲义中的“定义/性质/例题/注意”请用 `defbox/theorybox/examplebox/notebox` 盒子。
++- 严禁把中文字体硬写入单页，统一在 `settings/preamble.sty` 管控。
++
++### 解决问题时：
++- 编译错误优先级：缺宏包 > 包冲突 > 文件路径。
++- 样式异常先最小化复现（只保留最短文档），再逐项恢复。
++- 与现有风格不一致时，以 `preamble.sty`/`examx.sty` 为准。
++
++## 第三步：项目总结和优化
++- 新增题型或盒子风格时，优先写在 `styles/*.sty` 并在 README/`features.md` 记录参数。
++- 对目录/命名进行 lint（统一英文小写、下划线）。
++- 定期清理构建产物与冗余文件。
+
+diff --git a/features.md b/features.md
+new file mode 100644
+index 0000000..2222222
+--- /dev/null
++++ b/features.md
+@@ -0,0 +1,49 @@
++# Features
++
++本仓库是“数学讲义 + 试卷”双引擎：
++
++## 1. 模块与实现
++- **Exam（试卷）**
++  - 类：`exam-zh`
++  - 桥接包：`styles/examx.sty`（自动在题目尾部渲染教师信息框）
++  - 内容：`content/exams/*.tex`（示例：`exam01.tex`）
++  - 入口：`main-exam.tex`
++- **Handout（讲义）**
++  - 类：`ElegantBook`
++  - 扩展包：`styles/handoutx.sty`（定义/性质/例题/注意 等盒子）
++  - 内容：`content/handouts/*.tex`（示例：`ch01.tex`）
++  - 入口：`main-handout.tex`
++
++## 2. 元数据与教师信息框（统一接口）
++每道题或例题建议在尾部给出：
++
++```tex
++\topics{一次函数；待定系数}   % 知识点（分号分隔）
++\difficulty{0.60}             % 难度（0..1）
++\explain{略。}                % 详解（可含数学环境）
++\source{自编/教材/某年某校}
++```
++
++> 学生版：信息框隐藏；教师版：自动渲染在题目尾部的 tcolorbox 中。
++
++## 3. UI / 样式（对齐图片风格）
++- **字体**：中文 `PingFang SC`（preamble 管理）；英文字体随系统，数学 `amsmath`/`mathtools`。
++- **色板**：
++  - 主色：`MainGreen = RGB(36,158,108)`
++  - 淡绿底：`LightGreen`，淡蓝底：`LightBlue`
++- **盒子**（`styles/handoutx.sty`）：
++  - `defbox`（定义，淡蓝底、绿边）
++  - `theorybox`（性质，淡绿底、绿边）
++  - `examplebox`（例题，白底、绿边）
++  - `notebox`（注意，浅黄底、绿边）
++- **表格**：`booktabs + \arraystretch=1.25`，粗横线，默认无竖线。
++
++## 4. 构建
++```bash
++./build.sh exam both
++./build.sh handout both
++```
++
++## 5. 约定
++- 样式只改 `settings/preamble.sty` 与 `styles/*.sty`；内容写在 `content/**`；不要在单页硬编码字体与颜色。
++- 提交前本地编译通过；CI 可按需添加。

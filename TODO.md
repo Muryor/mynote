@@ -1,8 +1,0 @@
-- [x] Teacher/Student variants wired through `styles/exam.sty`
-- [x] Hide source info; store only
-- [x] Remove end-of-document answer summary/table hooks
-- [x] Implement \topics / \difficulty / \explain / \answer / \source APIs
-- [x] Numbering `n.` with right-aligned labels; \points flush-right
-- [x] Build script variants (teacher|student|both), outputs in `output/`
-- [x] Font setup for Lua/XeLaTeX to include Roman numerals & CJK
-- [ ] Optional: smarter auto-width for labels when item number > 99
