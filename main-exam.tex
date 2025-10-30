@@ -6,12 +6,13 @@
 
 % 预设与桥接
 \usepackage{settings/preamble}
-\usepackage{styles/examx}
+\usepackage[teacher=true]{styles/examx}
+
 \input{settings/metadata.tex}
 
 \begin{document}
   \begingroup\centering
-    {\heiti\zihao{2}\@title\quad（试卷）\par}
+    {\heiti\zihao{2}\makeatletter\@title\makeatother\quad（试卷）\par}
   \endgroup
   \vspace{1em}
 

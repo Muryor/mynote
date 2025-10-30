@@ -1,8 +1,7 @@
-
-% styles/examx.sty
+% styles/examx.sty (fixed)
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesExplPackage{examx}{2025-10-28}{1.3.0}
-  {Unified metadata & teacher/student rendering for exam-zh}
+\ProvidesExplPackage{examx}{2025-10-29}{1.3.1}
+  {Unified metadata & teacher/student rendering for exam-zh (fixed)}
 
 % --- Dependencies
 \RequirePackage{expl3}[2022-06-01]
@@ -29,25 +28,34 @@
 \bool_gset_false:N \l_examx_show_source_bool
 \bool_gset_true:N  \l_examx_boxed_bool     % boxed teacher block by default
 
-\DeclareOption{teacher}{\bool_gset_true:N  \l_examx_teacher_bool}
-\DeclareOption{student}{\bool_gset_false:N \l_examx_teacher_bool}
-\DeclareOption*{} % ignore unknown options
-\ProcessOptions\relax
-
-% runtime keys: \examxsetup{autoprint=<bool>, show-source=<bool>, boxed=<bool>}
+% package options via l3keys2e
 \keys_define:nn { examx }
   {
-    autoprint   .bool_set:N = \l_examx_autoprint_bool,
-    autoprint   .initial:n  = true,
-    show-source .bool_set:N = \l_examx_show_source_bool,
-    show-source .initial:n  = false,
-    boxed       .bool_set:N = \l_examx_boxed_bool,
-    boxed       .initial:n  = true,
+    teacher   .choice:,
+    teacher / true   .code:n = { \bool_gset_true:N  \l_examx_teacher_bool },
+    teacher / false  .code:n = { \bool_gset_false:N \l_examx_teacher_bool },
+    autoprint .choice:,
+    autoprint / true  .code:n = { \bool_gset_true:N  \l_examx_autoprint_bool },
+    autoprint / false .code:n = { \bool_gset_false:N \l_examx_autoprint_bool },
+    showsource .choice:,
+    showsource / true  .code:n = { \bool_gset_true:N  \l_examx_show_source_bool },
+    showsource / false .code:n = { \bool_gset_false:N \l_examx_show_source_bool },
+    boxed .choice:,
+    boxed / true  .code:n = { \bool_gset_true:N  \l_examx_boxed_bool },
+    boxed / false .code:n = { \bool_gset_false:N \l_examx_boxed_bool },
   }
-\NewDocumentCommand \examxsetup { m } { \keys_set:nn { examx } { #1 } }
+\ProcessKeysOptions{examx}
+
+% tcolorbox style for teacher block
+\tcbset{
+  examxblock/.style={
+    enhanced, breakable, colback=white, colframe=black!25,
+    boxrule=.4pt, arc=2mm, left=2mm, right=2mm, top=1mm, bottom=1mm
+  }
+}
 
 % ========================
-% Per-item state
+% Per-item stored data
 % ========================
 \tl_new:N \l_examx_topics_tl
 \tl_new:N \l_examx_source_tl
@@ -75,27 +83,10 @@
 %  - Accept 0..1 decimals; render as percent
 %  - Allow user override via \ExamDifficultyFormat
 % ========================
-\cs_if_exist:NTF \ExamDifficultyFormat
-  { \RenewDocumentCommand \ExamDifficultyFormat { m }
-      { \fp_eval:n { round((#1)*100,0) } \% } }
-  { \NewDocumentCommand \ExamDifficultyFormat { m }
-      { \fp_eval:n { round((#1)*100,0) } \% } }
+\providecommand\ExamDifficultyFormat[1]{\fp_eval:n { round((#1)*100,0) } \%}
 
 % ========================
-% Visuals
-% ========================
-\definecolor{examxAccent}{RGB}{33,111,219}
-
-\tcbset{
-  examxblock/.style={
-    enhanced, breakable, colback=white,
-    colframe=examxAccent, boxrule=0.5pt, arc=2mm,
-    left=6pt, right=6pt, top=4pt, bottom=4pt
-  }
-}
-
-% ========================
-% Printer
+% Print teacher block
 % ========================
 \cs_new_protected:Npn \examx_print_block:
   {
@@ -103,26 +94,34 @@
       {
         \group_begin:
           \footnotesize
-          \tl_if_blank:TF \l_examx_topics_tl   { \tl_set:Nn \l_tmpa_tl { } }
-                                             { \tl_set:Nx \l_tmpa_tl { \textbf{考点：} \l_examx_topics_tl \par } }
-          \tl_if_blank:TF \l_examx_diffinput_tl
-            { \tl_set:Nn \l_tmpb_tl { } }
+          \tl_clear_new:N \l_examx_tmp_tl
+          % topics
+          \tl_if_blank:VTF \l_examx_topics_tl
+            { \tl_clear_new:N \l_tmpa_tl }
+            { \tl_set:Nx \l_tmpa_tl { \textbf{考点：} \l_examx_topics_tl \par } }
+          % difficulty
+          \tl_if_blank:VTF \l_examx_diffinput_tl
+            { \tl_clear_new:N \l_tmpb_tl }
             { \tl_set:Nx \l_tmpb_tl { \textbf{难度：} \ExamDifficultyFormat{\l_examx_diffinput_tl} \par } }
-          \tl_if_blank:TF \l_examx_explain_tl { \tl_set:Nn \l_tmpc_tl { } }
-                                             { \tl_set:Nx \l_tmpc_tl { \textbf{详解：} \l_examx_explain_tl \par } }
-          \tl_if_blank:TF \l_examx_source_tl  { \tl_set:Nn \l_tmpd_tl { } }
-                                             {
-                                               \bool_if:NTF \l_examx_show_source_bool
-                                                 { \tl_set:Nx \l_tmpd_tl { \textbf{来源：} \l_examx_source_tl \par } }
-                                                 { \tl_set:Nn \l_tmpd_tl { } }
-                                             }
-          \tl_set:Nx \l_tmpe_tl { \l_tmpa_tl \l_tmpb_tl \l_tmpc_tl \l_tmpd_tl }
+          % explain
+          \tl_if_blank:VTF \l_examx_explain_tl
+            { \tl_clear_new:N \l_tmpc_tl }
+            { \tl_set:Nx \l_tmpc_tl { \textbf{详解：} \l_examx_explain_tl \par } }
+          % source (optional)
+          \tl_if_blank:VTF \l_examx_source_tl
+            { \tl_clear_new:N \l_tmpd_tl }
+            {
+              \bool_if:NTF \l_examx_show_source_bool
+                { \tl_set:Nx \l_tmpd_tl { \textbf{来源：} \l_examx_source_tl \par } }
+                { \tl_clear_new:N \l_tmpd_tl }
+            }
+          \tl_set:Nx \l_examx_tmp_tl { \l_tmpa_tl \l_tmpb_tl \l_tmpc_tl \l_tmpd_tl }
 
-          \tl_if_blank:NF \l_tmpe_tl
+          \tl_if_blank:NF \l_examx_tmp_tl
             {
               \bool_if:NTF \l_examx_boxed_bool
-                { \begin{tcolorbox}[examxblock] \l_tmpe_tl \end{tcolorbox} }
-                { \par\smallskip\hrule height .4pt\relax \par\smallskip \l_tmpe_tl }
+                { \begin{tcolorbox}[examxblock] \l_examx_tmp_tl \end{tcolorbox} }
+                { \par\smallskip\hrule height .4pt\relax \par\smallskip \l_examx_tmp_tl }
             }
         \group_end:
       }
@@ -138,6 +137,19 @@
 
 % manual trigger (when autoprint=false)
 \NewDocumentCommand \printteacherblock { } { \examx_print_block: }
+
+% ========================
+% Robust \choice patch:
+%  make \choice immune to optional label parsing of \item when the
+%  choice text begins with '[' or '('.
+% ========================
+\ExplSyntaxOff
+\makeatletter
+\@ifundefined{choice}
+  {\newcommand{\choice}{\item\relax}}
+  {\renewcommand{\choice}{\item\relax}}
+\makeatother
+\ExplSyntaxOn
 
 \ExplSyntaxOff
 \endinput
