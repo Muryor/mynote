@@ -1,158 +1,163 @@
-%% settings/preamble.sty  (macOS-safe)
-\ProvidesPackage{preamble}[2025/10/15 MyMathLectureNotes preamble]
-\RequirePackage{ifxetex}
-\RequirePackage{ifluatex}
+% settings/preamble.sty — Math handout font setup (macOS-friendly)
+\ProvidesPackage{settings/preamble}[2025/11/05 v1.0 Math handout fonts]
 
-% --- Compatibility guard for exam-zh + XeLaTeX ---
-\makeatletter
-% 1) Avoid loading ctex when class is already ctexbook (exam-zh uses ctexbook)
-\@ifclassloaded{ctexbook}{%
-  \@ifpackageloaded{ctex}{}{%
-    \expandafter\let\csname ver@ctex.sty\endcsname\relax
-  }%
-}{}
-% 2) Avoid amssymb when unicode-math is present
-\@ifpackageloaded{unicode-math}{%
-  \@ifpackageloaded{amssymb}{}{%
-    \expandafter\let\csname ver@amssymb.sty\endcsname\relax
-  }%
-}{}
-\makeatother
+% -------- Engine guard --------
+\RequirePackage{iftex}
+\ifXeTeX\else\ifLuaTeX\else
+  \PackageError{settings/preamble}{This template requires XeLaTeX or LuaLaTeX}{}
+\fi\fi
 
-%%-------------------------
-%% Engine guard: LuaLaTeX / XeLaTeX only
-%%-------------------------
-\ifxetex\else
-  \ifluatex\else
-    \PackageError{preamble}{This project must be compiled with XeLaTeX or LuaLaTeX}{Use lualatex or xelatex.}
-  \fi
-\fi
-
-%%-------------------------
-%% Core packages
-%%-------------------------
+% -------- Base packages --------
 \RequirePackage{fontspec}
-\RequirePackage{xcolor}
-\RequirePackage{amsmath}
-\RequirePackage{enumitem}
-\RequirePackage{hyperref}
-\hypersetup{hidelinks}
+\RequirePackage{xeCJK}   % CJK
+\RequirePackage{ctex}    % sensible CJK defaults on CN locales
+\RequirePackage{unicode-math}
 
-%%-------------------------
-%% Fonts (Latin + CJK)
-%%-------------------------
-% IMPORTANT: fix Scale to avoid MatchLowercase/Uppercase pitfalls on mixed CJK
-\defaultfontfeatures{Ligatures=TeX,Scale=1.0}
-
-% Latin main/sans/mono with fallback
-\makeatletter
-\IfFontExistsTF{TeX Gyre Termes}{%
-  \setmainfont{TeX Gyre Termes}[
-    BoldFont       = * Bold,
-    ItalicFont     = * Italic,
-    BoldItalicFont = * Bold Italic,
-  ]%
-}{%
-  \IfFontExistsTF{Times New Roman}{%
-    \setmainfont{Times New Roman}[Ligatures=TeX]
-  }{%
-    \setmainfont{Times} % last-resort
-  }%
+% Keep TeX-like math input feeling
+\unimathsetup{
+  math-style = TeX,
+  bold-style = TeX,
+  nabla      = italic,
+  partial    = italic,
 }
-\IfFontExistsTF{Helvetica}{\setsansfont{Helvetica}}{\setsansfont{Arial}}
-\IfFontExistsTF{Menlo}{\setmonofont{Menlo}}{\setmonofont{Courier New}}
-\makeatother
 
-% CJK main/sans/mono using family names only (no Path/Extension)
-\makeatletter
-\@ifundefined{setCJKmainfont}{}{%
-  % 1) Preferred: PingFang SC (macOS)
-  \IfFontExistsTF{PingFang SC}{%
-    \setCJKmainfont{PingFang SC}[BoldFont={PingFang SC Semibold}]
-    \setCJKsansfont{PingFang SC}
-    \setCJKmonofont{PingFang SC}
-  }{%
-    % 2) Fallback: Noto CJK (installable via homebrew cask-fonts)
-    \IfFontExistsTF{Noto Serif CJK SC}{%
-      \setCJKmainfont{Noto Serif CJK SC}[BoldFont={Noto Serif CJK SC SemiBold}]
-      \setCJKsansfont{Noto Sans CJK SC}
-      \setCJKmonofont{Noto Sans Mono CJK SC}
-    }{%
-      % 3) Last resort: System Songti/Heiti (older macs)
-      \IfFontExistsTF{Songti SC}{%
-        \setCJKmainfont{Songti SC}[BoldFont={Songti SC Bold}]
-        \setCJKsansfont{Heiti SC}
-        \setCJKmonofont{Heiti SC}
+% -------- Helpers --------
+\ExplSyntaxOn
+\cs_set_eq:NN \IfFontExistsTF \fontspec_if_font_exists:nTF
+\ExplSyntaxOff
+
+% =========================
+% Latin text fonts (serif/sans/mono)
+% =========================
+% Serif (main text) — prefer STIX Two Text to match STIX Two Math
+\IfFontExistsTF{STIX Two Text}{
+  \setmainfont{STIX Two Text}[
+    Ligatures=TeX
+  ]
+}{
+  \IfFontExistsTF{TeX Gyre Termes}{
+    \setmainfont{TeX Gyre Termes}[Ligatures=TeX]
+  }{
+    \IfFontExistsTF{Times New Roman}{
+      \setmainfont{Times New Roman}[Ligatures=TeX]
+    }{
+      \setmainfont{Latin Modern Roman}[Ligatures=TeX]
+    }
+  }
+}
+
+% Sans (headings)
+\IfFontExistsTF{Helvetica Neue}{
+  \setsansfont{Helvetica Neue}[Ligatures=TeX]
+}{
+  \IfFontExistsTF{TeX Gyre Heros}{
+    \setsansfont{TeX Gyre Heros}[Ligatures=TeX]
+  }{
+    \IfFontExistsTF{Arial}{
+      \setsansfont{Arial}[Ligatures=TeX]
+    }{
+      \setsansfont{Latin Modern Sans}[Ligatures=TeX]
+    }
+  }
+}
+
+% Mono (code)
+\IfFontExistsTF{Menlo}{
+  \setmonofont{Menlo}
+}{
+  \IfFontExistsTF{SF Mono}{
+    \setmonofont{SF Mono}
+  }{
+    \IfFontExistsTF{Inconsolata}{
+      \setmonofont{Inconsolata}
+    }{
+      \setmonofont{Latin Modern Mono}
+    }
+  }
+}
+
+% =========================
+% Math fonts (unicode-math)
+% =========================
+% Priority: STIX Two Math -> Libertinus Math -> XITS Math -> TeX Gyre Termes Math -> Latin Modern Math
+\ExplSyntaxOn
+\cs_new_protected:Npn \__mynote_set_math_font:
+ {
+  \IfFontExistsTF{STIX Two Math}{
+    \setmathfont{STIX Two Math}
+  }{
+    \IfFontExistsTF{Libertinus Math}{
+      \setmathfont{Libertinus Math}
+    }{
+      \IfFontExistsTF{XITS Math}{
+        \setmathfont{XITS Math}
+      }{
+        \IfFontExistsTF{TeX Gyre Termes Math}{
+          \setmathfont{TeX Gyre Termes Math}
+        }{
+          \setmathfont{Latin Modern Math}
+        }
+      }
+    }
+  }
+ }
+\__mynote_set_math_font:
+\ExplSyntaxOff
+
+% =========================
+% Chinese (CJK) fonts with graceful fallback
+% =========================
+% Main CJK (serif) — print-friendly for math handouts
+\IfFontExistsTF{Noto Serif CJK SC}{
+  \setCJKmainfont{Noto Serif CJK SC}
+}{
+  \IfFontExistsTF{Songti SC}{
+    \setCJKmainfont{Songti SC}
+  }{
+    \IfFontExistsTF{STSong}{
+      \setCJKmainfont{STSong}
+    }{
+      \IfFontExistsTF{SimSun}{
+        \setCJKmainfont{SimSun}
       }{}
-    }%
-  }%
+    }
+  }
 }
-\makeatother
 
-% Math font: only if unicode-math is loaded
-\makeatletter
-\@ifpackageloaded{unicode-math}{%
-  \IfFontExistsTF{STIX Two Math}{\setmathfont{STIX Two Math}}{%
-    \IfFontExistsTF{XITS Math}{\setmathfont{XITS Math}}{}%
-  }%
-}{}%
-\makeatother
-
-% Optional: Roman numeral fallback (Ⅱ, Ⅲ ...)
-\makeatletter
-\IfFontExistsTF{TeX Gyre Termes}{%
-  \newfontfamily\RomanFallback{TeX Gyre Termes}[Scale=1.0]
-}{%
-  \newfontfamily\RomanFallback{Times New Roman}[Scale=1.0]
+% CJK sans — headings/notes
+\IfFontExistsTF{Noto Sans CJK SC}{
+  \setCJKsansfont{Noto Sans CJK SC}
+}{
+  \IfFontExistsTF{PingFang SC}{
+    \setCJKsansfont{PingFang SC}
+  }{
+    \IfFontExistsTF{STXihei}{
+      \setCJKsansfont{STXihei}
+    }{}
+  }
 }
-\makeatother
-\newcommand{\useRomanFallback}[1]{{\RomanFallback #1}}
 
-%%-------------------------
-%% Colors & math numbering
-%%-------------------------
-\definecolor{ExamGray}{gray}{0.35}
-\numberwithin{equation}{section}
+% CJK mono — use a legible sans as fallback; true mono CJK is rare
+\IfFontExistsTF{Noto Sans Mono CJK SC}{
+  \setCJKmonofont{Noto Sans Mono CJK SC}
+}{
+  \IfFontExistsTF{PingFang SC}{
+    \setCJKmonofont{PingFang SC}
+  }{
+    \IfFontExistsTF{STFangsong}{
+      \setCJKmonofont{STFangsong}
+    }{}
+  }
+}
 
-%%-------------------------
-%% Heiti alias (defensive)
-%%-------------------------
-\makeatletter
-\@ifundefined{heiti}{\newcommand\heiti{\bfseries}}{}
-\makeatother
+% =========================
+% Optional: a quick preset toggle for macOS UI look (commented out)
+% Uncomment the block to switch Chinese to PingFang for everything.
+% =========================
+% \IfFontExistsTF{PingFang SC}{
+%   \setCJKmainfont{PingFang SC}
+%   \setCJKsansfont{PingFang SC}
+%   \setCJKmonofont{PingFang SC}
+% }{}
 
-%%-------------------------
-%% \zihao fallback (keep this block)
-%%-------------------------
-\makeatletter
-\@ifundefined{zihao}{%
-  \newcommand\zihao[1]{%
-    \begingroup
-      \def\Exam@v{#1}%
-      \def\Exam@pt{}%
-      \edef\Exam@vstr{\detokenize{#1}}%
-      \ifx\Exam@vstr\@empty
-        \let\Exam@pt\relax
-      \else
-        \ifnum#1=2\relax      \def\Exam@pt{22}%
-        \else\ifnum#1=3\relax \def\Exam@pt{16}%
-        \else\ifnum#1=4\relax \def\Exam@pt{14}%
-        \else\ifnum#1=5\relax \def\Exam@pt{10.5}%
-        \else                 \let\Exam@pt\relax
-        \fi\fi\fi\fi
-      \fi
-      \ifx\Exam@pt\relax
-        \normalsize
-      \else
-        \fontsize{\Exam@pt}{1.2\Exam@pt}\selectfont
-      \fi
-    \endgroup
-  }%
-}{}
-\makeatother
-
-% --- examx compatibility fallbacks (no-op if undefined) ---
-\makeatletter
-\@ifundefined{points}{\newcommand{\points}[1]{}}{}
-\@ifundefined{solutionbox}{\newenvironment{solutionbox}{}{}{}}{}
-\makeatother
+% --- End of preamble font setup ---

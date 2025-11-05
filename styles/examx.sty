@@ -1,155 +1,77 @@
-% styles/examx.sty (fixed)
-\NeedsTeXFormat{LaTeX2e}
-\ProvidesExplPackage{examx}{2025-10-29}{1.3.1}
-  {Unified metadata & teacher/student rendering for exam-zh (fixed)}
+% styles/examx.sty
+\NeedsTeXFormat{LaTeX2e}[2020-10-01]
+\ProvidesExplPackage{examx}{2025/10/30}{1.4.1}{Exam bridge for exam-zh}
 
-% --- Dependencies
-\RequirePackage{expl3}[2022-06-01]
-\RequirePackage{xparse}
-\RequirePackage{etoolbox}
-\RequirePackage{l3keys2e}
-\RequirePackage{xcolor}
-\RequirePackage{tcolorbox}
-\tcbuselibrary{skins,breakable}
+\RequirePackage{expl3,xparse,tcolorbox}
 
 \ExplSyntaxOn
 
-% ========================
-% Global flags / options
-% ========================
-\bool_new:N \l_examx_teacher_bool
-\bool_new:N \l_examx_autoprint_bool
-\bool_new:N \l_examx_show_source_bool
-\bool_new:N \l_examx_boxed_bool
+% ------- 配置 -------
+\bool_new:N \g_examx_autoprint_bool
+\bool_new:N \g_examx_show_source_bool
+\bool_new:N \g_examx_boxed_bool
 
-% sensible defaults
-\bool_gset_false:N \l_examx_teacher_bool   % default: student mode (safer)
-\bool_gset_true:N  \l_examx_autoprint_bool % auto print teacher block at end of item
-\bool_gset_false:N \l_examx_show_source_bool
-\bool_gset_true:N  \l_examx_boxed_bool     % boxed teacher block by default
-
-% package options via l3keys2e
 \keys_define:nn { examx }
   {
-    teacher   .choice:,
-    teacher / true   .code:n = { \bool_gset_true:N  \l_examx_teacher_bool },
-    teacher / false  .code:n = { \bool_gset_false:N \l_examx_teacher_bool },
-    autoprint .choice:,
-    autoprint / true  .code:n = { \bool_gset_true:N  \l_examx_autoprint_bool },
-    autoprint / false .code:n = { \bool_gset_false:N \l_examx_autoprint_bool },
-    showsource .choice:,
-    showsource / true  .code:n = { \bool_gset_true:N  \l_examx_show_source_bool },
-    showsource / false .code:n = { \bool_gset_false:N \l_examx_show_source_bool },
-    boxed .choice:,
-    boxed / true  .code:n = { \bool_gset_true:N  \l_examx_boxed_bool },
-    boxed / false .code:n = { \bool_gset_false:N \l_examx_boxed_bool },
+    autoprint .bool_set:N = \g_examx_autoprint_bool,
+    autoprint .initial:n  = true,
+    show-source .bool_set:N = \g_examx_show_source_bool,
+    show-source .initial:n  = false,
+    boxed .bool_set:N = \g_examx_boxed_bool,
+    boxed .initial:n  = true,
   }
-\ProcessKeysOptions{examx}
+\NewDocumentCommand \examxsetup { m } { \keys_set:nn { examx } {#1} }
 
-% tcolorbox style for teacher block
-\tcbset{
-  examxblock/.style={
-    enhanced, breakable, colback=white, colframe=black!25,
-    boxrule=.4pt, arc=2mm, left=2mm, right=2mm, top=1mm, bottom=1mm
-  }
-}
-
-% ========================
-% Per-item stored data
-% ========================
+% ------- 元数据 -------
 \tl_new:N \l_examx_topics_tl
-\tl_new:N \l_examx_source_tl
 \tl_new:N \l_examx_explain_tl
-\tl_new:N \l_examx_diffinput_tl % store raw difficulty input
+\tl_new:N \l_examx_source_tl
+\tl_new:N \l_examx_diff_tl
 
-\cs_new_protected:Npn \examx_reset_per_item:
+\NewDocumentCommand \topics    { m } { \tl_set:Nn \l_examx_topics_tl  {#1} }
+\NewDocumentCommand \difficulty{ m } { \tl_set:Nn \l_examx_diff_tl    {#1} }
+\NewDocumentCommand \explain   { m } { \tl_set:Nn \l_examx_explain_tl {#1} }
+\NewDocumentCommand \source    { m } { \tl_set:Nn \l_examx_source_tl  {#1} }
+
+% 难度显示：百分比（可重定义）
+\ProvideDocumentCommand \ExamDifficultyFormat { m }
+  { \fp_eval:n { round((#1)*100,0) } \% }
+
+% ------- 行为 -------
+\cs_new_protected:Npn \examx_reset_meta:
   {
     \tl_clear:N \l_examx_topics_tl
-    \tl_clear:N \l_examx_source_tl
     \tl_clear:N \l_examx_explain_tl
-    \tl_clear:N \l_examx_diffinput_tl
+    \tl_clear:N \l_examx_source_tl
+    \tl_clear:N \l_examx_diff_tl
   }
 
-% ========================
-% Public interfaces
-% ========================
-\NewDocumentCommand \topics     { m } { \tl_set:Nn \l_examx_topics_tl     {#1} }
-\NewDocumentCommand \difficulty { m } { \tl_set:Nn \l_examx_diffinput_tl  {#1} }
-\NewDocumentCommand \explain    { m } { \tl_set:Nn \l_examx_explain_tl    {#1} }
-\NewDocumentCommand \source     { m } { \tl_set:Nn \l_examx_source_tl     {#1} }
-
-% ========================
-% Difficulty formatter
-%  - Accept 0..1 decimals; render as percent
-%  - Allow user override via \ExamDifficultyFormat
-% ========================
-\providecommand\ExamDifficultyFormat[1]{\fp_eval:n { round((#1)*100,0) } \%}
-
-% ========================
-% Print teacher block
-% ========================
 \cs_new_protected:Npn \examx_print_block:
   {
-    \bool_if:NT \l_examx_teacher_bool
-      {
-        \group_begin:
-          \footnotesize
-          \tl_clear_new:N \l_examx_tmp_tl
-          % topics
-          \tl_if_blank:VTF \l_examx_topics_tl
-            { \tl_clear_new:N \l_tmpa_tl }
-            { \tl_set:Nx \l_tmpa_tl { \textbf{考点：} \l_examx_topics_tl \par } }
-          % difficulty
-          \tl_if_blank:VTF \l_examx_diffinput_tl
-            { \tl_clear_new:N \l_tmpb_tl }
-            { \tl_set:Nx \l_tmpb_tl { \textbf{难度：} \ExamDifficultyFormat{\l_examx_diffinput_tl} \par } }
-          % explain
-          \tl_if_blank:VTF \l_examx_explain_tl
-            { \tl_clear_new:N \l_tmpc_tl }
-            { \tl_set:Nx \l_tmpc_tl { \textbf{详解：} \l_examx_explain_tl \par } }
-          % source (optional)
-          \tl_if_blank:VTF \l_examx_source_tl
-            { \tl_clear_new:N \l_tmpd_tl }
-            {
-              \bool_if:NTF \l_examx_show_source_bool
-                { \tl_set:Nx \l_tmpd_tl { \textbf{来源：} \l_examx_source_tl \par } }
-                { \tl_clear_new:N \l_tmpd_tl }
-            }
-          \tl_set:Nx \l_examx_tmp_tl { \l_tmpa_tl \l_tmpb_tl \l_tmpc_tl \l_tmpd_tl }
-
-          \tl_if_blank:NF \l_examx_tmp_tl
-            {
-              \bool_if:NTF \l_examx_boxed_bool
-                { \begin{tcolorbox}[examxblock] \l_examx_tmp_tl \end{tcolorbox} }
-                { \par\smallskip\hrule height .4pt\relax \par\smallskip \l_examx_tmp_tl }
-            }
-        \group_end:
-      }
+    \group_begin:
+    \par\smallskip
+    \bool_if:NTF \g_examx_boxed_bool
+      { \begin{tcolorbox}[boxsep=1ex,left=1ex,right=1ex,colback=white,colframe=black!30] }
+      { \par\noindent\rule{\linewidth}{0.4pt}\par\smallskip }
+    \footnotesize
+    \tl_if_blank:NF \l_examx_topics_tl  { \textbf{考点：} \tl_use:N \l_examx_topics_tl \par }
+    \tl_if_blank:NF \l_examx_diff_tl    { \textbf{难度：} \ExamDifficultyFormat{\l_examx_diff_tl} \par }
+    \tl_if_blank:NF \l_examx_explain_tl { \textbf{详解：} \tl_use:N \l_examx_explain_tl \par }
+    \bool_if:NT \g_examx_show_source_bool
+      { \tl_if_blank:NF \l_examx_source_tl { \textbf{来源：} \tl_use:N \l_examx_source_tl \par } }
+    \bool_if:NTF \g_examx_boxed_bool
+      { \end{tcolorbox} }
+      { \par\noindent\rule{\linewidth}{0.4pt}\par }
+    \group_end:
   }
 
-% ========================
-% Hooks
-% ========================
-\AtBeginEnvironment{question}{\examx_reset_per_item:}
-\AtEndEnvironment  {question}{\bool_if:NT \l_examx_autoprint_bool { \examx_print_block: }}
-\AtBeginEnvironment{problem}{\examx_reset_per_item:}
-\AtEndEnvironment  {problem}{\bool_if:NT \l_examx_autoprint_bool { \examx_print_block: }}
+% 自动挂钩 question/problem
+\AddToHook{env/question/begin}{\examx_reset_meta:}
+\AddToHook{env/question/end}{\bool_if:NT \g_examx_autoprint_bool {\examx_print_block:}}
+\AddToHook{env/problem/begin}{\examx_reset_meta:}
+\AddToHook{env/problem/end}{\bool_if:NT \g_examx_autoprint_bool {\examx_print_block:}}
 
-% manual trigger (when autoprint=false)
-\NewDocumentCommand \printteacherblock { } { \examx_print_block: }
-
-% ========================
-% Robust \choice patch:
-%  make \choice immune to optional label parsing of \item when the
-%  choice text begins with '[' or '('.
-% ========================
-\ExplSyntaxOff
-\makeatletter
-\@ifundefined{choice}
-  {\newcommand{\choice}{\item\relax}}
-  {\renewcommand{\choice}{\item\relax}}
-\makeatother
-\ExplSyntaxOn
+% 手动打印环境
+\NewDocumentEnvironment{teachernotes}{}{\examx_reset_meta:}{\examx_print_block:}
 
 \ExplSyntaxOff
-\endinput

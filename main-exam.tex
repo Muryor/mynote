@@ -1,20 +1,37 @@
 % ========================= Exam main ============================
-\makeatletter\def\input@path{{styles/}}\makeatother
+% File: main-exam.tex
+% Entry for printable exams (exam-zh)
 \documentclass{exam-zh}
+
+% Page layout
 \usepackage{geometry}
-\geometry{a4paper,left=2cm,right=2cm,top=2.5cm,bottom=2.5cm}
+\geometry{a4paper, left=2cm, right=2cm, top=2.5cm, bottom=2.5cm}
 
-% 预设与桥接
+% Common preamble (fonts, math, colors, hyperref, etc.)
 \usepackage{settings/preamble}
-\usepackage[teacher=true]{styles/examx}
 
+% Our bridge for teacher block & metadata
+\usepackage{styles/examx}
 \input{settings/metadata.tex}
 
+% % ---- exam-zh global setup (safe defaults) ----
+% \examsetup{
+%   % fonts kept default (newcm) to be stable across TeX Live
+%   choices = { max-columns = 4, column-sep = 1em, label-pos = top-left },
+%   fillin  = { type = line },
+%   question = {
+%     show-paren  = true,
+%     show-points = false
+%   }
+% }
+
 \begin{document}
-  \begingroup\centering
-    {\heiti\zihao{2}\makeatletter\@title\makeatother\quad（试卷）\par}
-  \endgroup
+  % Title
+  \makeatletter
+  \begin{center}{\heiti\zihao{2}\@title\quad（试卷）}\end{center}
+  \makeatother
   \vspace{1em}
 
-  \input{content/exams/exam01.tex}
+  % Content
+  \input{content/exams/exam02.tex}
 \end{document}
