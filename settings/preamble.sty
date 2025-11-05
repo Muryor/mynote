@@ -1,17 +1,22 @@
 % settings/preamble.sty — Math handout font setup (macOS-friendly)
-\ProvidesPackage{settings/preamble}[2025/11/05 v1.0 Math handout fonts]
+\ProvidesPackage{settings/preamble}[2025/11/05 v1.1 Math handout fonts]
 
 % -------- Engine guard --------
 \RequirePackage{iftex}
 \ifXeTeX\else\ifLuaTeX\else
-  \PackageError{settings/preamble}{This template requires XeLaTeX or LuaLaTeX}{}
+  \PackageError{settings/preamble}{This template requires XeLaTeX or LuaLaTeX}{Use XeLaTeX or LuaLaTeX.}
 \fi\fi
 
 % -------- Base packages --------
 \RequirePackage{fontspec}
+\ExplSyntaxOn
+\cs_set_eq:NN \IfFontExistsTF \fontspec_if_font_exists:nTF
+\ExplSyntaxOff
 \RequirePackage{xeCJK}   % CJK
-\RequirePackage{ctex}    % sensible CJK defaults on CN locales
+\RequirePackage{ctex}    % sensible CJK defaults
 \RequirePackage{unicode-math}
+
+\defaultfontfeatures{Ligatures=TeX}
 
 % Keep TeX-like math input feeling
 \unimathsetup{
@@ -21,57 +26,50 @@
   partial    = italic,
 }
 
-% -------- Helpers --------
-\ExplSyntaxOn
-\cs_set_eq:NN \IfFontExistsTF \fontspec_if_font_exists:nTF
-\ExplSyntaxOff
-
 % =========================
 % Latin text fonts (serif/sans/mono)
 % =========================
 % Serif (main text) — prefer STIX Two Text to match STIX Two Math
 \IfFontExistsTF{STIX Two Text}{
-  \setmainfont{STIX Two Text}[
-    Ligatures=TeX
-  ]
+  \setmainfont{STIX Two Text}
 }{
   \IfFontExistsTF{TeX Gyre Termes}{
-    \setmainfont{TeX Gyre Termes}[Ligatures=TeX]
+    \setmainfont{TeX Gyre Termes}
   }{
     \IfFontExistsTF{Times New Roman}{
-      \setmainfont{Times New Roman}[Ligatures=TeX]
+      \setmainfont{Times New Roman}
     }{
-      \setmainfont{Latin Modern Roman}[Ligatures=TeX]
+      \setmainfont{Latin Modern Roman}
     }
   }
 }
 
 % Sans (headings)
 \IfFontExistsTF{Helvetica Neue}{
-  \setsansfont{Helvetica Neue}[Ligatures=TeX]
+  \setsansfont{Helvetica Neue}[Scale=MatchLowercase]
 }{
   \IfFontExistsTF{TeX Gyre Heros}{
-    \setsansfont{TeX Gyre Heros}[Ligatures=TeX]
+    \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]
   }{
     \IfFontExistsTF{Arial}{
-      \setsansfont{Arial}[Ligatures=TeX]
+      \setsansfont{Arial}[Scale=MatchLowercase]
     }{
-      \setsansfont{Latin Modern Sans}[Ligatures=TeX]
+      \setsansfont{Latin Modern Sans}[Scale=MatchLowercase]
     }
   }
 }
 
 % Mono (code)
 \IfFontExistsTF{Menlo}{
-  \setmonofont{Menlo}
+  \setmonofont{Menlo}[Scale=MatchLowercase]
 }{
   \IfFontExistsTF{SF Mono}{
-    \setmonofont{SF Mono}
+    \setmonofont{SF Mono}[Scale=MatchLowercase]
   }{
     \IfFontExistsTF{Inconsolata}{
-      \setmonofont{Inconsolata}
+      \setmonofont{Inconsolata}[Scale=MatchLowercase]
     }{
-      \setmonofont{Latin Modern Mono}
+      \setmonofont{Latin Modern Mono}[Scale=MatchLowercase]
     }
   }
 }
@@ -79,7 +77,6 @@
 % =========================
 % Math fonts (unicode-math)
 % =========================
-% Priority: STIX Two Math -> Libertinus Math -> XITS Math -> TeX Gyre Termes Math -> Latin Modern Math
 \ExplSyntaxOn
 \cs_new_protected:Npn \__mynote_set_math_font:
  {
@@ -152,7 +149,7 @@
 
 % =========================
 % Optional: a quick preset toggle for macOS UI look (commented out)
-% Uncomment the block to switch Chinese to PingFang for everything.
+% Uncomment to switch Chinese to PingFang for everything.
 % =========================
 % \IfFontExistsTF{PingFang SC}{
 %   \setCJKmainfont{PingFang SC}
