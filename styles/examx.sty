@@ -1,7 +1,35 @@
 % styles/examx.sty
 \NeedsTeXFormat{LaTeX2e}[2020-10-01]
-\ProvidesExplPackage{examx}{2025/10/30}{1.4.1}{Exam bridge for exam-zh}
+\ProvidesPackage{examx}[2025/10/30 v1.4.2 Exam bridge for exam-zh]
+% Accept package options [teacher]/[student]; default to student.
+% Keep \ExplSyntaxOn throughout this file per .llmrules.
+\RequirePackage{kvoptions}
+\SetupKeyvalOptions{family=examx,prefix=examx@}
+\DeclareBoolOption[false]{teacher}
+\DeclareBoolOption[false]{student}
+\ProcessKeyvalOptions*
 
+\ExplSyntaxOn
+% expl3 booleans mirroring options (idempotent-safe)
+\bool_if_exist:NF \g_examx_teacher_bool { \bool_new:N \g_examx_teacher_bool }
+\bool_if_exist:NF \g_examx_student_bool { \bool_new:N \g_examx_student_bool }
+\ifexamx@teacher
+  \bool_set_true:N  \g_examx_teacher_bool
+  \bool_set_false:N \g_examx_student_bool
+\else
+  \ifexamx@student
+    \bool_set_true:N  \g_examx_student_bool
+    \bool_set_false:N \g_examx_teacher_bool
+  \else
+    % default to student if not specified
+   \bool_set_true:N  \g_examx_student_bool
+    \bool_set_false:N \g_examx_teacher_bool
+  \fi
+\fi
+% convenience conditional for downstream logic
+\prg_new_conditional:Npnn \examx_if_teacher: { p, T, F, TF }
+  { \bool_if:NTF \g_examx_teacher_bool { \prg_return_true: } { \prg_return_false: } }
+% DO NOT \ExplSyntaxOff in this file.
 \RequirePackage{expl3,xparse,tcolorbox}
 
 \ExplSyntaxOn

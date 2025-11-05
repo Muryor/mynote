@@ -38,6 +38,13 @@
 ./build.sh handout student
 ./build.sh handout both
 ```
+在入口文件中，可通过包选项显式指定版本：
+```tex
+% 教师版
+\usepackage[teacher]{styles/examx}
+% 或者学生版
+\usepackage[student]{styles/examx}
+```
 
 > 构建脚本会在需要时自动开启 `-shell-escape`（例如检测到 `minted`）；所有产物位于 `./output/`。
 
