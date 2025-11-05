@@ -1,14 +1,18 @@
 % ========================= Handout main =========================
 \documentclass[lang=cn, color=blue, mode=fancy]{elegantbook}
+% Let LaTeX search in ./styles and ./settings for packages
+\makeatletter
+\def\input@path{{./styles/}{./settings/}}
+\makeatother
 
 % 字体/颜色等基础预设
-\input{settings/preamble.sty}
+\usepackage{preamble}
 
 % 讲义盒子 + 题目统一接口
-\usepackage{styles/handoutx}
-\usepackage{styles/examx} % 让 problem 也能写 \topics/\difficulty/\explain
+\usepackage{handoutx}
+\usepackage{examx} % 让 problem 也能写 \topics/\difficulty/\explain
 
-\input{settings/metadata.tex}
+\input{metadata.tex}
 
 \begin{document}
   \frontmatter

@@ -2,17 +2,20 @@
 % File: main-exam.tex
 % Entry for printable exams (exam-zh)
 \documentclass{exam-zh}
-
+\makeatletter
+\def\input@path{{./styles/}{./settings/}}
+\makeatother
 % Page layout
 \usepackage{geometry}
 \geometry{a4paper, left=2cm, right=2cm, top=2.5cm, bottom=2.5cm}
 
 % Common preamble (fonts, math, colors, hyperref, etc.)
-\usepackage{settings/preamble}
+\usepackage{preamble}
 
 % Our bridge for teacher block & metadata
-\usepackage{styles/examx}
-\input{settings/metadata.tex}
+\usepackage{examx}
+
+\input{metadata.tex}
 
 % % ---- exam-zh global setup (safe defaults) ----
 % \examsetup{

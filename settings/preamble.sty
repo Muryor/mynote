@@ -1,75 +1,81 @@
-% settings/preamble.sty — Math handout font setup (macOS-friendly)
-\ProvidesPackage{settings/preamble}[2025/11/05 v1.3 Math handout fonts]
+% settings/preamble.sty — Math handout fonts (robust, v1.5)
+\ProvidesPackage{preamble}[2025/11/05 v1.5 Math handout fonts (robust, mono fallbacks)]
 
 % -------- Engine guard --------
 \RequirePackage{iftex}
 \ifXeTeX\else\ifLuaTeX\else
-  \PackageError{settings/preamble}{This template requires XeLaTeX or LuaLaTeX}{Use XeLaTeX or LuaLaTeX.}
+  \PackageError{preamble}{This template requires XeLaTeX or LuaLaTeX}{Use XeLaTeX or LuaLaTeX.}
 \fi\fi
 
 % -------- Base packages --------
 \RequirePackage{fontspec}
-\RequirePackage{xeCJK}   % CJK
-\RequirePackage{ctex}    % sensible CJK defaults
 \RequirePackage{unicode-math}
+\RequirePackage{xeCJK}
+\RequirePackage{ctex}
 
 \defaultfontfeatures{Ligatures=TeX}
 
-% Keep TeX-like math input feeling
-\unimathsetup{
-  math-style = TeX,
-  bold-style = TeX,
-  nabla      = italic,
-  partial    = italic,
-}
-
 % =========================
-% Latin text fonts (serif/sans/mono)
+% Main Latin text font
 % =========================
-% Serif (main text) — prefer STIX Two Text to match STIX Two Math
 \IfFontExistsTF{STIX Two Text}{%
-  \setmainfont{STIX Two Text}%
+  \setmainfont{STIX Two Text}% let fontspec resolve faces; missing faces warn only
 }{%
   \IfFontExistsTF{TeX Gyre Termes}{%
     \setmainfont{TeX Gyre Termes}%
   }{%
-    \IfFontExistsTF{Times New Roman}{%
-      \setmainfont{Times New Roman}%
+    \IfFontExistsTF{TeX Gyre Termes X}{%
+      \setmainfont{TeX Gyre Termes X}%
     }{%
-      \setmainfont{Latin Modern Roman}%
+      \IfFontExistsTF{Times New Roman}{%
+        \setmainfont{Times New Roman}%
+      }{%
+        \setmainfont{Latin Modern Roman}%
+      }%
     }%
   }%
-}%
+}
 
-% Sans (headings)
-\IfFontExistsTF{Helvetica Neue}{%
-  \setsansfont{Helvetica Neue}[Scale=MatchLowercase]%
+% Sans — Inter / TGHeros / Helvetica / Arial
+\IfFontExistsTF{Inter}{%
+  \setsansfont{Inter}%
 }{%
   \IfFontExistsTF{TeX Gyre Heros}{%
-    \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]%
+    \setsansfont{TeX Gyre Heros}%
   }{%
-    \IfFontExistsTF{Arial}{%
-      \setsansfont{Arial}[Scale=MatchLowercase]%
+    \IfFontExistsTF{Helvetica}{%
+      \setsansfont{Helvetica}%
     }{%
-      \setsansfont{Latin Modern Sans}[Scale=MatchLowercase]%
+      \setsansfont{Arial}%
     }%
   }%
-}%
+}
 
-% Mono (code)
-\IfFontExistsTF{Menlo}{%
-  \setmonofont{Menlo}[Scale=MatchLowercase]%
-}{%
-  \IfFontExistsTF{SF Mono}{%
-    \setmonofont{SF Mono}[Scale=MatchLowercase]%
-  }{%
-    \IfFontExistsTF{Inconsolata}{%
-      \setmonofont{Inconsolata}[Scale=MatchLowercase]%
-    }{%
-      \setmonofont{Latin Modern Mono}[Scale=MatchLowercase]%
-    }%
-  }%
-}%
+% =========================
+% Mono — robust cascade (fixes 'Latin Modern Mono not found')
+% =========================
+\newif\ifpreamble@monoset
+\preamble@monosetfalse
+\IfFontExistsTF{JetBrains Mono}{\setmonofont{JetBrains Mono}\preamble@monosettrue}{}
+\ifpreamble@monoset\else
+  \IfFontExistsTF{Fira Code}{\setmonofont{Fira Code}\preamble@monosettrue}{}
+\fi
+\ifpreamble@monoset\else
+  \IfFontExistsTF{Latin Modern Mono}{\setmonofont{Latin Modern Mono}\preamble@monosettrue}{}
+\fi
+\ifpreamble@monoset\else
+  \IfFontExistsTF{TeX Gyre Cursor}{\setmonofont{TeX Gyre Cursor}\preamble@monosettrue}{}
+\fi
+\ifpreamble@monoset\else
+  \IfFontExistsTF{Courier New}{\setmonofont{Courier New}\preamble@monosettrue}{}
+\fi
+\ifpreamble@monoset\else
+  \IfFontExistsTF{Monaco}{\setmonofont{Monaco}\preamble@monosettrue}{}
+\fi
+\ifpreamble@monoset\else
+  % Last resort: fall back to main text font as mono to avoid hard errors
+  \setmonofont{\rmdefault}
+\fi
 
 % =========================
 % Math fonts (unicode-math)
@@ -90,42 +96,43 @@
       }%
     }%
   }%
-}%
+}
 
 % =========================
-% Chinese (CJK) fonts with graceful fallback
+% CJK fonts (xeCJK/ctex)
 % =========================
-% Main CJK (serif) — print-friendly for math handouts
-\IfFontExistsTF{Noto Serif CJK SC}{%
-  \setCJKmainfont{Noto Serif CJK SC}%
+\IfFontExistsTF{PingFang SC}{%
+  \setCJKmainfont{PingFang SC}%
 }{%
-  \IfFontExistsTF{Songti SC}{%
-    \setCJKmainfont{Songti SC}%
+  \IfFontExistsTF{Noto Serif CJK SC}{%
+    \setCJKmainfont{Noto Serif CJK SC}%
   }{%
-    \IfFontExistsTF{STSong}{%
-      \setCJKmainfont{STSong}%
+    \IfFontExistsTF{Source Han Serif SC}{%
+      \setCJKmainfont{Source Han Serif SC}%
     }{%
-      \IfFontExistsTF{SimSun}{%
-        \setCJKmainfont{SimSun}%
+      \IfFontExistsTF{STSong}{%
+        \setCJKmainfont{STSong}%
       }{}%
     }%
   }%
-}%
+}
 
-% CJK sans — headings/notes
-\IfFontExistsTF{Noto Sans CJK SC}{%
-  \setCJKsansfont{Noto Sans CJK SC}%
+\IfFontExistsTF{PingFang SC}{%
+  \setCJKsansfont{PingFang SC}%
 }{%
-  \IfFontExistsTF{PingFang SC}{%
-    \setCJKsansfont{PingFang SC}%
+  \IfFontExistsTF{Noto Sans CJK SC}{%
+    \setCJKsansfont{Noto Sans CJK SC}%
   }{%
-    \IfFontExistsTF{STXihei}{%
-      \setCJKsansfont{STXihei}%
-    }{}%
+    \IfFontExistsTF{Source Han Sans SC}{%
+      \setCJKsansfont{Source Han Sans SC}%
+    }{%
+      \IfFontExistsTF{STHeiti}{%
+        \setCJKsansfont{STHeiti}%
+      }{}%
+    }%
   }%
-}%
+}
 
-% CJK mono — use a legible sans as fallback; true mono CJK is rare
 \IfFontExistsTF{Noto Sans Mono CJK SC}{%
   \setCJKmonofont{Noto Sans Mono CJK SC}%
 }{%
@@ -136,6 +143,4 @@
       \setCJKmonofont{STFangsong}%
     }{}%
   }%
-}%
-
-% --- End of preamble font setup ---
+}
