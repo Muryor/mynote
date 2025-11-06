@@ -29,11 +29,8 @@
 % }
 
 \begin{document}
-  % Title
-  \makeatletter
-  \begin{center}{\heiti\zihao{2}\@title\quad（试卷）}\end{center}
-  \makeatother
-  \vspace{1em}
+  % Title is now set per-exam using \examxtitle{...} in content files
+  % No hardcoded default title
 
   % Content
   \input{content/exams/exam02.tex}

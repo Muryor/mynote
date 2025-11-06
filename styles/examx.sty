@@ -1,8 +1,9 @@
-% styles/examx.sty
+%% styles/examx.sty
 \NeedsTeXFormat{LaTeX2e}[2020-10-01]
-\ProvidesPackage{examx}[2025/10/30 v1.4.2 Exam bridge for exam-zh]
-% Accept package options [teacher]/[student]; default to student.
-% Keep \ExplSyntaxOn throughout this file per .llmrules.
+\ProvidesPackage{examx}[2025/11/06 v0.3 Exam extension with qmeta integration]
+
+%% Accept package options [teacher]/[student]; default to student.
+%% Keep \ExplSyntaxOn throughout this file per .llmrules.
 \RequirePackage{kvoptions}
 \SetupKeyvalOptions{family=examx,prefix=examx@}
 \DeclareBoolOption[false]{teacher}
@@ -10,9 +11,13 @@
 \ProcessKeyvalOptions*
 
 \ExplSyntaxOn
-% expl3 booleans mirroring options (idempotent-safe)
+
+%% ============================================================
+%% Global Booleans (mirroring options)
+%% ============================================================
 \bool_if_exist:NF \g_examx_teacher_bool { \bool_new:N \g_examx_teacher_bool }
 \bool_if_exist:NF \g_examx_student_bool { \bool_new:N \g_examx_student_bool }
+
 \ifexamx@teacher
   \bool_set_true:N  \g_examx_teacher_bool
   \bool_set_false:N \g_examx_student_bool
@@ -22,84 +27,93 @@
     \bool_set_false:N \g_examx_teacher_bool
   \else
     % default to student if not specified
-   \bool_set_true:N  \g_examx_student_bool
+    \bool_set_true:N  \g_examx_student_bool
     \bool_set_false:N \g_examx_teacher_bool
   \fi
 \fi
-% convenience conditional for downstream logic
+
+%% Convenience conditional for downstream logic
 \prg_new_conditional:Npnn \examx_if_teacher: { p, T, F, TF }
   { \bool_if:NTF \g_examx_teacher_bool { \prg_return_true: } { \prg_return_false: } }
-% DO NOT \ExplSyntaxOff in this file.
-\RequirePackage{expl3,xparse,tcolorbox}
 
-\ExplSyntaxOn
+%% ============================================================
+%% Load qmeta with version option
+%% ============================================================
+\ifexamx@teacher
+  \PassOptionsToPackage{version=teacher,show-source=false,difficulty-format=decimal}{qmeta}
+\else
+  \PassOptionsToPackage{version=student,show-source=false,difficulty-format=decimal}{qmeta}
+\fi
+\RequirePackage{qmeta}
 
-% ------- 配置 -------
-\bool_new:N \g_examx_autoprint_bool
-\bool_new:N \g_examx_show_source_bool
-\bool_new:N \g_examx_boxed_bool
+%% ============================================================
+%% Load exam-zh configuration
+%% ============================================================
+\RequirePackage{fancyhdr}
 
-\keys_define:nn { examx }
+%% Configure exam-zh based on teacher/student mode (only if exam-zh is loaded)
+\@ifclassloaded{exam-zh}{
+  \ifexamx@teacher
+    % Teacher mode: show answers and solutions
+    \examsetup{
+      question/show-answer   = true,
+      fillin/show-answer     = true,
+      paren/show-paren       = true,
+      solution/show-solution = show-stay
+    }
+  \else
+    % Student mode: hide answers and solutions
+    \examsetup{
+      question/show-answer   = false,
+      fillin/show-answer     = false,
+      paren/show-paren       = false,
+      solution/show-solution = hide,
+      fillin/no-answer-type  = none
+    }
+  \fi
+}{}
+
+%% ============================================================
+%% Helper: Paren Display (teacher shows answer, student empty)
+%% ============================================================
+\NewDocumentCommand \examx_show_paren { O{} }
   {
-    autoprint .bool_set:N = \g_examx_autoprint_bool,
-    autoprint .initial:n  = true,
-    show-source .bool_set:N = \g_examx_show_source_bool,
-    show-source .initial:n  = false,
-    boxed .bool_set:N = \g_examx_boxed_bool,
-    boxed .initial:n  = true,
-  }
-\NewDocumentCommand \examxsetup { m } { \keys_set:nn { examx } {#1} }
-
-% ------- 元数据 -------
-\tl_new:N \l_examx_topics_tl
-\tl_new:N \l_examx_explain_tl
-\tl_new:N \l_examx_source_tl
-\tl_new:N \l_examx_diff_tl
-
-\NewDocumentCommand \topics    { m } { \tl_set:Nn \l_examx_topics_tl  {#1} }
-\NewDocumentCommand \difficulty{ m } { \tl_set:Nn \l_examx_diff_tl    {#1} }
-\NewDocumentCommand \explain   { m } { \tl_set:Nn \l_examx_explain_tl {#1} }
-\NewDocumentCommand \source    { m } { \tl_set:Nn \l_examx_source_tl  {#1} }
-
-% 难度显示：百分比（可重定义）
-\ProvideDocumentCommand \ExamDifficultyFormat { m }
-  { \fp_eval:n { round((#1)*100,0) } \% }
-
-% ------- 行为 -------
-\cs_new_protected:Npn \examx_reset_meta:
-  {
-    \tl_clear:N \l_examx_topics_tl
-    \tl_clear:N \l_examx_explain_tl
-    \tl_clear:N \l_examx_source_tl
-    \tl_clear:N \l_examx_diff_tl
-  }
-
-\cs_new_protected:Npn \examx_print_block:
-  {
-    \group_begin:
-    \par\smallskip
-    \bool_if:NTF \g_examx_boxed_bool
-      { \begin{tcolorbox}[boxsep=1ex,left=1ex,right=1ex,colback=white,colframe=black!30] }
-      { \par\noindent\rule{\linewidth}{0.4pt}\par\smallskip }
-    \footnotesize
-    \tl_if_empty:NF \l_examx_topics_tl  { \textbf{考点：} \tl_use:N \l_examx_topics_tl \par }
-    \tl_if_empty:NF \l_examx_diff_tl    { \textbf{难度：} \ExamDifficultyFormat{\l_examx_diff_tl} \par }
-    \tl_if_empty:NF \l_examx_explain_tl { \textbf{详解：} \tl_use:N \l_examx_explain_tl \par }
-    \bool_if:NT \g_examx_show_source_bool
-      { \tl_if_empty:NF \l_examx_source_tl { \textbf{来源：} \tl_use:N \l_examx_source_tl \par } }
-    \bool_if:NTF \g_examx_boxed_bool
-      { \end{tcolorbox} }
-      { \par\noindent\rule{\linewidth}{0.4pt}\par }
-    \group_end:
+    \bool_if:NTF \g_examx_teacher_bool
+      { \paren[#1] }
+      { \paren[] }
   }
 
-% 自动挂钩 question/problem
-\AddToHook{env/question/begin}{\examx_reset_meta:}
-\AddToHook{env/question/end}{\bool_if:NT \g_examx_autoprint_bool {\examx_print_block:}}
-\AddToHook{env/problem/begin}{\examx_reset_meta:}
-\AddToHook{env/problem/end}{\bool_if:NT \g_examx_autoprint_bool {\examx_print_block:}}
+%% ============================================================
+%% Quick MCQ Macro
+%% ============================================================
+\NewDocumentCommand \mcq { O{} m m m m m }
+  {
+    \begin{question}
+      #2~\examx_show_paren[#1]
+      \begin{choices}
+        \item #3
+        \item #4
+        \item #5
+        \item #6
+      \end{choices}
+      % Store answer in metadata if provided (must be inside question environment)
+      \tl_if_blank:nF {#1} { \answer{#1} }
+    \end{question}
+  }
 
-% 手动打印环境
-\NewDocumentEnvironment{teachernotes}{}{\examx_reset_meta:}{\examx_print_block:}
+%% ============================================================
+%% Per-Exam Header Title
+%% ============================================================
+\NewDocumentCommand \examxtitle { m }
+  {
+    \pagestyle{fancy}
+    \fancyhf{}
+    \renewcommand\headrulewidth{0pt}
+    \renewcommand\footrulewidth{0pt}
+    \fancyhead[C]{\bfseries\Large #1}
+    \fancyfoot[C]{\thepage}
+  }
 
 \ExplSyntaxOff
+
+\endinput

@@ -1,0 +1,153 @@
+%% qmeta.sty
+%% Question metadata module for teacher-only blocks
+%% Shared by examx.sty and handoutx.sty
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesExplPackage{qmeta}{2025/11/06}{0.1}{Question metadata block}
+
+\RequirePackage{expl3,xparse,tcolorbox}
+\tcbuselibrary{skins,breakable}
+
+\ExplSyntaxOn
+
+%% ============================================================
+%% Variables (must be created before keys_define uses them)
+%% ============================================================
+\bool_new:N \l__qmeta_teacher_bool
+\bool_new:N \l__qmeta_show_source_bool
+\tl_new:N   \l__qmeta_diff_fmt_tl
+\tl_new:N   \l__qmeta_answer_tl
+\tl_new:N   \l__qmeta_topics_tl
+\tl_new:N   \l__qmeta_explain_tl
+\tl_new:N   \l__qmeta_source_tl
+\fp_new:N   \l__qmeta_diff_fp
+
+%% ============================================================
+%% Options
+%% ============================================================
+\keys_define:nn { qmeta / opt }
+  {
+    version .choice:,
+    version / teacher .code:n = { \bool_set_true:N  \l__qmeta_teacher_bool },
+    version / student .code:n = { \bool_set_false:N \l__qmeta_teacher_bool },
+    version .initial:n = student,
+    show-source .bool_set:N = \l__qmeta_show_source_bool,
+    show-source .initial:n  = false,
+    difficulty-format .choice:,
+    difficulty-format / decimal .code:n = { \tl_set:Nn \l__qmeta_diff_fmt_tl { decimal } },
+    difficulty-format / percent .code:n = { \tl_set:Nn \l__qmeta_diff_fmt_tl { percent } },
+    difficulty-format .initial:n = decimal
+  }
+\ProcessKeysOptions{ qmeta / opt }
+
+%% ============================================================
+%% User Commands
+%% ============================================================
+\NewDocumentCommand \answer { m }
+  { \tl_set:Nn \l__qmeta_answer_tl {#1} }
+
+\NewDocumentCommand \topics { m }
+  { \tl_set:Nn \l__qmeta_topics_tl {#1} }
+
+\NewDocumentCommand \difficulty { m }
+  { \fp_set:Nn \l__qmeta_diff_fp {#1} }
+
+\NewDocumentCommand \explain { m }
+  { \tl_set:Nn \l__qmeta_explain_tl {#1} }
+
+\NewDocumentCommand \source { m }
+  { \tl_set:Nn \l__qmeta_source_tl {#1} }
+
+%% ============================================================
+%% Internal Functions
+%% ============================================================
+
+%% Reset all metadata
+\cs_new_protected:Npn \qmeta_reset:
+  {
+    \tl_clear:N \l__qmeta_answer_tl
+    \tl_clear:N \l__qmeta_topics_tl
+    \tl_clear:N \l__qmeta_explain_tl
+    \tl_clear:N \l__qmeta_source_tl
+    \fp_zero:N  \l__qmeta_diff_fp
+  }
+
+%% Format difficulty based on format option
+\cs_new:Npn \qmeta_format_difficulty:
+  {
+    \str_if_eq:VnTF \l__qmeta_diff_fmt_tl { percent }
+      { \fp_eval:n { round(\l__qmeta_diff_fp * 100, 0) } \,\% }
+      { \fp_eval:n { round(\l__qmeta_diff_fp, 2) } }
+  }
+
+%% Simple, hook-safe content check (no lazy eval)
+\bool_new:N \l__qmeta_has_content_bool
+
+\cs_new_protected:Npn \qmeta_set_has_content_bool:
+  {
+    \bool_set_false:N \l__qmeta_has_content_bool
+    % Any field non-empty / non-zero => true
+    \tl_if_empty:NF \l__qmeta_answer_tl { \bool_set_true:N \l__qmeta_has_content_bool }
+    \fp_compare:nNnT { \l__qmeta_diff_fp } > { 0 } { \bool_set_true:N \l__qmeta_has_content_bool }
+    \tl_if_empty:NF \l__qmeta_topics_tl { \bool_set_true:N \l__qmeta_has_content_bool }
+    \tl_if_empty:NF \l__qmeta_explain_tl { \bool_set_true:N \l__qmeta_has_content_bool }
+    \bool_if:NT \l__qmeta_show_source_bool
+      { \tl_if_empty:NF \l__qmeta_source_tl { \bool_set_true:N \l__qmeta_has_content_bool } }
+  }
+
+%% tcolorbox style for metadata blocks
+\tcbset{
+  qmetaStyle/.style={
+    enhanced,
+    breakable,
+    colback=black!5,
+    colframe=black!10,
+    boxrule=0.6pt,
+    arc=1.8mm,
+    left=2mm,
+    right=2mm,
+    top=1.5mm,
+    bottom=1.5mm
+  }
+}
+
+%% Print teacher-only metadata block
+\cs_new_protected:Npn \qmeta_print_teacherblock:
+  {
+    \bool_if:NF \l__qmeta_teacher_bool { \use:n { } }
+    % Compute once; safe inside hooks
+    \qmeta_set_has_content_bool:
+    \bool_if:NF \l__qmeta_has_content_bool { \use:n { } }
+    % Render the teacher block
+    \par\smallskip
+    \begin{tcolorbox}[qmetaStyle]
+      \tl_if_empty:NF \l__qmeta_answer_tl
+        { \textbf{【答案】}~\l__qmeta_answer_tl \par }
+      \fp_compare:nNnT { \l__qmeta_diff_fp } > { 0 }
+        { \textbf{【难度】}~\qmeta_format_difficulty: \par }
+      \tl_if_empty:NF \l__qmeta_topics_tl
+        { \textbf{【知识点】}~\l__qmeta_topics_tl \par }
+      \tl_if_empty:NF \l__qmeta_explain_tl
+        { \textbf{【详解】}~\l__qmeta_explain_tl \par }
+      \bool_if:NT \l__qmeta_show_source_bool
+        {
+          \tl_if_empty:NF \l__qmeta_source_tl
+            { \textbf{【来源】}~\l__qmeta_source_tl \par }
+        }
+    \end{tcolorbox}
+  }
+
+%% ============================================================
+%% Automatic Hooks
+%% ============================================================
+
+% Hook into exam-zh's question environment
+\AddToHook{env/question/begin}{\qmeta_reset:}
+\AddToHook{env/question/end}{\qmeta_print_teacherblock:}
+
+% Hook into elegantbook's problem environment
+\AddToHook{env/problem/begin}{\qmeta_reset:}
+\AddToHook{env/problem/end}{\qmeta_print_teacherblock:}
+
+\ExplSyntaxOff
+
+\endinput

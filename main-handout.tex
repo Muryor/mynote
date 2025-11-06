@@ -9,14 +9,14 @@
 \usepackage{preamble}
 
 % 讲义盒子 + 题目统一接口
-\usepackage{handoutx}
+\usepackage[cover=false,infobar=false,authorhead=true]{handoutx}
 \usepackage{examx} % 让 problem 也能写 \topics/\difficulty/\explain
 
 \input{metadata.tex}
 
 \begin{document}
   \frontmatter
-  \maketitle
+  % \maketitle is now empty due to cover=false option
   \tableofcontents
   \mainmatter
   \input{content/handouts/ch01.tex}
