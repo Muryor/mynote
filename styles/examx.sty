@@ -82,11 +82,11 @@
       { \begin{tcolorbox}[boxsep=1ex,left=1ex,right=1ex,colback=white,colframe=black!30] }
       { \par\noindent\rule{\linewidth}{0.4pt}\par\smallskip }
     \footnotesize
-    \tl_if_blank:NF \l_examx_topics_tl  { \textbf{考点：} \tl_use:N \l_examx_topics_tl \par }
-    \tl_if_blank:NF \l_examx_diff_tl    { \textbf{难度：} \ExamDifficultyFormat{\l_examx_diff_tl} \par }
-    \tl_if_blank:NF \l_examx_explain_tl { \textbf{详解：} \tl_use:N \l_examx_explain_tl \par }
+    \tl_if_empty:NF \l_examx_topics_tl  { \textbf{考点：} \tl_use:N \l_examx_topics_tl \par }
+    \tl_if_empty:NF \l_examx_diff_tl    { \textbf{难度：} \ExamDifficultyFormat{\l_examx_diff_tl} \par }
+    \tl_if_empty:NF \l_examx_explain_tl { \textbf{详解：} \tl_use:N \l_examx_explain_tl \par }
     \bool_if:NT \g_examx_show_source_bool
-      { \tl_if_blank:NF \l_examx_source_tl { \textbf{来源：} \tl_use:N \l_examx_source_tl \par } }
+      { \tl_if_empty:NF \l_examx_source_tl { \textbf{来源：} \tl_use:N \l_examx_source_tl \par } }
     \bool_if:NTF \g_examx_boxed_bool
       { \end{tcolorbox} }
       { \par\noindent\rule{\linewidth}{0.4pt}\par }

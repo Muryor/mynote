@@ -33,6 +33,18 @@ compile() {
   fi
   printf "\\input{%s}\n" "${MAIN}"     >> "${wrap}"
   latexmk -xelatex -interaction=nonstopmode -file-line-error -outdir="${OUT}" "${wrap}"
+\
+  # Fallback: if XeLaTeX wrote only XDV, convert to PDF
+  if ls "${OUT}/"*.xdv >/dev/null 2>&1; then
+    for xdv in "${OUT}/"*.xdv; do
+      pdf="${xdv%.xdv}.pdf"
+      if [[ ! -f "$pdf" ]]; then
+        echo "[info] Converting $(basename "$xdv") -> $(basename "$pdf")"
+        xdvipdfmx -q -E -o "$pdf" "$xdv" || {
+          echo "[warn] xdvipdfmx failed for $xdv"; exit 1; }
+      fi
+    done
+  fi
 }
 
 case "${MODE}" in
