@@ -30,6 +30,9 @@
     version / teacher .code:n = { \bool_set_true:N  \l__qmeta_teacher_bool },
     version / student .code:n = { \bool_set_false:N \l__qmeta_teacher_bool },
     version .initial:n = student,
+    role .choice:,
+    role / teacher .code:n = { \bool_set_true:N  \l__qmeta_teacher_bool },
+    role / student .code:n = { \bool_set_false:N \l__qmeta_teacher_bool },
     show-source .bool_set:N = \l__qmeta_show_source_bool,
     show-source .initial:n  = false,
     difficulty-format .choice:,
@@ -147,6 +150,26 @@
 % Hook into elegantbook's problem environment
 \AddToHook{env/problem/begin}{\qmeta_reset:}
 \AddToHook{env/problem/end}{\qmeta_print_teacherblock:}
+
+%% ============================================================
+%% Unified authoring wrapper: qexercise
+%% ============================================================
+% If exam-zh defines 'question', alias qexercise to it
+\cs_if_exist:NT \question
+  { \NewDocumentEnvironment{qexercise}{ O{} }{ \begin{question}[#1] }{ \end{question} } }
+
+% If 'question' doesn't exist (handout), provide a tcolorbox fallback
+\cs_if_exist:NF \question
+  {
+    \providecolor{LegendGreen}{HTML}{2A776A}
+    \providecolor{LegendGreenLight}{HTML}{E7F4F1}
+    \NewDocumentEnvironment{qexercise}{ O{} }
+      { \begin{tcolorbox}[enhanced,breakable,arc=1.5mm,boxrule=0.6pt,
+          colframe=LegendGreen,colback=LegendGreenLight,title={#1},
+          left=2mm,right=2mm,top=1mm,bottom=1mm]
+        \qmeta_reset: }
+      { \end{tcolorbox} \qmeta_print_teacherblock: }
+  }
 
 \ExplSyntaxOff
 

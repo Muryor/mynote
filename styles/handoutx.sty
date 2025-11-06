@@ -10,6 +10,7 @@
 %% ============================================================
 %% Options
 %% ============================================================
+\bool_new:N \l__handoutx_mint_bool
 \keys_define:nn { handoutx / opt }
   {
     cover      .bool_set:N = \l__handoutx_cover_bool,
@@ -18,6 +19,10 @@
     infobar    .initial:n  = true,
     authorhead .bool_set:N = \l__handoutx_authorhead_bool,
     authorhead .initial:n  = true,
+    theme .choice:,
+    theme / green .code:n = { \bool_set_false:N \l__handoutx_mint_bool },
+    theme / mint  .code:n = { \bool_set_true:N  \l__handoutx_mint_bool },
+    theme .initial:n = green,
   }
 \ProcessKeysOptions{ handoutx / opt }
 
@@ -63,33 +68,62 @@
 }
 
 %% ============================================================
-%% Color Palette (green accent matching reference photos)
+%% Color Palette
 %% ============================================================
 \definecolor{HMain}{RGB}{40,140,90}   % main green
 \definecolor{HBack}{RGB}{245,251,247} % light background
+\definecolor{LegendGreen}{HTML}{2A776A}
+\definecolor{LegendGreenLight}{HTML}{E7F4F1}
+\definecolor{LegendMint}{HTML}{3BA58B}
+\definecolor{LegendOrange}{HTML}{F5B06A}
 
 %% ============================================================
-%% tcolorbox Preset (green rounded cards with drop shadow)
+%% tcolorbox Preset (theme-dependent)
 %% ============================================================
-\tcbset{
-  mygreen/.style={
-    enhanced,
-    breakable,
-    colback=green!4,
-    colframe=green!45!black,
-    coltitle=white,
-    fonttitle=\bfseries,
-    title~ filled,
-    boxrule=0.8pt,
-    arc=2.5mm,
-    left=2mm,
-    right=2mm,
-    top=1.5mm,
-    bottom=1.5mm,
-    drop~ shadow=black!20,
-    borderline={0.4pt}{0pt}{green!35!black},
-  },
-}
+\bool_if:NTF \l__handoutx_mint_bool
+  {
+    % Mint theme: title bar with mint background
+    \tcbset{
+      mygreen/.style={
+        enhanced,
+        breakable,
+        colback=LegendGreenLight,
+        colframe=LegendGreen,
+        coltitle=white,
+        fonttitle=\bfseries,
+        attach~ boxed~ title~ to~ top~ left={xshift=2mm,yshift*=-2mm},
+        boxed~ title~ style={frame~ code={},boxrule=0pt,sharp~ corners,colback=LegendMint},
+        boxrule=0.8pt,
+        arc=2mm,
+        left=3mm,
+        right=3mm,
+        top=2mm,
+        bottom=2mm,
+      },
+    }
+  }
+  {
+    % Green theme (default): original style
+    \tcbset{
+      mygreen/.style={
+        enhanced,
+        breakable,
+        colback=green!4,
+        colframe=green!45!black,
+        coltitle=white,
+        fonttitle=\bfseries,
+        title~ filled,
+        boxrule=0.8pt,
+        arc=2.5mm,
+        left=2mm,
+        right=2mm,
+        top=1.5mm,
+        bottom=1.5mm,
+        drop~ shadow=black!20,
+        borderline={0.4pt}{0pt}{green!35!black},
+      },
+    }
+  }
 
 %% ============================================================
 %% New Environment Names (recommended)
