@@ -47,10 +47,17 @@ compile() {
   fi
 }
 
+cleanup_artifacts() {
+  # Remove build artifacts, keep only PDFs
+  find "${OUT}" -type f ! -name "*.pdf" -delete 2>/dev/null || true
+}
+
 case "${MODE}" in
   teacher) compile teacher ;;
   student) compile student ;;
   both)    compile teacher; compile student ;;
   *) usage ;;
 esac
+
+cleanup_artifacts
 echo "✅ Done. PDFs in ./output"
