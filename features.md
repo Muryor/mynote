@@ -4,83 +4,99 @@
 
 ---
 
-## 1) 模块与实现
+## 1) Modules
 
-### Exam（试卷）
-- **类**：`exam-zh`
-- **桥接**：`styles/examx.sty`（在题目尾部自动渲染教师块）
-- **内容**：`content/exams/*.tex`（示例：`exam01.tex`）
-- **入口**：`main-exam.tex`
+### Exam
+- **Class**: `exam-zh`
+- **Bridge**: `styles/examx.sty` — hooks `question`/`problem` end to render teacher block
+- **Content**: `content/exams/*.tex` (e.g. `exam02.tex` demo)
+- **Entry**: `main-exam.tex`
 
-### Handout（讲义）
-- **类**：`ElegantBook`
-- **扩展**：`styles/handoutx.sty`（提供 *定义/性质/例题/注意* 等盒子）
-- **内容**：`content/handouts/*.tex`（示例：`ch01.tex`）
-- **入口**：`main-handout.tex`
+### Handout
+- **Class**: `ElegantBook`
+- **Extension**: `styles/handoutx.sty`
+- **Content**: `content/handouts/*.tex`
+- **Entry**: `main-handout.tex`
 
 ---
 
-## 2) 统一元数据接口与渲染
+## 2) Unified metadata & answer capture
 
-在题目或例题**尾部**补齐以下接口，即可在教师版自动打印信息块（学生版自动隐藏）：
-
+在题目/例题**尾部**使用：
 ```tex
-\topics{一次函数；待定系数} % 知识点（分号分隔）
-\difficulty{0.60}           % 难度（0..1）
-\explain{略。}              % 详解（可含数学环境）
-\source{自编/教材/某年某校} % 来源（可选）
+	opics{…} \difficulty{0.40} \explain{…} \source{…}
 ```
+- 教师版：自动打印教师信息块（Topics / Difficulty / Explanation / Source / **Answer**）  
+- 学生版：**完全不输出**教师块（无阴影框）  
+- `答案` 来自两种途径：
+  - `\mcq[<A-D>]` 的可选参数（内部等价于捕获 `\paren[<A-D>]`）；
+  - `\paren[<A-D>]` 或 `\fillin[<text>]` 的方括号参数。
 
-- `\topics{}` 为空将自动隐藏整行；`\difficulty{}` 未设时显示“—”。
-- 难度显示为百分比；如需显示 1 位或 2 位小数，可按下式重定义：
-
+难度显示为百分比；可重定义格式：
 ```tex
 \RenewDocumentCommand\ExamDifficultyFormat{m}{
-  \fp_eval:n { round((#1)*100, 1) } \% % 1 位小数
+  \fp_eval:n { round((#1)*100, 0) } \%
 }
 ```
 
-> 规范：请**使用 `\fp_eval:n`** 进行小数→百分比的计算，避免 `\numexpr`。
-
 ---
 
-## 3) 可配置项（`\examxsetup{...}`）
+## 3) Options (`\examxsetup{...}`)
 
 ```tex
 \examxsetup{
-  autoprint=true,    % 自动打印教师块（全局开关）
-  show-source=false, % 是否显示“来源”
-  boxed=true         % 教师块采用 tcolorbox 风格；false 为极简水平线
+  autoprint=true,     % 自动打印（仅教师版生效）
+  show-source=false,  % 是否显示“来源”
+  boxed=true          % 使用 tcolorbox；false 为极简样式
 }
 ```
 
-- 局部关闭/恢复自动渲染：`\examxsetup{autoprint=false}` / `\examxsetup{autoprint=true}`。
-- 手动打印（当关闭自动渲染时）：`teachernotes` 环境可随处输出教师块。
+- 当关闭 `autoprint` 时，如需手动输出，可使用 `teachernotes` 环境。
 
 ---
 
-## 4) 目录结构（关键）
+## 4) Authoring patterns
 
-- `styles/examx.sty`：Exam/Handout 统一渲染逻辑
-- `settings/preamble.sty`：字体与通用预设（如 PingFangSC/Noto CJK 优雅回退）
-- `content/exams/exam01.tex`、`content/handouts/ch01.tex`：内容示例
-- `main-exam.tex`、`main-handout.tex`：编译入口
-
----
-
-## 5) 构建矩阵
-
-```bash
-# 试卷
-./build.sh exam teacher
-./build.sh exam student
-./build.sh exam both
-
-# 讲义
-./build.sh handout teacher
-./build.sh handout student
-./build.sh handout both
+### Pattern 1 — `\mcq`（推荐）
+```tex
+\mcq[C]{题干}{$A$}{$B$}{$C$}{$D$}
+	opics{…}\difficulty{0.4}\explain{…}
 ```
 
-所有产物输出到 `./output/`。
+### Pattern 2 — 传统 exam-zh
+```tex
+\begin{question}
+题干 \paren[C]
+\begin{choices}
+  \item A \item B \item C \item D
+\end{choices}
+	opics{…}\difficulty{0.4}\explain{…}
+\end{question}
+```
+
+### Fill-in
+```tex
+函数 $f(x)=x^2-4x+3$ 的最小值为 \fillin[-1]{}。
+	opics{二次函数；顶点式}\difficulty{0.40}\explain{$(x-2)^2-1$}
+```
+
+> 默认 `\examsetup{ fillin={type=line}, question={show-paren=true, show-points=false} }`。
+
+---
+
+## 5) Build matrix
+
+```bash
+./build.sh exam teacher|student|both
+./build.sh handout teacher|student|both
+```
+产物输出到 `./output/`。
+
+---
+
+## 6) Changelog (highlights)
+
+- **examx.sty**: teacher/student gating; empty‑box suppression; answer capture from `\mcq` / `\paren` / `\fillin`  
+- **main-exam.tex**: simplified global setup (delegated to examx)  
+- **exam02.tex**: demonstrates both authoring patterns
 ```

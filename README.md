@@ -20,36 +20,41 @@
 
 ## Requirements
 
-- TeX Live **2024+**（推荐 2025）
-- 宏包：`exam-zh`、`tcolorbox`、`ElegantBook`、`ctex` 等
+## Features
 
----
-
-## Build
-
-```bash
+ Teacher / Student **dual outputs**
+ Unified metadata block (**teacher only**): Topics / Difficulty / Explanation / Source / **Answer**
+ Difficulty `0..1` → percentage (overridable via `\ExamDifficultyFormat`)
+ `tcolorbox` or minimal style for teacher block
+ **Zero‑intrusion**: authors focus on content; metadata renders automatically
 # 试卷
 ./build.sh exam teacher   # 教师版（含详解/考点/来源）
-./build.sh exam student   # 学生版（隐藏详解）
-./build.sh exam both      # 教师版与学生版一起编译
+## Requirements
 
-# 讲义
-./build.sh handout teacher
+ TeX Live **2024+**（recommended 2025）
+ Packages: `exam-zh`, `tcolorbox`, `ctex` (and others from `settings/preamble.sty`)
 ./build.sh handout student
-./build.sh handout both
-```
+## Build
 在入口文件中，可通过包选项显式指定版本：
 ```tex
 % 教师版
+```bash
 \usepackage[teacher]{styles/examx}
 % 或者学生版
+./build.sh exam teacher   # teacher version (shows metadata & answers)
 \usepackage[student]{styles/examx}
+./build.sh exam student   # student version (hides all teacher blocks)
 ```
+./build.sh exam both
 
+```bash
 > 构建脚本会在需要时自动开启 `-shell-escape`（例如检测到 `minted`）；所有产物位于 `./output/`。
 
+./build.sh handout teacher
 ---
+./build.sh handout student
 
+./build.sh handout both
 ## Runtime setup（可在导言区或章节前设置）
 
 ```tex
@@ -58,12 +63,18 @@
   show-source=false,% 默认不展示“来源”
   boxed=true        % 教师块使用 tcolorbox 风格
 }
+```tex
+% Teacher build
+\usepackage[teacher]{styles/examx}
+% Student build
+% \usepackage[student]{styles/examx}
 ```
 
 ---
+> Teacher build prints a metadata box **only when any field is non-empty** (including captured `答案`). Student build prints **nothing** (no shadow boxes).
 
-## Metadata（题目/例题尾部统一接口）
 
+## Runtime setup
 - `\topics{...}`   题目考点（多个用分号分隔）
 - `\difficulty{<0..1>}` 难度（小数；模板转换为百分比）
 - `\explain{...}`  详解（可含数学环境与分页）
@@ -72,13 +83,13 @@
 自定义难度显示（例如显示一位小数）：
 
 ```tex
-\RenewDocumentCommand\ExamDifficultyFormat{m}{
   \fp_eval:n { round((#1)*100, 1) } \%
+## Metadata interfaces
 }
-```
-
-> 规范：**统一使用 `\fp_eval:n` 处理小数到百分比**；不要用 `\numexpr` 以避免精度与舍入问题。
-
+`topics{...}` — topics (use semicolons to separate)
+`difficulty{<0..1>}` — difficulty (decimal)
+`explain{...}` — explanation (math friendly)
+`source{...}` — source (optional; gated by `show-source`)
 ---
 
 ## Troubleshooting
@@ -86,24 +97,23 @@
 - **Runaway argument / File ended while scanning use of ...**
   常为 `}` 被 `%` 注释吞掉；请检查最近改动。
 - **一串 `expl3` 命令未定义**
-  请勿在 `styles/examx.sty` 中途 `\ExplSyntaxOff`；保持文件内一直开启。
 
+## Project layout
 ---
-
-## Project layout（关键路径）
-
-- `styles/examx.sty`：桥接包，自动挂钩 `question` / `problem` 并渲染教师块
-- `settings/preamble.sty`：字体与基础预设
+`styles/examx.sty` — teacher/student controller, metadata & answer capture
+`settings/preamble.sty` — fonts and common setup
+`content/exams/*.tex` — exam sources (`exam02.tex` demonstrates both patterns)
+`main-exam.tex` / `main-handout.tex` — entry points
 - `content/exams/exam01.tex`：示例试卷
-- `content/handouts/ch01.tex`：示例讲义
 - `main-exam.tex` / `main-handout.tex`：试卷/讲义入口
-
----
-
 ## Contributing
 
-- 提交信息建议：`fix(examx): ...` / `feat(examx): ...` / `docs(readme): ...`
+Conventional commits suggested: `feat(examx): ...`, `fix(examx): ...`, `docs(readme): ...`
+When styles change, update both `README.md` and `features.md`.
+Keep filenames in **English** and lower_snake_case.
+
 - 文档与样式变更须同步更新 `README.md` 与 `features.md`。
+## License
 - 目录/命名请保持英文小写与下划线风格。
 
 ---
