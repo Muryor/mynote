@@ -19,16 +19,12 @@
 
 \input{metadata.tex}
 
-% % ---- exam-zh global setup (safe defaults) ----
-% \examsetup{
-%   % fonts kept default (newcm) to be stable across TeX Live
-%   choices = { max-columns = 4, column-sep = 1em, label-pos = top-left },
-%   fillin  = { type = line },
-%   question = {
-%     show-paren  = true,
-%     show-points = false
-%   }
-% }
+% ---- exam-zh global setup (safe defaults) ----
+% Note: teacher/student answer visibility is controlled by examx.sty
+\examsetup{
+  % fonts kept default (newcm) to be stable across TeX Live
+  choices = { max-columns = 4, column-sep = 1em, label-pos = top-left }
+}
 
 \begin{document}
   % Title is now set per-exam using \examxtitle{...} in content files

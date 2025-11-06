@@ -1,9 +1,8 @@
 %% styles/examx.sty
 \NeedsTeXFormat{LaTeX2e}[2020-10-01]
-\ProvidesPackage{examx}[2025/11/06 v0.3 Exam extension with qmeta integration]
+\ProvidesPackage{examx}[2025/11/06 v0.4 Exam extension with qmeta integration]
 
 %% Accept package options [teacher]/[student]; default to student.
-%% Keep \ExplSyntaxOn throughout this file per .llmrules.
 \RequirePackage{kvoptions}
 \SetupKeyvalOptions{family=examx,prefix=examx@}
 \DeclareBoolOption[false]{teacher}
@@ -58,30 +57,24 @@
     \examsetup{
       question/show-answer   = true,
       fillin/show-answer     = true,
+      fillin/type            = line,
       paren/show-paren       = true,
-      solution/show-solution = show-stay
+      solution/show-solution = show-stay,
+      question/show-points   = false
     }
   \else
     % Student mode: hide answers and solutions
     \examsetup{
       question/show-answer   = false,
       fillin/show-answer     = false,
+      fillin/type            = line,
+      fillin/no-answer-type  = none,
       paren/show-paren       = false,
       solution/show-solution = hide,
-      fillin/no-answer-type  = none
+      question/show-points   = false
     }
   \fi
 }{}
-
-%% ============================================================
-%% Helper: Paren Display (teacher shows answer, student empty)
-%% ============================================================
-\NewDocumentCommand \examx_show_paren { O{} }
-  {
-    \bool_if:NTF \g_examx_teacher_bool
-      { \paren[#1] }
-      { \paren[] }
-  }
 
 %% ============================================================
 %% Quick MCQ Macro
@@ -89,8 +82,8 @@
 \NewDocumentCommand \mcq { O{} m m m m m }
   {
     \begin{question}
-      #2~\examx_show_paren[#1]
-      \begin{choices}
+      #2~\paren[#1]
+      \begin{choices}[columns=2]
         \item #3
         \item #4
         \item #5

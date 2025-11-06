@@ -49,31 +49,54 @@ build.sh → Creates wrapper file → latexmk -xelatex → PDF in ./output/
 
 ### Key Style Packages (`styles/`)
 
-#### `examx.sty` - Teacher/Student Metadata Bridge
+#### `examx.sty` - Teacher/Student Mode Controller
 
-This is the core package that enables the single-source, dual-output functionality. It provides:
+This package controls teacher/student mode and provides convenience macros. It:
+
+**Package Options**:
+- `[teacher]` - Enable teacher mode (show answers and metadata)
+- `[student]` - Enable student mode (hide answers and metadata, default)
+
+**Convenience Macros**:
+- `\mcq[answer]{stem}{A}{B}{C}{D}` - Quick multiple-choice question macro
+- `\examxtitle{title}` - Set per-exam header title
+
+**How It Works**:
+- Loads `qmeta.sty` with appropriate version option
+- Configures `exam-zh` settings based on teacher/student mode
+- Provides fallback `choices` environment when exam-zh is not loaded
+
+**Important Implementation Details**:
+- Uses LaTeX3 (`expl3`) syntax - keep `\ExplSyntaxOn` sections clean
+- Mode is controlled by build.sh via `\PassOptionsToPackage{teacher|student}{styles/examx}`
+
+#### `qmeta.sty` - Question Metadata System
+
+This package handles metadata capture and rendering. It provides:
 
 **Metadata Commands** (used within question environments):
+- `\answer{...}` - Answer (captured automatically by `\mcq` or `\paren`)
 - `\topics{topic1；topic2}` - Topic tags (semicolon-separated for Chinese)
-- `\difficulty{0.0-1.0}` - Difficulty as decimal (auto-converts to percentage)
+- `\difficulty{0.0-1.0}` - Difficulty as decimal (displays as decimal by default)
 - `\explain{...}` - Detailed solution explanation
-- `\source{...}` - Question source (optional)
+- `\source{...}` - Question source (optional, hidden by default)
 
 **How It Works**:
 - Hooks into `exam-zh`'s `question` environment and `elegantbook`'s `problem` environment
 - Automatically resets metadata at the start of each question
-- In **teacher mode** with `autoprint=true`: Renders metadata block after the question automatically
+- In **teacher mode**: Renders metadata block after the question automatically
 - In **student mode**: All metadata is silently discarded
+- Only renders metadata box when at least one field is non-empty (prevents empty boxes)
 
-**Configuration** via `\examxsetup{...}`:
-- `autoprint=true/false` - Enable/disable automatic metadata rendering
-- `show-source=true/false` - Show/hide source information
-- `boxed=true/false` - Use tcolorbox (true) or simple horizontal rules (false)
+**Configuration Options**:
+- `version=teacher|student` - Control metadata visibility
+- `show-source=true|false` - Show/hide source information (default: false)
+- `difficulty-format=decimal|percent` - Display format for difficulty (default: decimal)
 
 **Important Implementation Details**:
-- Uses LaTeX3 (`expl3`) syntax - keep `\ExplSyntaxOn` sections clean
+- Uses LaTeX3 (`expl3`) syntax
 - Difficulty formatting uses `\fp_eval:n` for decimal calculations (NOT `\numexpr`)
-- Can be configured mid-document with `\examxsetup{...}`
+- Metadata box uses `tcolorbox` with breakable support
 
 #### `handoutx.sty` - Handout Theorem Boxes
 
@@ -115,12 +138,27 @@ To add new content, edit the appropriate main file to `\input{content/.../yourfi
 
 ## Typical Question Format
 
+MyNote supports two authoring patterns for multiple-choice questions:
+
+### Pattern 1: Using `\mcq` Macro (Recommended)
+
 ```tex
-\begin{question}[points=2]
-  已知集合 $A=\{x\mid \log_2 x < 1\}$，则 $A\cap B$ 等于（ ）
+\mcq[B]{已知集合 $A=\{x\mid \log_2 x < 1\},\, B=\{x\mid x<1\}$，则 $A\cap B$ 等于}
+{$(-\infty,1)$}{$(0,1)$}{$(-\infty,2)$}{$(0,2)$}
+\topics{交集；不等式与函数单调性}
+\difficulty{0.40}
+\explain{由 $\log_2 x<1\Rightarrow 0<x<2$，与 $x<1$ 取交得 $(0,1)$。}
+\source{自编}
+```
+
+### Pattern 2: Using Traditional exam-zh Syntax
+
+```tex
+\begin{question}
+  已知集合 $A=\{x\mid \log_2 x < 1\}$，则 $A\cap B$ 等于 \paren[B]
   \begin{choices}[columns=2]
     \choice $(-\infty,1)$
-    \CorrectChoice $(0,1)$      % Marks correct answer
+    \choice $(0,1)$
     \choice $(-\infty,2)$
     \choice $(0,2)$
   \end{choices}
@@ -132,10 +170,11 @@ To add new content, edit the appropriate main file to `\input{content/.../yourfi
 ```
 
 **Key Points**:
-- Question content comes first
-- Metadata commands (`\topics`, `\difficulty`, `\explain`, `\source`) are added at the end
-- These metadata commands are automatically hidden in student version
-- No manual conditionals needed - the `examx` package handles everything
+- `\mcq[answer]{stem}{optionA}{optionB}{optionC}{optionD}` - Convenience macro for simple MCQs
+- `\paren[answer]` - Shows answer in teacher version, empty parentheses in student version
+- Metadata commands (`\topics`, `\difficulty`, `\explain`, `\source`, `\answer`) work with both patterns
+- Metadata is automatically hidden in student version
+- No manual conditionals needed - the `examx` and `qmeta` packages handle everything
 
 ## Development Workflow
 
