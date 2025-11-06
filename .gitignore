@@ -11,12 +11,13 @@ output/
 *.run.xml
 *.synctex.gz
 *.fdb_latexmk
-*.fls
+*.flsßß
 *.xdv
 
 *.patch
 *.diff
 
+.claude
 # OS/Editor
 .DS_Store
 vscode/
