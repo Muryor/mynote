@@ -144,3 +144,10 @@
     }{}%
   }%
 }
+
+% =========================
+% MCQ safety net (global)
+% =========================
+\RequirePackage{etoolbox}
+\providecommand\choicelabel{\Alph{choicesi}.}
+\AtBeginEnvironment{choices}{\setlength{\itemsep}{0.75em}}

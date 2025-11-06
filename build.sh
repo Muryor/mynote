@@ -20,7 +20,13 @@ esac
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 OUT="${ROOT}/output"
-mkdir -p "${OUT}"
+
+# Ensure output directories exist
+ensure_dirs() {
+  mkdir -p "${OUT}" "${OUT}/.aux"
+}
+
+ensure_dirs
 
 compile() {
   local role="$1"   # teacher | student
@@ -48,8 +54,23 @@ compile() {
 }
 
 cleanup_artifacts() {
-  # Remove build artifacts, keep only PDFs
-  find "${OUT}" -type f ! -name "*.pdf" -delete 2>/dev/null || true
+  # Clean with latexmk
+  latexmk -C -outdir="${OUT}" 2>/dev/null || true
+  
+  # Remove minted directories
+  rm -rf _minted-* */_minted-* "${OUT}/_minted-"* 2>/dev/null || true
+  
+  # Remove specific artifact types, keep only PDFs
+  find "${OUT}" -type f \( \
+    -name '*.aux' -o -name '*.log' -o -name '*.fls' -o \
+    -name '*.fdb_latexmk' -o -name '*.out' -o -name '*.toc' -o \
+    -name '*.synctex.gz' -o -name '*.run.xml' -o -name '*.bcf' -o \
+    -name '*.xdv' -o -name '*.nav' -o -name '*.snm' -o \
+    -name 'wrap-*.tex' \
+  \) -delete 2>/dev/null || true
+  
+  # Clean .aux subdirectory but keep the directory itself
+  [[ -d "${OUT}/.aux" ]] && rm -rf "${OUT}/.aux"/* 2>/dev/null || true
 }
 
 case "${MODE}" in

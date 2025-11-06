@@ -114,6 +114,23 @@
     \fancyfoot[C]{\thepage}
   }
 
+%% ============================================================
+%% MCQ options visibility guard (fallback when exam-zh is absent)
+%% ============================================================
+\makeatletter
+\@ifclassloaded{exam-zh}{%
+  % exam-zh is present: do nothing here; it controls choices rendering.
+}{%
+  % exam-zh missing: provide a simple visible fallback
+  \RequirePackage{enumitem}
+  \newlist{choices}{enumerate}{1}
+  \setlist[choices]{label=\Alph*., leftmargin=*, itemsep=.55\baselineskip}
+  \providecommand{\choice}{\item}
+  \providecommand{\CorrectChoice}{\item} % in teacher mode you may decorate externally
+  \providecommand{\choicelabel}{\Alph{choicesi}.}
+}
+\makeatother
+
 \ExplSyntaxOff
 
 \endinput
