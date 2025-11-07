@@ -7,16 +7,17 @@
 
 % Example 1: Using the \mcq convenience macro (recommended for simple MCQs)
 \mcq[B]{已知集合 $A=\{x\mid \log_2 x < 1\},\, B=\{x\mid x<1\}$，则 $A\cap B$ 等于}
-{$(-\infty,1)$}{$(0,1)$}{$(-\infty,2)$}{$(0,2)$}
+{$(-\infty,1)$}{$(0,1)$}{$(-\infty,2)$}{$(0,2)$}[
 \topics{交集；不等式与函数单调性}
 \difficulty{0.40}
 \explain{由 $\log_2 x<1\Rightarrow 0<x<2$，与 $x<1$ 取交得 $(0,1)$。}
 \source{自编}
+]
 
 % Example 2: Using traditional exam-zh syntax (for more control)
 \begin{question}
 已知函数 $f(x)=2^x$，则 $f(0)+f(1)$ 等于 \paren[C]
-\begin{choices}[columns=2]
+\begin{choices}
   \choice $1$
   \choice $2$
   \choice $3$
@@ -29,12 +30,30 @@
 
 
 \begin{question}
+已知向量$\vec{a}=(0,1),\vec{b}=(2,x)$ ，若$\vec{b}\perp(\vec{b}-4\vec{a})$ ，则x=（）\paren[C]
+\begin{choices}
+ \choice $1$
+ \choice $-2$
+ \choice $-1$
+ \choice $2$
+\end{choices}
+\topics{平面向量线性运算的坐标表示；向量垂直的坐标表示}
+\difficulty{0.85}
+\explain{
+根据向量垂直的坐标运算可求$x$ 的值
+因为$\vec{b}\perp\left(\vec{b}-4\vec{a}\right)$ ，所以$\vec{b}\cdot\left(\vec{b}-4\vec{a}\right)=0$ 所以$\vec{b}^{2}-4\vec{a}\cdot\vec{b}=0$ 即$4+x^{2}-4x=0$ ，故$x=2$ 故选：D.
+本题答案：D。
+}\end{question}
+
+
+
+\section*{Ⅱ. 填空题}
+
+\begin{question}
   若指数函数 $f(x)=2^x$，则 $f(0)+f(1)=\fillin[3]{}$。
   \topics{指数函数；基本运算}
   \difficulty{0.20}
 \end{question}
-
-\section*{Ⅱ. 填空题}
 
 \begin{question}
   函数 $f(x)=x^2-4x+3$ 的最小值为 \fillin[-1]{}。

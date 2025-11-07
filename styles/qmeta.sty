@@ -4,6 +4,10 @@
 \NeedsTeXFormat{LaTeX2e}
 \ProvidesExplPackage{qmeta}{2025/11/06}{0.1}{Question metadata block}
 
+%% Debug: Show load path
+\RequirePackage{currfile}
+\typeout{[qmeta]~LOADED~FROM:~\currfileabsdir}
+
 \RequirePackage{expl3,xparse,tcolorbox}
 \tcbuselibrary{skins,breakable}
 
@@ -116,11 +120,17 @@
 %% Print teacher-only metadata block
 \cs_new_protected:Npn \qmeta_print_teacherblock:
   {
+    % CRITICAL: Check teacher mode BEFORE creating any container
     \bool_if:NF \l__qmeta_teacher_bool { \use:n { } }
-    % Compute once; safe inside hooks
+
+    % Check if we have any content to display
     \qmeta_set_has_content_bool:
     \bool_if:NF \l__qmeta_has_content_bool { \use:n { } }
-    % Render the teacher block
+
+    % Debug logging
+    \typeout{[qmeta]~Rendering~metadata~block~(teacher=true,~has_content=true)}
+
+    % Only NOW create the container (guaranteed teacher mode + has content)
     \par\smallskip
     \begin{tcolorbox}[qmetaStyle]
       \tl_if_empty:NF \l__qmeta_answer_tl

@@ -2,6 +2,10 @@
 \NeedsTeXFormat{LaTeX2e}[2020-10-01]
 \ProvidesPackage{examx}[2025/11/06 v0.4 Exam extension with qmeta integration]
 
+%% Debug: Show load path
+\RequirePackage{currfile}
+\typeout{[examx]~LOADED~FROM:~\currfileabsdir}
+
 %% Accept package options [teacher]/[student]; default to student.
 \RequirePackage{kvoptions}
 \SetupKeyvalOptions{family=examx,prefix=examx@}
@@ -20,14 +24,17 @@
 \ifexamx@teacher
   \bool_set_true:N  \g_examx_teacher_bool
   \bool_set_false:N \g_examx_student_bool
+  \typeout{[examx]~MODE:~teacher}
 \else
   \ifexamx@student
     \bool_set_true:N  \g_examx_student_bool
     \bool_set_false:N \g_examx_teacher_bool
+    \typeout{[examx]~MODE:~student~(explicit)}
   \else
     % default to student if not specified
     \bool_set_true:N  \g_examx_student_bool
     \bool_set_false:N \g_examx_teacher_bool
+    \typeout{[examx]~MODE:~student~(default)}
   \fi
 \fi
 
@@ -79,7 +86,7 @@
 %% ============================================================
 %% Quick MCQ Macro
 %% ============================================================
-\NewDocumentCommand \mcq { O{} m m m m m }
+\NewDocumentCommand \mcq { O{} m m m m m O{} }
   {
     \begin{question}
       #2~\paren[#1]
@@ -89,8 +96,8 @@
         \item #5
         \item #6
       \end{choices}
-      % Store answer in metadata if provided (must be inside question environment)
       \tl_if_blank:nF {#1} { \answer{#1} }
+      #7
     \end{question}
   }
 
