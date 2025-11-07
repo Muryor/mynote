@@ -1,407 +1,266 @@
+```tex
+\section{一、单选题}
 
-% --- Make \choice immune to leading [ ... ] while keeping exam-zh layout ---
-\makeatletter
-\@ifundefined{choice}{\newcommand{\choice}{\item\relax}}{\renewcommand{\choice}{\item\relax}}
-\makeatother
-% --- end patch ---
-
-
-% --- Safe fallbacks (do NOT override exam-zh; only if missing) ---
-\makeatletter
-\expandafter\ifx\csname tl_if_blank:NF\endcsname\relax
-  \expandafter\def\csname tl_if_blank:NF\endcsname#1#2{%
-    \edef\gpt@tmp{\detokenize{#1}}%
-    \ifx\gpt@tmp\@empty\relax\else #2\fi
-  }%
-\fi
-\expandafter\ifx\csname bool_if:NTF\endcsname\relax
-  \expandafter\def\csname bool_if:NTF\endcsname#1#2#3{#2}% assume true
-\fi
-\makeatother
-% --- end fallbacks ---
-
-\section*{Ⅰ. 单选题（示例转换）}
-
-\begin{question}
-已知集合$A=\left\{x|-5<x^{3}<5\right\},B=\left\{-3,-1,0,2,3\right\}$ ，则$A\cap B= ($ )
-\begin{choices}
-\choice $\{-1,0\}$
-\choice $\{2,3\}$
-\choice $\{-3,-1,0\}$
-\choice $\{-1,0,2\}$
-\end{choices}
-\topics{交集的概念及运算；由幂函数的单调性解不等式}
-\difficulty{0.94}
-\explain{
-化简集合$A$ ，由交集的概念即可得解
-
-因为$A=\left\{x\mid-\sqrt[3]{5}<x<\sqrt[3]{5}\right\},B=\left\{-3,-1,0,2,3\right\}$ $B=\left\{-3,-1,0,2,3\right\}$ $B=\left\{-3,-1,0,2,3\right\}$ ，且注意到1<\sqrt[3]{5}<2， 从而$A\cap B=\left\{-1,0\right\}$ 故选：A.
-
-本题答案：A。
-}\end{question}
-
-\begin{question}
-若$\frac z{z-1}=1+$i ，则$z= ($ )
-\begin{choices}
-\choice 1-i
-\choice 1+i
-\choice -1-i
-\choice $-1+i$
-\end{choices}
-\topics{复数的乘方；复数的除法运算}
-\difficulty{0.94}
-\explain{
-由复数四则运算法则直接运算即可求解
-
-因为$\frac{z}{z-1}=\frac{z-1+1}{z-1}=1+\frac{1}{z-1}=1+$i ，所以$z=1+\frac{1}{\mathrm{i}}=1-$i 故选：C.
-
-本题答案：C。
-}\end{question}
-
-\begin{question}
-已知向量$\vec{a}=(0,1),\vec{b}=(2,x)$ ，若$\vec{b}\perp(\vec{b}-4\vec{a})$ ，则x=（）
-\begin{choices}
-\choice 1
-\choice -2
-\choice -1
-\choice 2
-\end{choices}
-\topics{平面向量线性运算的坐标表示；向量垂直的坐标表示}
+\mcq[A]
+{设复数 $z=(1+\mathrm{i}a)(2-\mathrm{i})$，若 $z$ 的实部与虚部相等，则实数 $a$ 的值为（\quad）。}
+{$3$}
+{$1$}
+{$-1$}
+{$-3$}
+\topics{求复数的实部与虚部；复数代数式的乘法运算}
 \difficulty{0.85}
-\explain{
-根据向量垂直的坐标运算可求$x$ 的值
+\explain{分析：根据复数的乘法运算求出 $z=2+a+(2a-1)\mathrm{i}$，由题意列出方程，即可求得答案。\\
+详解：因为 $z=(1+\mathrm{i}a)(2-\mathrm{i})=2+a+(2a-1)\mathrm{i}$，且 $z$ 的实部与虚部相等，故 $2+a=2a-1$，解得 $a=3$，故选：A。}
 
-
-因为$\vec{b}\perp\left(\vec{b}-4\vec{a}\right)$ ，所以$\vec{b}\cdot\left(\vec{b}-4\vec{a}\right)=0$ 所以$\vec{b}^{2}-4\vec{a}\cdot\vec{b}=0$ 即$4+x^{2}-4x=0$ ，故$x=2$ 故选：D.
-
-本题答案：D。
-}\end{question}
-
-\begin{question}
-已知$\cos(\alpha+\beta)=m$ tan $\alpha$ tan $\beta=2$ ，则$\cos(\alpha-\beta)=($ ）
-\begin{choices}
-\choice 3m
-\choice 3m
-\choice $-\frac{m}{3}$
-\choice $\frac m3$
-\end{choices}
-\topics{三角函数的化简；求值一同角三角函数基本关系；用和；差角的余弦公式化简求值}
+\mcq[D]
+{已知集合 $M=\{\,x\mid x^2-2x-3\le 0\,\}$，$N=\{\,x\mid y=\ln(x-4)\,\}$，则 $(\mathbb{R}\setminus M)\cap N$ 等于（\quad）。}
+{$(-1,4]$}
+{$(-1,3]$}
+{$(3,+\infty)$}
+{$(4,+\infty)$}
+\topics{交集的概念及运算；补集的概念及运算；求对数型复合函数的定义域；解不含参数的一元二次不等式}
 \difficulty{0.85}
-\explain{
-根据两角和的余弦可求cosαcos $\beta$ ,sin $\alpha$ sin $\beta$ 的关系，结合tan $\alpha$ tan $\beta$ 的值可求前者， 故可求$\cos(\alpha-\beta)$ 的值
+\explain{分析：先解一元二次不等式求出集合 $M$，再求对数型复合函数定义域求出集合 $N$，再根据补集和交集运算求解即可。\\
+详解：$M=\{\,x\mid x^2-2x-3\le 0\,\}=\{\,x\mid -1\le x\le 3\,\}$，所以 $\mathbb{R}\setminus M=\{\,x\mid x<-1\text{ 或 }x>3\,\}$；又 $N=\{\,x\mid y=\ln(x-4)\,\}=\{\,x\mid x>4\,\}$，所以 $(\mathbb{R}\setminus M)\cap N=\{\,x\mid x>4\,\}=(4,+\infty)$。故选：D。}
 
-因为$\cos\left(\alpha+\beta\right)=m$ ，所以cos $.a$ cos $\beta$ sin α sin $\beta=m$ 而tan $\alpha$ tan $\beta=2$ ，所以$\sin\alpha\sin\beta=2\cos\alpha\cos\beta$ 故co α $\alpha$ β $\beta$ ${\mathrm{s}}\alpha\cos\beta-2\cos\alpha\cos\beta=m$ β=m $\beta=m$ 即$\cos\alpha\cos\beta=-m$ $\beta=-m$ $\beta=-m$ 从而$\sin\alpha\sin\beta=-2m$ ，故$\cos(\alpha-\beta)=-3m$ 故选：A.
-
-本题答案：A。
-}\end{question}
-
-\begin{question}
-已知圆柱和圆锥的底面半径相等，侧面积相等，且它们的高均为$\sqrt{3}$ ，则圆锥的体积为（）
-\begin{choices}
-\choice 3√3π
-\choice 6√3π
-\choice 2√3π
-\choice 9√3π
-\end{choices}
-\topics{圆柱表面积的有关计算；圆锥表面积的有关计算；锥体体积的有关计算}
+\mcq[C]
+{已知 $a\ne0$，命题 $P:x=1$ 是一元二次方程 $ax^2+bx+c=0$ 的一个根，命题 $q:a+b+c=0$，则 $P$ 是 $q$ 的（\quad）。}
+{充分不必要条件}
+{必要不充分条件}
+{充分必要条件}
+{既不充分也不必要条件}
+\topics{充分条件、必要条件、充要条件的证明}
 \difficulty{0.85}
-\explain{
-设圆柱的底面半径为r，根据圆锥和圆柱的侧面积相等可得半径$r$ 的方程，求出解后可求圆锥的体积.
+\explain{分析：根据充分、必要性的定义判断命题间的推出关系，即可得答案。\\
+详解：对于命题 $P$，$x=1$ 为方程的根，则 $a+b+c=0$，充分性成立；对命题 $q$，$a+b+c=0$ 且 $a\ne0$，则 $x=1$ 必是题设方程的一个根，必要性成立；所以 $P$ 是 $q$ 的充分必要条件。故选：C。}
 
-设圆柱的底面半径为$r$ ，则圆锥的母线长为$\sqrt{r^2+3}$ 而它们的侧面积相等，所以$2\pi r\times\sqrt{3}=\pi r\times\sqrt{3+r^{2}}$ 即$2\sqrt{3}=\sqrt{3+r^2}$
-
-
-故$r=3$ ，故圆锥的体积为$\frac{1}{3}\pi\times9\times\sqrt{3}=3\sqrt{3}\pi$ 故选：B.
-
-本题答案：B。
-}\end{question}
-
-\begin{question}
-已知函数$f(x)=\begin{cases}-x^{2}-2ax-a,x<0\\\mathrm{e}^{x}+\ln(x+1),x\geq0\end{cases}$ 在$R$ 上单调递增，则$a$ 的取值范围是（）
-\begin{choices}
-\choice (∞0,0]
-\choice $[0,+\infty)$
-\choice [-1,0]
-\choice [-1,1]
-\end{choices}
-\topics{判断指数函数的单调性；研究对数函数的单调性；根据分段函数的单调性求参数}
-\difficulty{0.65}
-\explain{
-根据二次函数的性质和分界点的大小关系即可得到不等式组，解出即可
-
-因为$f(x)$ 在R上单调递增，且$x\geq0$ 时， $f(x)=\mathrm{e}^{x}+\ln\left(x+1\right)$ 单调递增， 周质润足$\begin{cases}-\frac{-2a}{2\times\left(-1\right)}\geq0\end{cases}$ $\left\lfloor-a\leq\mathrm{e}^{0}+\ln1\right\rfloor$ 解拍$-1\leq a\leq0$ 即$a$ 的范围是[-1,0] 故选：B.
-
-本题答案：B。
-}\end{question}
-
-\begin{question}
-当$x\in[0,2\pi]$ 时，曲线$y=\sin x$ 与y=2sin3x-的交点个数为（
-\begin{choices}
-\choice 4
-\choice 6
-\choice 3
-\choice 8
-\end{choices}
-\topics{正弦函数图象的应用；求函数零点或方程根的个数}
-\difficulty{0.65}
-\explain{
-画出两函数在$\begin{bmatrix}0,2\pi\end{bmatrix}$ 上的图象，根据图象即可求解
-
-因为函数$y=\sin x$ 的最小正周期为$T=2\pi$ 函数$y=2\sin\left(3x-\frac{\pi}{6}\right)$ 的最小正周期为$T=\frac{2\pi}{3}$ 所以在$x\in\left[0,2\pi\right]$ 上函数$y=2\sin\left(3x-\frac{\pi}{6}\right)$ 有三个周期的图象在坐标系中结合五点法画出两函数图象，如图所示：
-
-
-
-由图可知，两函数图象有6个交点故选：C
-
-本题答案：C。
-}\end{question}
-
-\begin{question}
-已知函数$f(x)$ 的定义域为$R$ ， $f(x)>f(x-1)+f(x-2)$ ，且当$x<3$ 时$f(x)=x$ ，则下列结论中一定正确的是（）
-\begin{choices}
-\choice $f(20)>1000$
-\choice $f(10)>100$
-\choice $f(10)<1000$
-\choice $f(20)<10000$
-\end{choices}
-\topics{求函数值；比较函数值的大小关系}
-\difficulty{0.4}
-\explain{
-代入得到$f(1)=1,f(2)=2$ ，再利用函数性质和不等式的性质，逐渐递推即可判断
-
-因为当$x<3$ 时$f(x)=x$ ，所以$f(1)=1,f(2)=2$ 又因为$f(x)>f(x-1)+f(x-2)$ ， 则$f(3)>f(2)+f(1)=3,f(4)>f(3)+f(2)>5$ ，
-$$f(5)>f(4)+f(3)>8,f(6)>f(5)+f(4)>13,f(7)>f(6)+f(5)>21\:,$$
-
-$$f(8)>f(7)+f(6)>34,f(9)>f(8)+f(7)>55,f(10)>f(9)+f(8)>89\:,$$
-
-$$\begin{aligned}
-&f\left(0\right)>f\left(1\right)+f\left(0\right)>24,f\left(7\right)>f\left(0\right)<f\left(1\right)>22,f\left(10\right)>f\left(7\right)+f\left(0\right)>07, \\
-&f(11)>f(10)+f(9)>144,f(12)>f(11)+f(10)>233,f(13)>f(12)+f(11)>377 \\
-&f(14)>f(13)+f(12)>610,f(15)>f(14)+f(13)>987\:,
-\end{aligned}$$
-$f(16)>f(15)+f(14)>1597>1000$ ，则依次下去可知$f(20)>1000$ ，则B正确； 且无证据表明ACD一定正确故选：B.
-
-本题答案：B。
-}\end{question}
-
-\begin{question}
-随着“一带一路"国际合作的深入，某茶叶种植区多措并举推动茶叶出口.为了解推动出口后的亩收入（单位：万元）情况，从该种植区抽取样本，得到推动出口后亩收入的样本均值$\overline{x}=2.1$ ，样本方差$s^{2}=0.0$l ，已知该种植区以往的亩收入$X$ 服从正态分布$N\bigl(1.8,0.1^{2}\bigr)$ ，假设推动出口后的亩收入$Y$ 服从正态分布$N\left(\overline{x},s^{2}\right)$ ，则（）（若随机变量$Z$ 服从正态分布
-$$N\Big(\mu,\sigma^{2}\Big),\:P(Z<\mu+\sigma)\approx0.8413\:)$$
-\begin{choices}
-\choice $P(X>2)>0.2$
-\choice $P(X>2)<0.5$
-\choice $P(Y>2)>0.5$
-\choice PY>20.8
-\end{choices}
-\topics{指定区间的概率；正态分布的实际应用}
-\difficulty{0.85}
-\explain{
-根据正态分布的$3\sigma$ 原则以及正态分布的对称性即可解出，
-
-依题可知， $\overline{x}=2.1,s^{2}=0.01$ ，所以$Y\sim N\Big(2.1,0.1^{2}\Big)$ 故$P\left(Y>2\right)=P\left(Y>2.1-0.1\right)=P\left(Y<2.1+0.1\right)\approx0.8413>0.5$ ，C正确，D错误； 因为$X\sim N\left(1.8,0.1^{2}\right)$ ，所以$P\big(X>2\big)=P\big(X>1.8+2\times0.1\big)$ 因为$P\big(X<1.8+0.1\big)\approx0.8413$ ，所以$P\big(X>1.8+0.1\big)\approx1-0.8413=0.1587<0.2$ 而$P\left(X>2\right)=P\left(X>1.8+2\times0.1\right)<P\left(X>1.8+0.1\right)<0.2$ ，B正确，A错误， 故选：BC.
-
-本题答案：BC。
-}\end{question}
-
-\begin{question}
-设函数$f(x)=(x-1)^{2}(x-4)$ ，则（）
-\begin{choices}
-\choice 当$0<x<1$ 时， $f(x)<f\left(x^{2}\right)$
-\choice $x=3$ 是$f(x)$ 的极小值点C.当$1<x<2$ 时， $-4<f(2x-1)<0$
-\choice 当$-1<x<0$ 时， $f(2-x)>f(x)$
-\end{choices}
-\topics{利用导数求函数的单调区间（不含参）；求已知函数的极值点}
-\difficulty{0.65}
-\explain{
-求出函数$f(x)$ 的导数，得到极值点，即可判断A：利用函数的单调性可判断B； 根据函数$f(x)$ 在(1,3)上的值域即可判断C：直接作差可判断D
-
-
-对A，因为函数$f(x)$ 的定义域为$R$ ，而
-
-$$f'\left(x\right)=2\left(x-1\right)\left(x-4\right)+\left(x-1\right)^{2}=3\left(x-1\right)\left(x-3\right),$$
-
-易知当$x\in(1,3)$ 时， $f'(x)<0$ ，当$x\in\left(-\infty,1\right)$ 或$x\in\left(3,+\infty\right)$ 时， $f'(x)>0$
-
-函数$f(x)$ 在$\begin{pmatrix}-\infty,1\end{pmatrix}$ 上单调递增，在(1,3)上单调递减，在$\begin{pmatrix}3,+\infty\end{pmatrix}$ 上单调递增，故$x=3$ 是函数$f(x)$ 的极小值点，正确； 对B，当$0<x<1$ 时， $x-x^{2}=x\left(1-x\right)>0$ ，所以$1>x>x^{2}>0$ ， 而由上可知，函数$f(x)$ 在(0,1)上单调递增，所以$f(x)>f\left(x^{2}\right)$ ，错误； 对C，当$1<x<2$ 时， $1<2x-1<3$ ，而由上可知，函数$f(x)$ 在(1,3)上单调递减所以$f(1)>f\left(2x-1\right)>f\left(3\right)$ ，即$-4<f\left(2x-1\right)<0$ ，正确；
-$$f(2-x)-f(x)=\left(1-x\right)^2\left(-2-x\right)-\left(x-1\right)^2\left(x-4\right)=\left(x-1\right)^2\left(2-2x\right)>0\:,$$
-所以$f(2-x)>f(x)$ ，正确： 故选：ACD.
-
-本题答案：ACD。
-}\end{question}
-
-\begin{question}
-设计一条美丽的丝带，其造型可以看作图中的曲线 $C$ 的一部分。已知 $C$ 过坐标原点且 $C$ 上的点满足：横坐标大于 $-2$，到点 $F(2,0)$ 的距离与到定直线 $x=a\ (a<0)$ 的距离之积为 $4$，则（ ）
+\mcq[B]
+{在 $\triangle ABC$ 中，$D$ 是 $BC$ 的中点，$E$ 是 $AD$ 的中点。若 $\overrightarrow{BE}=\lambda\overrightarrow{AB}+\mu\overrightarrow{AC}$，则 $\dfrac{\lambda}{\mu}=$（\quad）。}
+{$3$}
+{$-3$}
+{$2$}
+{$-2$}
 \begin{center}
-\IfFileExists{content/assets/q11.png}{\includegraphics[width=.62\linewidth]{content/assets/q11.png}}{\fbox{(图略)}}
+\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
+  % 三角形与中点示意（按原题图形重绘）
+  \coordinate (B) at (0,0);
+  \coordinate (C) at (5.2,0.35);
+  \coordinate (A) at (2.9,3.6);
+  \path (B) -- (C) coordinate[pos=0.5] (D);
+  \path (A) -- (D) coordinate[pos=0.5] (E);
+  \draw[thick] (B)--(A)--(C)--cycle;
+  \draw[thick] (A)--(D);
+  \draw[thick] (B)--(E);
+  \fill (A) circle (1.25pt) node[above] {$A$};
+  \fill (B) circle (1.25pt) node[below left=-1pt] {$B$};
+  \fill (C) circle (1.25pt) node[below right=-1pt] {$C$};
+  \fill (D) circle (1.25pt) node[below=2pt] {$D$};
+  \fill (E) circle (1.25pt) node[right=2pt] {$E$};
+\end{tikzpicture}
 \end{center}
+\topics{平面向量的混合运算；用基底表示向量}
+\difficulty{0.85}
+\explain{分析：利用向量的线性运算求解即可。\\
+详解：$\overrightarrow{BE}=\dfrac12(\overrightarrow{BA}+\overrightarrow{BD})=-\dfrac12\overrightarrow{AB}+\dfrac14\overrightarrow{BC}=-\dfrac12\overrightarrow{AB}+\dfrac14(\overrightarrow{AC}-\overrightarrow{AB})=-\dfrac34\overrightarrow{AB}+\dfrac14\overrightarrow{AC}$，所以 $\lambda=-\dfrac34,\ \mu=\dfrac14$，所以 $\dfrac{\lambda}{\mu}=-3$。故选：B。}
+
+\mcq[C]
+{已知函数 $f(x)$ 是定义在 $\mathbb{R}$ 上的奇函数，当 $x<0$ 时，$f(x)=10^x$，则 $f(\lg3)=$（\quad）。}
+{$-3$}
+{$3$}
+{$-\dfrac13$}
+{$\dfrac13$}
+\topics{函数奇偶性的应用；对数的运算}
+\difficulty{0.85}
+\explain{分析：利用函数为奇函数，将 $f(\lg3)$ 化为 $-f\!\left(\lg\dfrac13\right)$，结合当 $x<0$ 时 $f(x)=10^x$，代入求值，即可求得答案。\\
+详解：由题意知函数 $f(x)$ 是定义在 $\mathbb{R}$ 上的奇函数，故 $f(\lg3)=-f(-\lg3)=-f\!\left(\lg\dfrac13\right)$，而 $\lg\dfrac13<0$，故 $f\!\left(\lg\dfrac13\right)=10^{\lg(1/3)}=\dfrac13$，则 $f(\lg3)=-\dfrac13$，故选：C。}
+
+\mcq[D]
+{在数列 $\{a_n\}$ 中，$a_1=1$，若数列 $\{a_1,a_3,\dots,a_{2n-1}\}$ 是公比为 $2$ 的等比数列，则 $a_1+a_3+a_5+\cdots+a_9=$（\quad）。}
+{$2048$}
+{$2047$}
+{$1024$}
+{$1023$}
+\topics{由定义判定等比数列；求等比数列前 $n$ 项和}
+\difficulty{0.65}
+\explain{分析：根据等比数列定义得数列 $\{a_n\}$ 的奇数项是以 $1$ 为首项、$2$ 为公比的等比数列，再应用等比数列前 $n$ 项和公式求解即可。\\
+详解：数列 $\{a_1,a_{n-1}\}$ 是公比为 $2$ 的等比数列，则有 $\dfrac{a_{n+1}\cdot a_{n+2}}{a_n\cdot a_{n+1}}=2$，所以 $\dfrac{a_{n+2}}{a_n}=2$，因此数列 $\{a_n\}$ 的奇数项是以 $1$ 为首项、$2$ 为公比的等比数列，所以 $a_1+a_3+a_5+\cdots+a_9=\dfrac{1-2^{10}}{1-2}=1023$，故选：D。}
+
+\mcq[C]
+{在四边形 $ABCD$ 中，$\overrightarrow{AB}=\lambda\overrightarrow{DC}$，$\overrightarrow{AB}=(1,-\sqrt2)$，$\overrightarrow{AD}=(4,2\sqrt2)$。若四边形 $ABCD$ 的面积为 $12\sqrt2$，则实数 $\lambda$ 的值为（\quad）。}
+{$3$}
+{$\sqrt3$}
+{$\dfrac13$}
+{$\dfrac{\sqrt3}{3}$}
+\topics{向量的线性运算的几何应用；坐标计算向量的模；向量垂直的坐标表示}
+\difficulty{0.65}
+\explain{分析：根据向量的模长及数量积为 $0$，可得四边形 $ABCD$ 为直角梯形，然后结合模长关系利用面积建立方程求解即可。\\
+详解：因为 $AB=\lambda DC$，$|AB|=\sqrt{1+2}=\sqrt3$，$|AD|=\sqrt{16+8}=2\sqrt6$，所以四边形 $ABCD$ 为梯形；又 $AB\cdot AD=1\times4+(-\sqrt2)\times2\sqrt2=0$，所以 $AB\perp AD$，即 $AB\perp AD$，所以四边形 $ABCD$ 为直角梯形，则 $S_{\triangle ABD}=\dfrac12\sqrt3\times2\sqrt6=3\sqrt2$，又四边形 $ABCD$ 的面积为 $12\sqrt2$，所以 $S_{\triangle BCD}=12\sqrt2-3\sqrt2=9\sqrt2$，所以 $\dfrac12\times|CD|\times|AD|=\dfrac12\times\dfrac{\sqrt3}{\lambda}\times|AD|=\dfrac12\times\dfrac{\sqrt3}{\lambda}\times2\sqrt6=9\sqrt2$，所以 $\dfrac1\lambda=\dfrac13$，故选：C。}
+
+\mcq[D]
+{已知函数 $f(x)=\dfrac1x-\dfrac1{1-x}+x+k$ 的三个零点为 $a,b,c$，且 $a<b<c$，则下列结论不正确的是（\quad）。}
+{$f(x)$ 在 $(0,1)$ 上单调递减}
+{曲线 $y=f(x)$ 是中心对称图形}
+{$\forall k\in\mathbb{R}$，都有 $c>b+1$}
+{$\forall k\in\mathbb{R}$，都有 $c>a+3$}
+\topics{判断或证明函数的对称性；函数单调性的应用；用导数判断或证明已知函数的单调性；利用导数研究函数的零点}
+\difficulty{0.4}
+\explain{分析：求导后结合定义域即可得 A；计算 $f(x)+f(-x+1)$ 为定值可得 B；结合函数单调性可得 $a,b,c$ 取值范围，再计算出 $f(b+1)$，结合 $f(x)$ 在 $(1,+\infty)$ 上单调性即可得 C；举出反例即可得 D。\\
+详解：对 A：由 $f'(x)=-\dfrac1{x^2}-\dfrac1{(1-x)^2}-1$，则当 $x\in(-\infty,0)\cup(0,1)\cup(1,+\infty)$ 时，$f'(x)<0$ 恒成立，故 $f(x)$ 在 $(-\infty,0)$、$(0,1)$、$(1,+\infty)$ 上单调递减，故 A 正确；对 B：$f(x)+f(-x+1)=\dfrac1x+\dfrac1{1-x}-x+k+\dfrac1{-x+1}+x-1+k=2k-1$，又 $f(x)$ 定义域为 $(-\infty,0)\cup(0,1)\cup(1,+\infty)$ 故曲线 $y=f(x)$ 关于点 $\left(\dfrac12,k-\dfrac12\right)$ 对称，即曲线 $y=f(x)$ 是中心对称图形，故 B 正确；对 C：由 $f(x)$ 在 $(-\infty,0)$、$(0,1)$、$(1,+\infty)$ 上单调递减，且函数 $f(x)$ 有三个零点，则 $a\in(-\infty,0)$，$b\in(0,1)$，$c\in(1,+\infty)$，则 $b+1\in(1,2)$，有 $f(b+1)=\dfrac1{b+1}+\dfrac1b-b-1+k$，又 $f(b)=\dfrac1b-\dfrac1{1-b}-b+k=0$，即 $k=b+\dfrac1{1-b}-\dfrac1b$，则 $f(b+1)=\dfrac1{b+1}-\dfrac1b-1+b+\dfrac1{1-b}-1+\dfrac1{1-b}-\dfrac2{1-b^2}-1$，由于 $b\in(0,1)$，则 $1-b^2\in(0,1)$，则 $f(b+1)=\dfrac2{1-b^2}-1>1$，又 $c\in(1,+\infty)$，且 $f(c)=0$，$f(x)$ 在 $(1,+\infty)$ 上单调递减，故 $c>b+1$ 对 $\forall k\in\mathbb{R}$ 恒成立，故 C 正确；对 D：取 $k=\dfrac12$，则 $f(x)=\dfrac1x-\dfrac1{1-x}+x+\dfrac12$，则有 $f(-1)=\dfrac1{-1}-\dfrac1{1-(-1)}+\dfrac12(-1)+\dfrac12=0$，$f(2)=\dfrac12-\dfrac1{-1}-2+\dfrac12=0$，即 $a=-1，c=2$，此时 $c=a+3$，故 D 错误。故选：D。}
+
+\section{二、多选题}
+
+\begin{question}
+若 $\dfrac1a<\dfrac1b<0$，则下列不等式正确的是（\quad）。
 \begin{choices}
-\choice 点 $(2\sqrt{2},0)$ 在 $C$ 上
-\choice $a=-2$
-\choice $C$ 在第一象限的点的纵坐标的最大值为 $1$
-\choice 当点 $(x_0,y_0)$ 在 $C$ 上时，$y\le 4$
+  \item $|a|>|b|$
+  \item $\sqrt{-a}<\sqrt{-b}$
+  \item $a+b>ab$
+  \item $a^2-a<b^2-b$
 \end{choices}
-\topics{由方程研究曲线的性质；求平面轨迹方程}
+\topics{由已知条件判断所给不等式是否正确；由不等式的性质比较数（式）大小；作差法比较代数式的大小}
 \difficulty{0.65}
-\explain{
-根据题设将原点代入曲线方程可求 $a$，故可判断 A 的正误；结合曲线方程可判断 B 的正误；利用特例法可判断 C 的正误；将曲线方程化简后结合不等式的性质可判断 D 的正误。
-\[ {\sqrt{(x-2)^2+y^2}}\,(x+2)=4. \]
-当 $x=2\sqrt{2},y=0$ 时等式成立，故 A 正确；由 $x=0$ 得 $-a\le 1$，故 $a\le 0$，结合条件得 $a=-2$，故 B 正确；由上式解得 $y\le 4/(x+2)$，故 D 正确；综合可知本题答案：ABD。
-}\end{question}
-
-\begin{question}
-设双曲线$C:\frac{x^{2}}{a^{2}}-\frac{y^{2}}{b^{2}}=1(a>0,b>0)$ 的左右焦点分别为$F_{1}$, $F_2$ ，过$F_{2}$ 作平行于$y$ 轴的直线交$C$ 于$A$ ， $B$ 两点，若$\mid F_{1}A\mid=13,\mid AB\mid=10$ AB |=10 $AB\mid=10$ ，则$C$ 的离心率为
-\topics{求双曲线的离心率或离心率的取值范围}
-\difficulty{0.65}
-\explain{
-由题意画出双曲线大致图象，求出$\left|AF_2\right|$ ，结合双曲线第一定义求出$\left|AF_{1}\right|$ ，即可得到$a,b,c$ 的值，从而求出离心率
-
-由题可知$A,B,F_{2}$ 三点横坐标相等，设$A$ 在第一象限，将$x=c$ 代入得$y=\pm\frac{b^2}a$ ，即$A\Bigg(c,\frac{b^2}a\Bigg),B\Bigg(c,-\frac{b^2}a\Bigg)$ ，故$\left|AB\right|=\frac{2b^2}a=10$ |Ar|=5又$\left|AF_{1}\right|-\left|AF_{2}\right|=2a$ ，得$\left|AF_{1}\right|=\left|AF_{2}\right|+2a=2a+5=13$ ，解得$a=4$ ，代入$\frac{b^2}a=5$ 得$b^2=20$ 故$c^{2}=a^{2}+b^{2}=36$ ，即$c=6$ ，所以$e=\frac{c}{a}=\frac{6}{4}=\frac{3}{2}$ 故答案为： $\frac{3}{2}$
-
-}
+\explain{答案：BD。\\
+详解：由 $\dfrac1a<\dfrac1b<0$ 可知，$b<a<0$，所以 $-b>-a>0$，即 $|b|>|a|$，故 A 错误；$\sqrt{-b}>\sqrt{-a}$，故 B 正确；$a+b<0,ab>0$，所以 $a+b<ab$，故 C 错误；$a^2-a-b^2+b=(a+b)(a-b)-(a-b)=(a-b)(a+b-1)$，由以上可知，$a-b>0$，$a+b-1<0$，所以 $a^2-a-b^2+b<0$，即 $a^2-a<b^2-b$，故 D 正确。}
 \end{question}
 
 \begin{question}
-若曲线$y=\mathrm{e}^{x}+x$ 在点(0,1)处的切线也是曲线$y=\ln(x+1)+a$ 的切线，则$a=$
-\topics{已知切线（斜率）求参数；两条切线平行；垂直；重合（公切线）问题}
-\difficulty{0.65}
-\explain{
-先求出曲线$y=\mathrm{e}^{x}+x$ 在(0,1)的切线方程，再设曲线$y=\ln\left(x+1\right)+a$ 的切点为$\left(x_0,\ln\left(x_0+1\right)+a\right)$ ，求出$y^{\prime}$ ，利用公切线斜率相等求出$x_0$ ，表示出切线方程，结合两切线方程相同即可求解
-
-由$y=\mathrm{e}^{x}+x$ 得$y^{\prime}=\mathrm{e}^{x}+1$ ， $y^{\prime}\left|_{x=0}=\mathrm{e}^{0}+1=2\right.$ 故曲线$y=\mathrm{e}^{x}+x$ 在(0.1)处的切线方程为$y=2x+1$ 由$y=\ln\left(x+1\right)+a$ 得$y^{\prime}=\frac{1}{x+1}$ 设切线与曲线$y=\ln\left(x+1\right)+a$ 相切的切点为$\left(x_{0},\ln\left(x_{0}+1\right)+a\right)$ 由两曲线有公切线得$y'=\frac{1}{x_{0}+1}=2$ ，解得$x_{0}=-\frac{1}{2}$ ，则切点为$\cdot\left(-\frac{1}{2},a+\ln\frac{1}{2}\right)$
-
-
-切线方程为$y= 2\left($ $x+ \frac 12\right) + a+ \ln \frac 12= 2x+ 1+ a- \ln 2$ . 根据两切线重合，所以$a-\ln2=0$ ，解得$a=\ln2$ 故答案为：ln2
-}
-\end{question}
-
-\begin{question}
-甲、乙两人各有四张卡片，每张卡片上标有一个数字，甲的卡片上分别标有数字1，35，7，乙的卡片上分别标有数字2，4，6，8，两人进行四轮比赛，在每轮比赛中，两人各自从自己持有的卡片中随机选一张，并比较所选卡片上数字的大小，数字大的人得1分，数字小的人得0分，然后各自弃置此轮所选的卡片（弃置的卡片在此后的轮次中不能使用） 则四轮比赛后，甲的总得分不小于2的概率为
-\topics{计算古典概型问题的概率；求离散型随机变量的均值；均值的性质}
+在直角坐标系 $xOy$ 中，已知 $O$ 是以 $O$ 为圆心的单位圆，点 $A$ 的坐标为 $(1,0)$，角 $\theta$ 的始边为射线 $OA$，终边 $OB$ 交圆于点 $B$，过点 $B$ 作直线 $OA$ 的垂线，垂足为 $C$。若将点 $C$ 到直线 $OB$ 的距离表示为 $\theta$ 的函数 $h(\theta)$，则（\quad）。
+\begin{choices}
+  \item $h\!\left(\dfrac\pi{12}\right)=\dfrac14$
+  \item $h(\theta)$ 的最小正周期为 $\dfrac\pi4$
+  \item $\left[\dfrac{3\pi}4,\pi\right]$ 是 $h(\theta)$ 的一个单调减区间
+  \item $h(\theta)+h\!\left(\dfrac\pi4+\theta\right)$ 的最大值为 $\dfrac{\sqrt2}{2}$
+\end{choices}
+\topics{求含 $\sin x(\cos x)$ 函数的值域和取值；求正弦（型）函数的最小正周期、二倍角的正弦公式；求点到直线的距离}
 \difficulty{0.4}
-\explain{
-将每局的得分分别作为随机变量，然后分析其和随机变量即可，
+\explain{答案：ACD。\\
+详解：利用点到直线的距离公式及二倍角正弦公式得 $h(\theta)=\dfrac12\lvert\sin2\theta\rvert$，代入求得 $h\!\left(\dfrac\pi{12}\right)=\dfrac14$，正确；对 B，因为 $h\!\left(\theta+\dfrac\pi4\right)=\dfrac12\lvert\sin(2\theta+\dfrac\pi2)\rvert\ne h(\theta)$，所以 $\dfrac\pi4$ 不是 $h(\theta)$ 的周期，错误；对 C，$\theta\in\left[\dfrac{3\pi}4,\pi\right]$，所以 $2\theta\in\left[\dfrac{3\pi}2,2\pi\right]$，所以 $h(\theta)=-\dfrac12\sin2\theta$，因 $y=\sin x$ 在 $\left[\dfrac{3\pi}2,2\pi\right]$ 单调递增，所以 $h(\theta)=-\dfrac12\sin2\theta$ 在 $\theta\in\left[\dfrac{3\pi}4,\pi\right]$ 单调递减，正确；对 D，$h(\theta)+h\!\left(\dfrac\pi4+\theta\right)=\dfrac12\left(|\sin2\theta|+|\cos2\theta|\right)\le\dfrac{\sqrt2}{2}$，当且仅当 $|\sin2\theta|=|\cos2\theta|$ 时等号成立，正确。}
+\end{question}
 
-设甲在四轮游戏中的得分分别为$X_{1},X_{2},X_{3},X_{4}$ ，四轮的总得分为$X$ 对于任意一轮，甲乙两人在该轮出示每张牌的概率都均等，其中使得甲得分的出牌组合有六种，从而甲在该轮得分的概率$P\big(X_{k}=1\big)=\frac{6}{4\times4}=\frac{3}{8}$ ，所以$E(X_{k})=\frac{3}{8}\Big(k=1,2,3,4\Big)$ 从而$E\left(X\right)=E\left(X_{1}+X_{2}+X_{3}+X_{4}\right)=\sum_{k=1}^{4}E\left(X_{k}\right)=\sum_{k=1}^{4}\frac{3}{8}=\frac{3}{2}.$ 记$p_{k}=P\Big(X=k\Big)\Big(k=0,1,2,3\Big)$ 如果甲得0分，则组合方式是唯一的：必定是甲出1，3，5，7分别对应乙出2，4，6，8所以$p_{0}=\frac{1}{\mathrm{A}_{4}^{4}}=\frac{1}{24}$ 如果甲得3分，则组合方式也是唯一的：必定是甲出1，3，5，7分别对应乙出8，2，46，所以$p_3=\frac1{\mathrm{A}_4^4}=\frac1{24}$ 而$X$ 的所有可能取值是0 ，1，2，3，故$p_{0}+p_{1}+p_{2}+p_{3}=1$ p+2p+3p=EX= 所以$p_1+p_2+\frac1{12}=1$ ， $p_1+2p_2+\frac18=\frac32$ ，两式相减即得$p_{2}+\frac{1}{24}=\frac{1}{2}$ ，故$p_2+p_3=\frac12$ 所以甲的总得分不小于 2的概率为$p_2+p_3=\frac12$ 故答案为： $\frac12$
-}
+\section{三、填空题}
+
+\begin{question}
+已知向量 $\vec a=(m+2n,2)$，$\vec b=(1,2)$，其中 $mn>0$。若 $\vec a\parallel\vec b$，则 $mn$ 的最大值为\fillin[$\dfrac18$]。
+\topics{由向量共线（平行）求参数；基本不等式求积的最大值}
+\difficulty{0.65}
+\explain{根据向量平行的坐标公式得到 $m,n$ 的关系，再利用基本不等式求解即可。\\
+详解：$\vec a=(m+2n,2)$，$\vec b=(1,2)$，因为 $\vec a\parallel\vec b$，所以 $1\times2=2(m+2n)$，即 $m+2n=1$，$mn>0$。所以 $2mn\le\left(\dfrac{m+2n}{2}\right)^2=\dfrac18$，当且仅当 $m=\dfrac12,\ n=\dfrac14$ 时等号成立。故 $mn$ 的最大值为 $\dfrac18$。}
 \end{question}
 
 \begin{question}
-记$\triangle ABC$ 的内角$A$ 、B、 $C$ 的对边分别为$a$ ，b，c，已知$\sin C=\sqrt{2}\cos B$
-$$a^2+b^2-c^2=\sqrt{2}ab$$
-
-(1)求$B$
-
-(2)若$\triangle ABC$ 的面积为$3+\sqrt{3}$ ，求$c$
-\topics{已知两角的正；余弦，求和；差角的正弦；正弦定理解三角形；三角形面积公式及其应用；余弦定理解三角形}
+在 2025 年江苏省“苏超”足球联赛的一场激烈比赛中，某城市队的 10 号球员从 $A$ 出发，以 $2.5$ 米/秒的速度做匀速直线运动，到达 $B$ 点时，发现足球在点 $C$ 处正以 $3$ 倍于自己的速度向点 $A$ 侧匀速直线运动。已知 $AB=4\sqrt3$ 米，$AC=20$ 米，$\angle BAC=30^\circ$。若忽略球员转身所需的时间，则该球员按原来的速度最快截住足球所用的时间为\fillin[$\dfrac85$]秒。
+\begin{center}
+\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
+  \coordinate (A) at (0,0);
+  \coordinate (B) at (5.1,0);
+  \coordinate (C) at (2.6,4.4);
+  \path (A) -- (C) coordinate[pos=0.35] (D);
+  \draw (A)--(B)--(C)--cycle;
+  \draw (B)--(D);
+  \draw ($(A)+(0.7,0)$) arc[start angle=0,end angle=60,radius=0.7];
+  \node at (0.95,0.35) {$30^\circ$};
+  \node[below] at ($(A)!0.5!(B)$) {$4\sqrt{3}$};
+  \fill (A) circle (1.1pt) node[below left] {$A$};
+  \fill (B) circle (1.1pt) node[below right] {$B$};
+  \fill (C) circle (1.1pt) node[above] {$C$};
+  \fill (D) circle (1.1pt) node[left] {$D$};
+\end{tikzpicture}
+\end{center}
+\topics{余弦定理；距离最短（时间最短）模型}
 \difficulty{0.65}
-\explain{
-（1）由余弦定理、平方关系依次求出cos $C,\sin C$ ，最后结合已知$\sin C=\sqrt{2}\cos B$ 得cos $B$ 的值即可：
-
-(2）首先求出$A,B,C$ ，然后由正弦定理可将$a,b$ 均用含有$c$ 的式子表示，结合三角形面积公式即可列方程求解
-
-（1）由余弦定理有$a^{2}+b^{2}-c^{2}=2ab\cos C$ ，对比已知$a^{2}+b^{2}-c^{2}=\sqrt{2}ab$ 可得$\cos C=\frac{a^{2}+b^{2}-c^{2}}{2ab}=\frac{\sqrt{2}ab}{2ab}=\frac{\sqrt{2}}{2}$ 因为$C\in(0,\pi)$ ，所以sin $C>0$
-$${\vec{\jmath}}\sin C={\sqrt{1-\cos^{2}C}}={\sqrt{1-\left({\frac{\sqrt{2}}{2}}\right)^{2}}}={\frac{\sqrt{2}}{2}}\:,$$
-又因为sin $C=\sqrt{2}\cos B$ ，即$\cos B=\frac{1}{2}$ 注意到$B\in(0,\pi)$ 所以$B=\frac{\pi}{3}$
-
-（2）由(1)可得$B=\frac{\pi}{3}$ $B=\frac{\pi}{3}$ $B= \frac \pi 3$, $\cos C= \frac {\sqrt {2}}2$ C= $.C=\frac{\sqrt{2}}{2}$ ， $C\in(0,\pi)$ ，从而$C=\frac{\pi}{4}$ $C=\frac{\pi}{4}$ $C= \frac \pi 4$ , $A= \pi - \frac \pi 3- \frac \pi 4= \frac {5\pi }{12}$ Tisin $A= \sin \left( \frac {5\pi }{12}\right) = \sin \left( \frac \pi 4+ \frac \pi 6\right) = \frac {\sqrt {2}}2\times \frac {\sqrt {3}}2+ \frac {\sqrt {2}}2\times \frac 12= \frac {\sqrt {6}+ \sqrt {2}}4$ ,
-
-
-由正张定理有$\frac{a}{\sin\frac{5\pi}{12}}=\frac{b}{\sin\frac{\pi}{3}}=\frac{c}{\sin\frac{\pi}{4}}$
-$${\bar{1}}\:a={\frac{\sqrt{6}+\sqrt{2}}{4}}\cdot{\sqrt{2}}c={\frac{\sqrt{3}+1}{2}}c,b={\frac{\sqrt{3}}{2}}\cdot{\sqrt{2}}c={\frac{\sqrt{6}}{2}}c\:,$$
-由三角形面积公式可知， $\triangle ABC$ 的面积可表示为
-$$S_{_{s.ABC}}=\frac{1}{2}\:ab\sin C=\frac{1}{2}\cdot\frac{\sqrt{3}+1}{2}c\cdot\frac{\sqrt{6}}{2}c\cdot\frac{\sqrt{2}}{2}=\frac{3+\sqrt{3}}{8}c^{2}\:,$$
-由已知$\triangle ABC$ 的面积为$3+\sqrt{3}$ ，可得$\frac{3+\sqrt{3}}{8}c^2=3+\sqrt{3}$ 所以$c=2\sqrt{2}$ 16.已知$A(0,3)$ 和P3,为椭圆$C:\frac{x^{2}}{a^{2}}+\frac{y^{2}}{b^{2}}=1(a>b>0)$ 上两点(1)求$C$ 的离心率： (2)若过$P$ 的直线1交$C$ 于另一点$B$ ，且$\Delta ABP$ 的面积为9，求7的方程，
-
-本题答案：$(1)B=\frac{\pi}{3}$。
-}\end{question}
+\explain{设在 $D$ 处截住足球，时间设为 $t$ 秒，则 $BD=2.5t,\ CD=7.5t$，则 $AD=20-7.5t$；又 $AB=4\sqrt3,\ \angle BAC=30^\circ$，在 $\triangle ABD$ 中，利用余弦定理可知，$BD^2=AD^2+AB^2-2AD\cdot AB\cdot\sin\angle BAC$，则 $(2.5t)^2=(20-7.5t)^2+48-2\times4\sqrt3\times(20-7.5t)\times\dfrac{\sqrt3}{2}$，化简得 $25t^2-110t+104=0$，解得 $t=\dfrac85$ 或 $t=\dfrac{13}5$，所以该球员按原来的速度最快截住足球所用的时间为 $\dfrac85$ 秒。}
+\end{question}
 
 \begin{question}
-如图，四棱锥$P-ABCD$ 中， $PA\bot$ 底面ABCD， $PA=AC=2$ ， $BC=1,AB=\sqrt{3}$
-
-
-(1)若$AD\perp PB$ ，证明：AD//平面$PBC$ ： (2)若$AD\perp DC$ ，且二面角$A-CP-D$ 的正弦值为$\frac{\sqrt{42}}7$ ，求$AD$
-\topics{证明线面平行；证明面面垂直；由二面角大小求线段长度或距离}
-\difficulty{0.65}
-\explain{
-（1）先证出$AD\bot$ 平面$PAB$ ，即可得$AD\perp AB$ ，由勾股定理逆定理可得$BC\perp AB$ 从而$AD//BC$ ，再根据线面平行的判定定理即可证出：
-
-(2）过点$D$ 作$DE\perp AC$ 于$E$ ，再过点$E$ 作$EF\perp CP$ 于$F$ ，连接$DF$ ，根据三垂线法可知$\angle DFE$ 即为二面角$A-CP-D$ 的平面角，即可求得tan $\angle DFE=\sqrt{6}$ ，再分别用$AD$ 的长度表示出$DE,EF$ ，即可解方程求出$AD$
-
-（1）因为$PA\bot$ 平面$ABCD$ ，而$AD\subset$ 平面$ABCD$ ，所以$PA\perp AD$ ， 又$AD\perp PB$ ， $PB\cap PA=P$ ， $PB,PA\subset$ 平面$PAB$ ，所以$AD\bot$ 平面$PAB$ 而$AB\subset$ 平面$PAB$ ，所以$AD\perp AB$ 因为$BC^{2}+AB^{2}=AC^{2}$ ，所以$BC\perp AB$ ，根据平面知识可知$AD//BC$ ，
-
-又$AD\not\subset$ 平面$PBC$ ， $BC\subset$ 平面$PBC$ ，所以$AD//$ 平面$PBC$
-
-
-（2）如图所示，过点$D$ 作$DE\perp AC$ 于$E$ ，再过点$E$ 作$EF\perp CP$ 于$F$ ，连接$DF$ 因为$PA\bot$ 平面$ABCD$ ，所以平面$PAC\bot$ 平面$ABCD$ ，而平面PAC门平面$ABCD=AC$ 所以$DE\bot$ 平面$PAC$ ，又$EF\bot CP$ ，所以$CP\bot$ 平面$DEF$ 根据二面角的定义可知， $\angle DFE$ 即为二面角$A-CP-D$ 的平面角， 即sin $\angle DFE=\frac{\sqrt{42}}{7}$ ，即tan $\angle DFE=\sqrt{6}$ 因为$AD\perp DC$ ，设$AD$ = $x$ ，则$CD=\sqrt{4-x^{2}}$ ，由等面积法可得，DE=x4-x² $.CE=\sqrt{\left(4-x^{2}\right)-\frac{x^{2}\left(4-x^{2}\right)}{4}}=\frac{4-x^{2}}{2}$ ，而$_{\Delta}EFC$ 为等腰直角三角形，所以$EF=\frac{4-x^2}{2\sqrt{2}}$ 成m $\angle DFE=\frac{\frac{x\sqrt{4-x^2}}{2}}{\frac{4-x^2}{2\sqrt{2}}}=\sqrt{6}$ 好$x=\sqrt{3}$ 肌$AD=\sqrt{3}$
-
-
-本题答案：(1)证明见解析(2)√3。
-}\end{question}
-
-\begin{question}
-已知函数$f(x)=\ln\frac{x}{2-x}+ax+b(x-1)^{3}$ (1)若$b=0$ ，且$f^{\prime}(x)\geq0$ ，求$a$ 的最小值： (2)证明：曲线$y=f(x)$ 是中心对称图形： (3)若$f(x)>-2$ 当且仅当$1<x<2$ ，求$b$ 的取值范围，
-\topics{判断或证明函数的对称性；简单复合函数的导数；利用导数证明不等式；利用导数研究不等式恒成立问题}
+设函数 $f(x)=\sin x-kx-b,\ x\in\left[0,\dfrac\pi2\right)$，其中 $k,\ b\in\mathbb{R}$。若 $k=\dfrac2\pi,\ b=0$，则 $f(x)$ 的最小值为\fillin[0]；若 $f'(x)\ge0$ 恒成立，则 $-k^2+\pi k+b$ 的最大值为\fillin[$\dfrac{\pi^2}{16}+1$]。
+\begin{center}
+\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
+  \draw[->] (-0.5,0) -- (5.2,0) node[right] {$x$};
+  \draw[->] (0,-2.2) -- (0,3.2) node[above] {$y$};
+  \draw[thick,domain=0:4.5,samples=200] plot (\x,{1.6*sin(deg(\x/1.6))});
+  \node at (2.2,1.8) {$y=\sin x$};
+  \draw[thick] (-0.2,-1.4) -- (5,3);
+  \node at (3.9,2.5) {$y=kx+b$};
+  \draw[dashed] ({pi/2},-2.2) -- ({pi/2},3.2);
+  \node[below] at ({pi/2},0) {$\dfrac{\pi}{2}$};
+  \fill (0,0) circle (1.1pt) node[below left] {$O$};
+\end{tikzpicture}
+\end{center}
+\topics{由导数求函数的最值（不含参）；一元二次不等式在实数集上恒成立问题；函数不等式恒成立问题}
 \difficulty{0.4}
-\explain{
-（1）求出f（x）_=2+a后根据$f^{\prime}(x)\geq0$ 可求$a$ 的最小值：
+\explain{若 $k=\dfrac2\pi,\ b=0$，求导，利用导数判断 $f(x)$ 的单调性和最值；若 $f'(x)\ge0$ 恒成立，即 $\sin x\ge kx+b$，结合图象可得 $b\le0$，$\pi k+2b-2\le0$；令 $-k^2+\pi k+b=t$，消去 $b$ 结合 $a$ 判别式运算求解即可。\\
+详解：当 $k=\dfrac2\pi,\ b=0$，则 $f(x)=\sin x-\dfrac2\pi x,\ f'(x)=\cos x-\dfrac2\pi$，因为 $f'(x)$ 在 $\left(0,\dfrac\pi2\right)$ 内存在唯一零点 $x_0$，当 $0<x<x_0$ 时，$f'(x)>0$；当 $x_0<x<\dfrac\pi2$ 时，$f'(x)<0$；可知 $f(x)$ 在 $(0,x_0)$ 内单调递增，在 $\left(x_0,\dfrac\pi2\right)$ 内单调递减，且 $f(0)=f\!\left(\dfrac\pi2\right)=0$，所以 $f(x)$ 的最小值为 $0$；若 $f(x)=\sin x-kx-b\ge0$，即 $\sin x\ge kx+b$，可知当 $x\in\left[0,\dfrac\pi2\right]$ 时，$y=\sin x$ 在线段 $y=kx+b$ 的上方，结合图象可得 $\sin0\ge0\ge b$，即 $b\le0$；$\sin\dfrac\pi2=1\ge\dfrac\pi2k+b$，即 $\pi k+2b-2\le0$，可知 $k\in\mathbb{R}$，设 $-k^2+\pi k+b=t$，则 $b=k^2-\pi k+t$，可得 $\begin{cases}k^2-\pi k+t\le0\\2k^2-\pi k+2t-2\le0\end{cases}$，因为该不等式组在 $k\in\mathbb{R}$ 内有解，则 $\begin{aligned}\Delta_1&=\pi^2-4t\ge0\\ \Delta_2&=\pi^2-8(2t-2)\ge0\end{aligned}$，解得 $t\le\dfrac{\pi^2}{16}+1$，所以当 $k=\dfrac\pi4,\ b=1-\dfrac{\pi^2}{8}$ 时，$-k^2+\pi k+b$ 取得最大值 $\dfrac{\pi^2}{16}+1$。}
+\end{question}
 
-
-(2）设$P(m,n)$ 为$y=f(x)$ 图象上任意一点，可证$P(m,n)$ 关于$(1,a)$ 的对称点为$Q(2-m,2a-n)$ 也在函数的图像上，从而可证对称性；
-
-（3）根据题设可判断$f(1)=-2$ 即$a=-2$ ，再根据$f(x)>-2$ 在(1,2)上恒成立可求得$b\geq-\frac{2}{3}$
-
-（1） $b=0$ 时， $f(x)=\ln\frac{x}{2-x}+ax$ ，其中$x\in(0,2)$ 则$f^{\prime}\left(x\right)=\frac{1}{x}+\frac{1}{2-x}+a=\frac{2}{x\left(2-x\right)}+a,x\in\left(0,2\right)$, 因为$x\left(2-x\right)\leq\left(\frac{2-x+x}{2}\right)^{2}=1$ ，当且仅当$x=1$ 时等号成立， 故$f^{\prime}(x)_{\mathrm{min}}=2+a$ ，而$f'(x)\geq0$ 成立，故$a+2\geq0$ 即$a\geq-2$ 所以$a$ 的最小值为-2 ·， （2) $f\left(x\right)=\ln\frac{x}{2-x}+ax+b\left(x-1\right)^{3}$ 的定义域为(0.2) 设$P(m,n)$ 为$y=f(x)$ 图象上任意一点， $P(m,n)$ 关于$(1,a)$ 的对称点为$Q(2-m,2a-n)$ 因为$P(m,n)$ 在$y=f(x)$ 图象上，故$n=\ln\frac{m}{2-m}+am+b\left(m-1\right)^{3}$
-$${\vec{\jmath}}\:f\left(2-m\right)=\ln{\frac{2-m}{m}}+a\left(2-m\right)+b\left(2-m-1\right)^{3}=-\left[\ln{\frac{m}{2-m}}+am+b\left(m-1\right)^{3}\right]+2a\:,$$
-$=-n+2a$ 所以$Q(2-m,2a-n)$ 也在$y=f(x)$ 图象上由$P$ 的任意性可得$y=f(x)$ 图象为中心对称图形，且对称中心为$(1,a)$ （3）因为$f(x)>-2$ 当且仅当$1<x<2$ ，故$x=1$ 为$f(x)=-2$ 的一个解，
-
-所以$f(1)=-2$ 即$a=-2$ 先考虑$1<x<2$ 时， $f(x)>-2$ 恒成立此时$f(x)>-2$ 即为$\ln\frac{x}{2-x}+2\left(1-x\right)+b\left(x-1\right)^{3}>0$ 在(1,2)上恒成立， 设$t=x-1\in(0,1)$ ，则$\ln\frac{t+1}{1-t}-2t+bt^{3}>0$ 在(0.1)上恒成立设$g\left(t\right)=\ln\frac{t+1}{1-t}-2t+bt^{3},t\in\left(0,1\right)$,
-
-
-$$\parallel g^{\prime}\left(t\right)={\frac{2}{1-t^{2}}}-2+3bt^{2}={\frac{t^{2}\left(-3bt^{2}+2+3b\right)}{1-t^{2}}}\:,$$
-当$b\geq0$ ， $-3bt^2+2+3b\geq-3b+2+3b=2>0$ 故$g'(t)>0$ 恒成立，故$g(t)$ 在(0,1)上为增函数故$g(t)>g(0)=0$ 即$f(x)>-2$ 在(1,2)上恒成立当$-\frac23\leq b<0$ 时， $-3bt^2+2+3b\geq2+3b\geq0$ 故$g'(t)\geq0$ 恒成立，故$g(t)$ 在(0.1)上为增函数故$g(t)>g(0)=0$ 即$f(x)>-2$ 在(1,2)上恒成立当$b<-\frac{2}{3}$ ，则当$0<t<\sqrt{1+\frac{2}{3b}}<1$ 时， $g'(t)<0$ 效在$:\left(0,\sqrt{1+\frac{2}{3b}}\right)$上$g\left(t\right)$ 为减函数，故$g(t)<g(0)=0$ ，不合题意，含综上， $f(x)>-2$ 在(1,2)上恒成立时$b\geq-\frac{2}{3}$ 而当$b\geq-\frac{2}{3}$ 时， 而$b\geq-\frac{2}{3}$ 时，由上述过程可得$g(t)$ 在(0.1)逆增，故$g(t)>0$ 的解为(0.1) 即$f(x)>-2$ 的解为(1,2) 综上， $b\geq-\frac{2}{3}$
-
-本题答案：（1)-2 (2）证明见解析。
-}\end{question}
+\section{四、解答题}
 
 \begin{question}
-设$m$ 为正整数，数列$a_{1},a_{2},...,a_{4m+2}$ 是公差不为0的等差数列，若从中删去两项$a_{i}$ 和$a_{j}(i<j)$ 后剩余的$4m$ 项可被平均分为$m$ 组，且每组的4个数都能构成等差数列，则称数列$a_1,a_2,...,a_{4m+2}$ 是$(i,j)-$ 可分数列，
+在 $\triangle ABC$ 中，角 $A,B,C$ 所对的边为 $a,b,c$，且 $\dfrac{b}{\cos B}=\dfrac{a+b+c}{\cos A+\cos B+\cos C}$。
+\begin{enumerate}[(1)]
+  \item 求角 $B$ 的大小；
+  \item 若 $\cos A=\dfrac{2\sqrt7}{7}$，求 $\tan(2A-B)$ 的值。
+\end{enumerate}
+\topics{用和、差的正弦公式化简、求值；用和、差的正切公式化简、求值；二倍角的正切公式；正弦定理边角互化的应用}
+\difficulty{0.65}
+\explain{(1) 根据正弦定理及两角差的正弦定理化简得 $\sin(B-A)=\sin(C-B)$，解得 $A+C=2B$，即可求得 $B=\dfrac\pi3$；\\
+(2) 利用同角三角函数关系求得 $\tan A=\dfrac{\sqrt3}{2}$，利用二倍角正切公式得 $\tan2A=4\sqrt3$，然后利用两角和的正切公式求解即可。\\
+答案：(1) $B=\dfrac\pi3$；(2) $\dfrac{3\sqrt3}{13}$。}
+\end{question}
 
-(1)写出所有的$(i,j)$ ， $1\leq i<j\leq6$ ，使数列$a_{1},a_{2},...,a_{6}$ 是$(i,j)-$ 可分数列：
+\begin{question}
+已知向量 $\vec m=(\sin x,\sqrt3)$，$\vec n=\!\left(\cos x,\dfrac12\cos2x\right)$，设函数 $f(x)=\vec m\cdot\vec n$。
+\begin{enumerate}[(1)]
+  \item 若 $\left(\dfrac x2-\dfrac\pi{12}\right)=\dfrac35,\ \dfrac\pi3<x<\dfrac{5\pi}6$，求 $\cos x$ 的值；
+  \item 将函数 $f(x)$ 的图像上所有的点向右平移 $\varphi\ (0<\varphi<\dfrac\pi2)$ 个单位长度，再把所得各点的纵坐标缩短到原来的 $\dfrac12$ 倍（纵坐标不变），得到函数 $y=g(x)$ 的图像。若函数 $y=g(x)$ 的图像关于直线 $x=\dfrac\pi{12}$ 对称，求 $g(x)$ 在 $\left[0,\dfrac\pi4\right]$ 上的最大值和最小值。
+\end{enumerate}
+\topics{求含 $\sin x(\cos x)$ 函数的值域和最值；做图象变换前（后）的解析式；给值求值型题；数量积的坐标表示}
+\difficulty{0.65}
+\explain{(1) 根据向量数量积运算及辅助角公式化简得到 $f(x)$，再结合 $\cos x=\cos\!\left[\left(x+\dfrac\pi6\right)-\dfrac\pi6\right]$ 求得 $\cos x$；\\
+(2) 根据三角函数图象变换得到 $g(x)$ 解析式，结合 $x$ 范围求解 $g(x)$ 取值范围。\\
+答案：(1) $\dfrac{3-4\sqrt3}{10}$；(2) 最大值为 $1$，最小值为 $\dfrac12$。}
+\end{question}
 
-(2)当$m\geq3$ 时，证明：数列$a_{1},a_{2},...,a_{4m+2}$ 是（2,13）-可分数列
+\begin{question}
+已知函数 $g(x)=\dfrac1x$。
+\begin{enumerate}[(1)]
+  \item 求过点 $A(-4,2)$ 且与曲线 $y=g(x)$ 相切的直线方程；
+  \item 令 $f(x)=\dfrac{x^2-ax+1}{g(x)}$，若 $f(x)$ 有两个极值点 $x_1,\ x_2$，记过两点 $P(x_1,f(x_1))，Q(x_2,f(x_2))$ 的直线斜率为 $k$。是否存在实数 $a$，使得 $k=\dfrac53-a$？若存在，求 $a$ 的值；若不存在，试说明理由。
+\end{enumerate}
+\topics{求过一点的切线方程；根据极值点求参数}
+\difficulty{0.65}
+\explain{(1) 设切点 $\left(x_0,\dfrac1{x_0}\right)$，然后利用导数的几何意义及点斜式求出切线方程 $y=\dfrac1{x_0}-\dfrac1{x_0^2}(x-x_0)$，将点 $A(-4,2)$ 的坐标代入求得 $x_0=2$ 或 $x_0=-1$，即切线方程：$y=-\dfrac14x+1$ 或 $y=-x-2$；\\
+(2) 求出导函数，由题意 $3x^2-2ax+1=0$ 有两个不等的实根 $x_1,\ x_2$，进而有 $x_1+x_2=\dfrac{2a}{3},\ x_1x_2=\dfrac13$，结合两点斜率公式及 $k=\dfrac53-a$ 列式得 $-\,\dfrac{2a^2}{9}+\dfrac23=\dfrac53-a$，解得 $a=3$。}
+\end{question}
 
+\begin{question}
+设数列 $\{a_n\}$ 的前 $n$ 项和为 $S_n$，已知 $(3n-5)a_{n+1}-6S_n=pn+q,\ n\in\mathbb{N}^*$，其中 $p,\ q$ 为常数。
+\begin{enumerate}[(1)]
+  \item 当 $p=0$ 时，若 $S_1=-2,\ S_2=-1$，求数列 $\{a_n\}$ 的通项公式；
+  \item 若 $a_1=-\dfrac q5$。
+  \begin{enumerate}[(i)]
+    \item 证明：数列 $\{a_n\}$ 为等差数列；
+    \item 若 $8,\ \sqrt3a_3,\ a_{12}$ 成等比数列，当 $n$ 为何值时，$\displaystyle\sum_{k=1}^n a_ka_{k+1}a_{k+2}$ 取得最大值，请说明理由。
+  \end{enumerate}
+\end{enumerate}
+\topics{判断数列的增减性、由递推关系证明数列是等差数列；等比中项的应用；利用 $a_n$ 与 $S_n$ 关系求通项或项}
+\difficulty{0.4}
+\explain{(1) 代入 $p=0$，再升次作差得 $(3n-2)a_{n+2}=(3n+1)a_{n+1}$，从而有 $\dfrac{a_{n+1}}{a_n}=\dfrac{3n-2}{3n-5}$，最后用累乘法即可得到答案：$a_n=3n-5\ (n\in\mathbb{N}^*)$；\\
+(2) (i) 两次升次作差得 $a_{n+3}+a_{n+1}=2a_{n+2}$，再验证前 $3$ 项即可；(ii) 根据等比中项和等差数列通项公式得 $d<0$，得其单调性，再求出 $\dfrac{76}{5}\le n\le\dfrac{81}{5}$，再设 $T_n=\sum_{k=1}^n a_ka_{k+1}a_{k+2}$，得到其单调性即可得到最大值。}
+\end{question}
 
-(3)从$1,2,...,4m+2$ 中任取两个数$i$ 和$j(i<j)$ ，记数列$a_{1},a_{2},...,a_{4m+2}$ 是$(i,j)-$ 可分数列的概率为$P_{m}$ ，证明： $P_{m}>\frac{1}{8}$
-\topics{等差数列通项公式的基本量计算；数列新定义}
+\begin{question}
+设 $a>0,\ b>0$，函数 $f(x)=a\ln x-\dfrac12\,b(x-1)^2$，函数 $g(x)=\dfrac{f(x)}x$。
+\begin{enumerate}[(1)]
+  \item 当 $b=2$ 时：
+    \begin{enumerate}[(i)]
+      \item 讨论函数 $g(x)=\dfrac{f(x)}x$ 的单调性；
+      \item 若 $f(x)\le0$ 在 $(0,+\infty)$ 上恒成立，求 $a$ 的值。
+    \end{enumerate}
+  \item 当 $a\ge b>0$ 时，证明：函数 $f(x)$ 有两个极值点 $x_1,\ x_2\,(x_1<x_2)$ 且 $x_2<\left(\dfrac{2ea}{b}\right)^2x_1$。
+\end{enumerate}
+\topics{利用导数证明不等式；利用导数研究不等式恒成立问题；利用导数求函数（含参）的单调区间}
 \difficulty{0.15}
-\explain{
-\textbf{(1)} 由定义，删去两项后剩余 $4$ 项须仍能构成一个等差数列。
-对 $a_1,a_2,\ldots,a_6$ 而言，这等价于剩余四项的下标是四个连续整数。
-逐一检查可得仅有 $(i,j)=(1,2),(1,6),(5,6)$ 三种情形满足题意。
-
-\textbf{(2)} 当 $m\ge 3$ 时，删去第 $2$、$13$ 项：
-将余下的 $4m$ 项按下标模 $4$ 的同余类分组并作适当“错位配对”，即可把它们分成 $m$ 组、每组 $4$ 项且成等差（公差与原数列相同）。
-这给出 $(2,13)$ 为一组可行的 $(i,j)$。
-
-\textbf{(3)} 设
-\(
-A=\{\,4k+1\mid k=0,1,\ldots,m\,\},\quad
-B=\{\,4k+2\mid k=0,1,\ldots,m\,\}.
-\)
-若 $i\in A,\,j\in B$ 或 $i\in B,\,j\in A$ 且 $j-i\ne 3$，
-则可按模 $4$ 的结构把余下各项划分为 $m$ 组，每组 $4$ 项且成等差；
-因此这是一条\emph{充分条件}。
-
-可行对数至少为
-\((m+1)^2 - m\)：其中 $(m+1)^2$ 来自 $A\times B$ 的全部配对，减去 $m$ 个满足 $j-i=3$ 的配对。
-总配对数
-\(\binom{4m+2}{2}=\dfrac{(4m+2)(4m+1)}2=8m^2+6m+1\)。
-于是
-\[
-P_m \ge \frac{(m+1)^2-m}{\binom{4m+2}{2}}
-= \frac{m^2+m+1}{8m^2+6m+1}
-> \frac18,
-\]
-因为 \(8(m^2+m+1)-(8m^2+6m+1)=2m+7>0\) 恒成立。
-}
+\explain{(1) 代入后求导得 $g'(x)=-\dfrac{x^2-ax+1}{x^2}$，再求出导函数为 $0$ 时的根，最后分析其单调性即可；(ii) 分 $a=0,\ a>0$ 以及 $a<0$ 讨论即可。\\
+(2) 二次求导再其单调性，再利用零点存在性定理证明极值点所在区间，再利用切线不等式 $\ln x<x-1$ 得 $e^{-2}<x_1<1<x_2<\left(\dfrac{2a}{b}\right)^2$，从而证明原不等式结论。}
 \end{question}
+```

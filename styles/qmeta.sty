@@ -50,19 +50,19 @@
 %% User Commands
 %% ============================================================
 \NewDocumentCommand \answer { m }
-  { \tl_set:Nn \l__qmeta_answer_tl {#1} }
+  { \tl_gset:Nn \l__qmeta_answer_tl {#1} }
 
 \NewDocumentCommand \topics { m }
-  { \tl_set:Nn \l__qmeta_topics_tl {#1} }
+  { \tl_gset:Nn \l__qmeta_topics_tl {#1} }
 
 \NewDocumentCommand \difficulty { m }
-  { \fp_set:Nn \l__qmeta_diff_fp {#1} }
+  { \fp_gset:Nn \l__qmeta_diff_fp {#1} }
 
 \NewDocumentCommand \explain { m }
-  { \tl_set:Nn \l__qmeta_explain_tl {#1} }
+  { \tl_gset:Nn \l__qmeta_explain_tl {#1} }
 
 \NewDocumentCommand \source { m }
-  { \tl_set:Nn \l__qmeta_source_tl {#1} }
+  { \tl_gset:Nn \l__qmeta_source_tl {#1} }
 
 %% ============================================================
 %% Internal Functions
@@ -71,11 +71,11 @@
 %% Reset all metadata
 \cs_new_protected:Npn \qmeta_reset:
   {
-    \tl_clear:N \l__qmeta_answer_tl
-    \tl_clear:N \l__qmeta_topics_tl
-    \tl_clear:N \l__qmeta_explain_tl
-    \tl_clear:N \l__qmeta_source_tl
-    \fp_zero:N  \l__qmeta_diff_fp
+    \tl_gclear:N \l__qmeta_answer_tl
+    \tl_gclear:N \l__qmeta_topics_tl
+    \tl_gclear:N \l__qmeta_explain_tl
+    \tl_gclear:N \l__qmeta_source_tl
+    \fp_gzero:N  \l__qmeta_diff_fp
   }
 
 %% Format difficulty based on format option
@@ -118,35 +118,33 @@
 }
 
 %% Print teacher-only metadata block
-\cs_new_protected:Npn \qmeta_print_teacherblock:
+\cs_set_protected:Npn \qmeta_print_teacherblock:
   {
-    % CRITICAL: Check teacher mode BEFORE creating any container
-    \bool_if:NF \l__qmeta_teacher_bool { \use:n { } }
-
-    % Check if we have any content to display
-    \qmeta_set_has_content_bool:
-    \bool_if:NF \l__qmeta_has_content_bool { \use:n { } }
-
-    % Debug logging
-    \typeout{[qmeta]~Rendering~metadata~block~(teacher=true,~has_content=true)}
-
-    % Only NOW create the container (guaranteed teacher mode + has content)
-    \par\smallskip
-    \begin{tcolorbox}[qmetaStyle]
-      \tl_if_empty:NF \l__qmeta_answer_tl
-        { \textbf{【答案】}~\l__qmeta_answer_tl \par }
-      \fp_compare:nNnT { \l__qmeta_diff_fp } > { 0 }
-        { \textbf{【难度】}~\qmeta_format_difficulty: \par }
-      \tl_if_empty:NF \l__qmeta_topics_tl
-        { \textbf{【知识点】}~\l__qmeta_topics_tl \par }
-      \tl_if_empty:NF \l__qmeta_explain_tl
-        { \textbf{【详解】}~\l__qmeta_explain_tl \par }
-      \bool_if:NT \l__qmeta_show_source_bool
-        {
-          \tl_if_empty:NF \l__qmeta_source_tl
-            { \textbf{【来源】}~\l__qmeta_source_tl \par }
-        }
-    \end{tcolorbox}
+    % Teacher-only gating
+    \bool_if:NT \l__qmeta_teacher_bool
+      {
+        % Content gating
+        \qmeta_set_has_content_bool:
+        \bool_if:NT \l__qmeta_has_content_bool
+          {
+            \par\smallskip
+            \begin{tcolorbox}[qmetaStyle]
+              \tl_if_empty:NF \l__qmeta_answer_tl
+                { \textbf{【答案】}~\l__qmeta_answer_tl \par }
+              \fp_compare:nNnT { \l__qmeta_diff_fp } > { 0 }
+                { \textbf{【难度】}~\qmeta_format_difficulty: \par }
+              \tl_if_empty:NF \l__qmeta_topics_tl
+                { \textbf{【知识点】}~\l__qmeta_topics_tl \par }
+              \tl_if_empty:NF \l__qmeta_explain_tl
+                { \textbf{【详解】}~\l__qmeta_explain_tl \par }
+              \bool_if:NT \l__qmeta_show_source_bool
+                {
+                  \tl_if_empty:NF \l__qmeta_source_tl
+                    { \textbf{【来源】}~\l__qmeta_source_tl \par }
+                }
+            \end{tcolorbox}
+          }
+      }
   }
 
 %% ============================================================

@@ -115,6 +115,8 @@ main-handout.tex          — handout entry point
   已修复：确保使用最新版 `qmeta.sty`。
 - **教师版缺失元信息**
   使用 `\mcq` 时，元信息必须放在最后的可选参数 `[...]` 中。
+- **选择题选项不显示**
+  `choices` 环境内应使用 `\item`（推荐）或 `\choice`（已提供别名）。两者等价。
 
 ---
 
