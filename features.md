@@ -24,19 +24,16 @@
 
 在题目/例题**尾部**使用：
 ```tex
-	opics{…} \difficulty{0.40} \explain{…} \source{…}
+\topics{…} \difficulty{0.40} \explain{…} \source{…}
 ```
-- 教师版：自动打印教师信息块（Topics / Difficulty / Explanation / Source / **Answer**）  
-- 学生版：**完全不输出**教师块（无阴影框）  
-- `答案` 来自两种途径：
-  - `\mcq[<A-D>]` 的可选参数（内部等价于捕获 `\paren[<A-D>]`）；
-  - `\paren[<A-D>]` 或 `\fillin[<text>]` 的方括号参数。
+- 教师版：自动打印教师信息块（Topics / Difficulty / Explanation / Source / **Answer**）
+- 学生版：**完全不输出**教师块（无阴影框）
+- `答案` 自动从 `\paren[<A-D>]` 或 `\fillin[<text>]` 的方括号参数捕获
+- **重要**：内联答案标记"（A）"已默认隐藏（`show-paren=false`），答案仅显示在教师信息块中
 
-难度显示为百分比；可重定义格式：
+难度默认显示为小数（decimal）；可配置为百分比：
 ```tex
-\RenewDocumentCommand\ExamDifficultyFormat{m}{
-  \fp_eval:n { round((#1)*100, 0) } \%
-}
+\PassOptionsToPackage{difficulty-format=percent}{qmeta}
 ```
 
 ---
@@ -57,30 +54,26 @@
 
 ## 4) Authoring patterns
 
-### Pattern 1 — `\mcq`（推荐）
-```tex
-\mcq[C]{题干}{$A$}{$B$}{$C$}{$D$}
-	opics{…}\difficulty{0.4}\explain{…}
-```
-
-### Pattern 2 — 传统 exam-zh
+### Multiple-choice questions (native exam-zh)
 ```tex
 \begin{question}
 题干 \paren[C]
 \begin{choices}
   \item A \item B \item C \item D
 \end{choices}
-	opics{…}\difficulty{0.4}\explain{…}
 \end{question}
+\topics{…}\difficulty{0.4}\explain{…}
 ```
 
-### Fill-in
+### Fill-in questions
 ```tex
 函数 $f(x)=x^2-4x+3$ 的最小值为 \fillin[-1]{}。
-	opics{二次函数；顶点式}\difficulty{0.40}\explain{$(x-2)^2-1$}
+\topics{二次函数；顶点式}\difficulty{0.40}\explain{$(x-2)^2-1$}
 ```
 
-> 默认 `\examsetup{ fillin={type=line}, question={show-paren=true, show-points=false} }`。
+> 默认 `\examsetup{ fillin={type=line}, paren={show-paren=false}, question={show-points=false} }`。
+>
+> **注意**：`\mcq` 宏已弃用。如遇到旧代码使用 `\mcq`，会触发警告并自动转换为 exam-zh 格式。
 
 ---
 
@@ -96,7 +89,11 @@
 
 ## 6) Changelog (highlights)
 
-- **examx.sty**: teacher/student gating; empty‑box suppression; answer capture from `\mcq` / `\paren` / `\fillin`  
-- **main-exam.tex**: simplified global setup (delegated to examx)  
-- **exam02.tex**: demonstrates both authoring patterns
+- **examx.sty**:
+  - Default `show-paren=false` — inline answer markers "（A）" suppressed
+  - `\mcq` macro deprecated with warning (auto-converts to exam-zh format)
+  - Teacher/student gating; empty-box suppression
+  - Answer capture from `\paren` / `\fillin`
+- **qmeta.sty**: Answer display in teacher box only
+- **content/exams/*.tex**: Migrated to native exam-zh authoring (no `\mcq`)
 ```

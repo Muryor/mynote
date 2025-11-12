@@ -45,44 +45,35 @@
 
 ## Usage
 
-### Pattern 1: Using `\mcq` Macro (Recommended)
+### Authoring Multiple-Choice Questions
 
-```tex
-\mcq[B]{已知集合 $A=\{x\mid \log_2 x < 1\},\, B=\{x\mid x<1\}$，则 $A\cap B$ 等于}
-{$(-\infty,1)$}{$(0,1)$}{$(-\infty,2)$}{$(0,2)$}[
-\topics{交集；不等式与函数单调性}
-\difficulty{0.40}
-\explain{由 $\log_2 x<1\Rightarrow 0<x<2$，与 $x<1$ 取交得 $(0,1)$。}
-\source{自编}
-]
-```
-
-**Syntax**: `\mcq[answer]{stem}{optionA}{optionB}{optionC}{optionD}[metadata]`
-
-- First optional argument `[answer]`: Correct answer (A/B/C/D)
-- Four mandatory arguments: Question stem and four choices
-- Last optional argument `[metadata]`: Metadata commands block
-
-### Pattern 2: Using Traditional exam-zh Syntax
+Use native `exam-zh` syntax with the `question` environment:
 
 ```tex
 \begin{question}
-已知函数 $f(x)=2^x$，则 $f(0)+f(1)$ 等于 \paren[C]
-\begin{choices}[columns=2]
-  \choice $1$
-  \choice $2$
-  \choice $3$
-  \choice $4$
+已知集合 $A=\{x\mid \log_2 x < 1\},\, B=\{x\mid x<1\}$，则 $A\cap B$ 等于 \paren[B]
+\begin{choices}
+  \item $(-\infty,1)$
+  \item $(0,1)$
+  \item $(-\infty,2)$
+  \item $(0,2)$
 \end{choices}
-\topics{指数函数；基本运算}
-\difficulty{0.20}
-\explain{$f(0)=2^0=1$，$f(1)=2^1=2$，故 $f(0)+f(1)=3$。}
+\topics{交集；不等式与函数单调性}
+\difficulty{0.40}
+\explain{由 $\log_2 x<1\Rightarrow 0<x<2$，与 $x<1$ 取交得 $(0,1)$。}
 \end{question}
 ```
 
+**Key Points**:
+- Use `\paren[answer]` to supply the correct answer (A/B/C/D)
+- Inline answer marker "（A）" is **never shown** in either teacher or student builds (`show-paren=false`)
+- Answers appear **only in the teacher metadata box** (【答案】), not inline in the question stem
+- Use `\item` (or `\choice` alias) for each option in the `choices` environment
+- **CRITICAL**: Metadata commands (`\topics`, `\difficulty`, `\explain`) must be placed **BEFORE** `\end{question}` to ensure they are captured in the teacher box
+
 ### Metadata Commands
 
-- `\answer{...}` — 答案（`\mcq` 自动捕获，手动题目需显式标注）
+- `\answer{...}` — 答案（automatically captured from `\paren[...]` or `\fillin[...]`）
 - `\topics{...}` — 题目考点（多个用分号分隔）
 - `\difficulty{<0..1>}` — 难度（小数）
 - `\explain{...}` — 详解（可含数学环境与分页）
@@ -95,10 +86,10 @@
 ## Project Layout
 
 ```
-styles/examx.sty          — teacher/student controller, \mcq macro
+styles/examx.sty          — teacher/student controller, exam-zh configuration
 styles/qmeta.sty          — metadata capture and rendering
 settings/preamble.sty     — fonts and common setup
-content/exams/*.tex       — exam sources (exam02.tex demonstrates both patterns)
+content/exams/*.tex       — exam sources
 main-exam.tex             — exam entry point
 main-handout.tex          — handout entry point
 ```
@@ -114,7 +105,9 @@ main-handout.tex          — handout entry point
 - **学生版出现阴影方框**
   已修复：确保使用最新版 `qmeta.sty`。
 - **教师版缺失元信息**
-  使用 `\mcq` 时，元信息必须放在最后的可选参数 `[...]` 中。
+  元信息命令（`\topics`, `\difficulty`, `\explain`）**必须放在 `\end{question}` 之前**，否则在环境结束钩子触发时无法捕获。
+- **单选题不显示【答案】**
+  确认使用了 `\paren[X]` 或显式调用 `\answer{X}`，且元数据在 `\end{question}` 之前。
 - **选择题选项不显示**
   `choices` 环境内应使用 `\item`（推荐）或 `\choice`（已提供别名）。两者等价。
 

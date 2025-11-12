@@ -6,6 +6,9 @@
 \RequirePackage{currfile}
 \typeout{[examx]~LOADED~FROM:~\currfileabsdir}
 
+%% Enable enumitem shortlabels for backward compatibility
+\PassOptionsToPackage{shortlabels}{enumitem}
+
 %% Accept package options [teacher]/[student]; default to student.
 \RequirePackage{kvoptions}
 \SetupKeyvalOptions{family=examx,prefix=examx@}
@@ -53,6 +56,12 @@
 \RequirePackage{qmeta}
 
 %% ============================================================
+%% Legacy \paren[...] capture (no inline output)
+%% ============================================================
+\RenewDocumentCommand \paren { O{} } { \tl_if_blank:nF {#1} { \answer{#1} } }
+\ProvideDocumentCommand \answers { m } { \answer{#1} }
+
+%% ============================================================
 %% Load exam-zh configuration
 %% ============================================================
 \RequirePackage{fancyhdr}
@@ -60,12 +69,12 @@
 %% Configure exam-zh based on teacher/student mode (only if exam-zh is loaded)
 \@ifclassloaded{exam-zh}{
   \ifexamx@teacher
-    % Teacher mode: show answers and solutions
+    % Teacher mode: capture answers but don't show inline (show in metadata box only)
     \examsetup{
       question/show-answer   = true,
       fillin/show-answer     = true,
       fillin/type            = line,
-      paren/show-paren       = true,
+      paren/show-paren       = false,
       solution/show-solution = show-stay,
       question/show-points   = false
     }
@@ -91,8 +100,8 @@
 \NewDocumentCommand \mcq { O{} m m m m m O{} }
   {
     \begin{question}
-      #2~\paren[#1]
-      \begin{choices}[columns=2]
+      #2
+      \begin{choices}
         \item #3
         \item #4
         \item #5
@@ -104,16 +113,20 @@
   }
 
 %% ============================================================
-%% Per-Exam Header Title
+%% Per-Exam Header Title (first page only)
 %% ============================================================
+\newcommand\examx@title{}
+\fancypagestyle{examxfirstpage}{
+  \fancyhf{}
+  \renewcommand\headrulewidth{0pt}
+  \renewcommand\footrulewidth{0pt}
+  \fancyhead[C]{\bfseries\Large \examx@title}
+  \fancyfoot[C]{\thepage}
+}
 \NewDocumentCommand \examxtitle { m }
   {
-    \pagestyle{fancy}
-    \fancyhf{}
-    \renewcommand\headrulewidth{0pt}
-    \renewcommand\footrulewidth{0pt}
-    \fancyhead[C]{\bfseries\Large #1}
-    \fancyfoot[C]{\thepage}
+    \gdef\examx@title{#1}%
+    \thispagestyle{examxfirstpage}%
   }
 
 %% ============================================================
