@@ -86,6 +86,28 @@ Use native `exam-zh` syntax with the `question` environment:
 >
 > In the teacher metadata box, **Difficulty and Answer are printed on the same line** (e.g., 【难度】0.85  【答案】A), followed by Topics, Explanation, and Source on separate lines.
 
+### Handout Examples (讲义)
+
+Handouts use the **same metadata system** as exams. For `examplex` (例题) environments, add metadata at the end:
+
+```tex
+\begin{examplex}{例题：椭圆方程}{ex:ellipse-01}
+已知椭圆 $C:\,\dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1\ (a>b>0)$ 的左、右焦点分别为 $F_1,F_2$。
+求椭圆 $C$ 的方程。
+\topics{椭圆的标准方程；焦点坐标；离心率}
+\difficulty{0.6}
+\answer{$\dfrac{x^2}{a^2}+\dfrac{y^2}{b^2}=1$，其中 $c^2=a^2-b^2$}
+\explain{可由定义 $|PF_1|+|PF_2|=2a$ 推导，或由几何关系 $c^2=a^2-b^2$ 确定参数。}
+\end{examplex}
+```
+
+**Behavior**:
+
+- Handouts are **teacher-facing only** (no student variant)
+- After each `examplex` environment, a shaded metadata box appears with the same layout as exam questions
+- First line: 【难度】...  【答案】... (if provided)
+- Subsequent lines: 【知识点】..., 【详解】..., 【来源】... (if enabled)
+
 ---
 
 ## Project Layout

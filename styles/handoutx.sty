@@ -183,6 +183,15 @@
 \newtcbtheorem[]{notebox}{注意}{
   mygreen}{note}
 
+%% ============================================================
+%% Integrate qmeta metadata system with handout environments
+%% ============================================================
+% Hook examplex environment to use qmeta metadata (topics, difficulty, answer, explain, source)
+% On begin: reset metadata variables
+% On end: print teacher metadata box with "Difficulty + Answer" on first line
+\AddToHook{env/examplex/begin}{\qmeta_reset:}
+\AddToHook{env/examplex/end}{\qmeta_print_teacherblock:}
+
 \ExplSyntaxOff
 
 \endinput
