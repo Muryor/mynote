@@ -24,6 +24,7 @@
 \tl_new:N   \l__qmeta_explain_tl
 \tl_new:N   \l__qmeta_source_tl
 \fp_new:N   \l__qmeta_diff_fp
+\bool_new:N \l__qmeta_headrow_bool
 
 %% ============================================================
 %% Options
@@ -129,14 +130,34 @@
           {
             \par\smallskip
             \begin{tcolorbox}[qmetaStyle]
-              \tl_if_empty:NF \l__qmeta_answer_tl
-                { \textbf{【答案】}~\l__qmeta_answer_tl \par }
+              %=== First row: Difficulty + Answer in the same line ===
+              \bool_set_false:N \l__qmeta_headrow_bool
+
+              % Difficulty part
               \fp_compare:nNnT { \l__qmeta_diff_fp } > { 0 }
-                { \textbf{【难度】}~\qmeta_format_difficulty: \par }
+                {
+                  \textbf{【难度】}~\qmeta_format_difficulty:
+                  \bool_set_true:N \l__qmeta_headrow_bool
+                }
+
+              % Answer part
+              \tl_if_empty:NF \l__qmeta_answer_tl
+                {
+                  \bool_if:NT \l__qmeta_headrow_bool { \qquad }
+                  \textbf{【答案】}~\l__qmeta_answer_tl
+                  \bool_set_true:N \l__qmeta_headrow_bool
+                }
+
+              % Paragraph break only if something was printed on the head row
+              \bool_if:NT \l__qmeta_headrow_bool { \par }
+
+              %=== Remaining fields: Topics, Explanation, Source ===
               \tl_if_empty:NF \l__qmeta_topics_tl
                 { \textbf{【知识点】}~\l__qmeta_topics_tl \par }
+
               \tl_if_empty:NF \l__qmeta_explain_tl
                 { \textbf{【详解】}~\l__qmeta_explain_tl \par }
+
               \bool_if:NT \l__qmeta_show_source_bool
                 {
                   \tl_if_empty:NF \l__qmeta_source_tl

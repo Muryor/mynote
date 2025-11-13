@@ -24,11 +24,16 @@
 
 在题目/例题**尾部**使用：
 ```tex
-\topics{…} \difficulty{0.40} \explain{…} \source{…}
+\topics{…} \difficulty{0.40} \answer{…} \explain{…} \source{…}
 ```
-- 教师版：自动打印教师信息块（Topics / Difficulty / Explanation / Source / **Answer**）
+- 教师版：自动打印教师信息块（Difficulty / Answer / Topics / Explanation / Source）
+  - **Difficulty 和 Answer 显示在同一行**（例：【难度】0.85  【答案】A）
+  - Topics、Explanation、Source 各占独立行
 - 学生版：**完全不输出**教师块（无阴影框）
-- `答案` 自动从 `\paren[<A-D>]` 或 `\fillin[<text>]` 的方括号参数捕获
+- `答案` 由以下方式提供：
+  - 快速单选题：`\mcq[<正确选项>]` 的可选参数
+  - 其他题型：在元信息尾部显式写 `\answer{...}` 或 `\answers{...}`
+- **不再从 `\paren[<A-D>]`、`\fillin[<text>]` 的方括号参数自动捕获答案**，以降低题面 TeX 复杂度、方便从外部题库导入
 - **重要**：内联答案标记"（A）"已默认隐藏（`show-paren=false`），答案仅显示在教师信息块中
 
 难度默认显示为小数（decimal）；可配置为百分比：
@@ -61,19 +66,34 @@
 \begin{choices}
   \item A \item B \item C \item D
 \end{choices}
+\topics{…}
+\difficulty{0.4}
+\answer{B}
+\explain{…}
 \end{question}
-\topics{…}\difficulty{0.4}\explain{…}
 ```
+
+### Quick MCQ (using \mcq macro)
+```tex
+\mcq[B]{题干}{选项A}{选项B}{选项C}{选项D}
+\topics{…}
+\difficulty{0.4}
+\explain{…}
+```
+> `\mcq[<correct>]` 会自动调用 `\answer{<correct>}`，无需重复写 `\answer`。
 
 ### Fill-in questions
 ```tex
-函数 $f(x)=x^2-4x+3$ 的最小值为 \fillin[-1]{}。
-\topics{二次函数；顶点式}\difficulty{0.40}\explain{$(x-2)^2-1$}
+函数 $f(x)=x^2-4x+3$ 的最小值为 \fillin{}。
+\topics{二次函数；顶点式}
+\difficulty{0.40}
+\answer{-1}
+\explain{$(x-2)^2-1$}
 ```
 
 > 默认 `\examsetup{ fillin={type=line}, paren={show-paren=false}, question={show-points=false} }`。
 >
-> **注意**：`\mcq` 宏已弃用。如遇到旧代码使用 `\mcq`，会触发警告并自动转换为 exam-zh 格式。
+> **重要**：`\paren[...]` 和 `\fillin[...]` 仅用于排版，不再自动捕获答案。答案必须通过 `\answer{...}` 显式提供。
 
 ---
 
@@ -91,9 +111,12 @@
 
 - **examx.sty**:
   - Default `show-paren=false` — inline answer markers "（A）" suppressed
-  - `\mcq` macro deprecated with warning (auto-converts to exam-zh format)
+  - `\mcq[<correct>]` macro available for quick MCQs (automatically calls `\answer{<correct>}`)
   - Teacher/student gating; empty-box suppression
-  - Answer capture from `\paren` / `\fillin`
-- **qmeta.sty**: Answer display in teacher box only
-- **content/exams/*.tex**: Migrated to native exam-zh authoring (no `\mcq`)
-```
+  - **Removed automatic answer capture from `\paren` / `\fillin`** — answers must be explicit via `\answer{...}` or `\mcq[...]`
+  - Both teacher and student builds hide exam-zh inline answers (show only in metadata box)
+- **qmeta.sty**:
+  - Answer display in teacher box only
+  - **Difficulty and Answer printed on same line** (e.g., 【难度】0.85  【答案】A)
+  - Topics, Explanation, Source follow on separate lines
+- **content/exams/*.tex**: Uses explicit `\answer{...}` metadata for all questions

@@ -56,9 +56,9 @@
 \RequirePackage{qmeta}
 
 %% ============================================================
-%% Legacy \paren[...] capture (no inline output)
+%% Answer metadata helpers (no automatic capture from \paren / \fillin)
+%% We no longer override \paren; answers must be explicit.
 %% ============================================================
-\RenewDocumentCommand \paren { O{} } { \tl_if_blank:nF {#1} { \answer{#1} } }
 \ProvideDocumentCommand \answers { m } { \answer{#1} }
 
 %% ============================================================
@@ -69,11 +69,12 @@
 %% Configure exam-zh based on teacher/student mode (only if exam-zh is loaded)
 \@ifclassloaded{exam-zh}{
   \ifexamx@teacher
-    % Teacher mode: capture answers but don't show inline (show in metadata box only)
+    % Teacher mode: hide inline answers (show only in metadata box)
     \examsetup{
-      question/show-answer   = true,
-      fillin/show-answer     = true,
+      question/show-answer   = false,
+      fillin/show-answer     = false,
       fillin/type            = line,
+      fillin/no-answer-type  = none,
       paren/show-paren       = false,
       solution/show-solution = show-stay,
       question/show-points   = false
