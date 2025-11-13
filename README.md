@@ -36,6 +36,37 @@
 
 ---
 
+## Configuration
+
+### Switching Compilation Target
+
+The project uses a **metadata-driven entry point** system. To switch which exam or handout to compile:
+
+1. Open `settings/metadata.tex`
+2. Modify the source file path:
+   - For exams: `\newcommand{\examSourceFile}{path/to/your/exam.tex}`
+   - For handouts: `\newcommand{\handoutSourceFile}{path/to/your/handout.tex}`
+3. Run the build command (see below)
+
+**Path Support**:
+- ✅ English paths (recommended): `content/exams/g3/sem1/midterm/g3_sem1_midterm_2025_wuxi.tex`
+- ✅ Chinese paths (macOS + XeLaTeX tested): `content/exams/高三/上学期/期中/高三上学期期中考试数学试卷.tex`
+- Use relative paths (from repository root) or absolute paths
+- Avoid spaces in paths; use underscores instead (e.g., `高三上_期中.tex`)
+
+**Example `settings/metadata.tex`**:
+```tex
+% Exam entry (currently selected)
+\newcommand{\examSourceFile}{content/exams/exam01.tex}
+
+% Handout entry (currently selected)
+\newcommand{\handoutSourceFile}{content/handouts/g3/functions/g3_functions_topic01_basic_concepts.tex}
+```
+
+> The teacher/student role is controlled by `build.sh`, **not** in metadata. Metadata only specifies **which** file to compile.
+
+---
+
 ## Build
 
 ```bash
@@ -126,13 +157,61 @@ Handouts use the **same metadata system** as exams. For `examplex` (例题) envi
 ## Project Layout
 
 ```
-styles/examx.sty          — teacher/student controller, exam-zh configuration
-styles/qmeta.sty          — metadata capture and rendering
-settings/preamble.sty     — fonts and common setup
-content/exams/*.tex       — exam sources
-main-exam.tex             — exam entry point
-main-handout.tex          — handout entry point
+main-exam.tex                    — exam entry point (loads content via metadata)
+main-handout.tex                 — handout entry point (loads content via metadata)
+settings/
+  metadata.tex                   — compilation target configuration
+  preamble.sty                   — fonts and common setup
+styles/
+  examx.sty                      — teacher/student controller, exam-zh configuration
+  qmeta.sty                      — metadata capture and rendering
+  handoutx.sty                   — handout environment extensions
+content/
+  exams/
+    exam01.tex                   — example exam (current default)
+    g1/sem1/                     — grade 1 semester 1 exams
+    g1/sem2/                     — grade 1 semester 2 exams
+    g2/sem1/                     — grade 2 semester 1 exams
+    g2/sem2/                     — grade 2 semester 2 exams
+    g3/...                       — grade 3 stage tests, mock exams
+  handouts/
+    ch01.tex                     — legacy example handout
+    g1/sem1/                     — grade 1 semester 1 handouts
+    g1/sem2/                     — grade 1 semester 2 handouts
+    g2/sem1/                     — grade 2 semester 1 handouts
+    g2/sem2/                     — grade 2 semester 2 handouts
+    g3/
+      functions/                 — 函数专题
+      derivatives/               — 导数专题
+      conics/                    — 圆锥曲线专题
+      sequences/                 — 数列专题
+      trigonometry/              — 三角函数专题
+      vectors/                   — 向量专题
+      combinatorics/             — 排列组合专题
+      probability_statistics/    — 概率与统计专题
+      solid_geometry/            — 立体几何专题
+      sets_complex_inequalities/ — 集合、复数、不等式专题
+      comprehensive/             — 综合专题
+output/                          — build artifacts (PDFs)
 ```
+
+### Directory Organization
+
+**Exams** (`content/exams/`):
+- Grade 1-2: organized by semester (sem1/sem2)
+- Grade 3: organized by test type (stage tests, mock exams, etc.)
+- Use English lower_snake_case filenames (recommended)
+- Metadata allows Chinese paths for personal use
+
+**Handouts** (`content/handouts/`):
+- Grade 1-2: organized by semester (sem1/sem2)
+- Grade 3: organized by topic (11 major topics listed above)
+- Each topic directory can contain multiple handout files
+- See `content/handouts/README.md` for detailed structure
+
+**Configuration**:
+- `settings/metadata.tex`: Set `\examSourceFile` and `\handoutSourceFile` to switch compilation targets
+- Supports both English and Chinese paths (macOS + XeLaTeX tested)
 
 ---
 
@@ -176,6 +255,22 @@ main-handout.tex          — handout entry point
   - 建议流程: 1) 备份原文件 2) 执行修改 3) 测试编译 4) 逐个修复错误 5) 验证两版本输出
   - 使用 `./build.sh exam both` 同时编译教师/学生版，确保两版本都通过
   - 检查 `output/` 目录生成的 PDF 文件大小和内容是否符合预期
+
+### 文件命名约定
+
+**Repository files (tracked in Git)**:
+- 推荐使用英文 lower_snake_case 文件名和目录名
+- 示例: `g3_sem1_midterm_2025_wuxi.tex`, `g3_functions_topic01_basic_concepts.tex`
+- 这确保了跨平台兼容性和版本控制的稳定性
+
+**Local files (personal use)**:
+- 允许使用中文文件名和目录名（macOS + XeLaTeX 环境下测试通过）
+- 示例: `高三上学期期中考试数学试卷.tex`, `高三函数专题（一）.tex`
+- 通过 `settings/metadata.tex` 配置路径即可编译
+- 注意事项:
+  - 避免路径中使用空格，建议用下划线连接
+  - 如遇编译问题，可先用英文文件名测试排查
+  - 这些文件可以不纳入版本控制（添加到 `.gitignore`）
 
 ---
 

@@ -32,6 +32,20 @@
   % Title is now set per-exam using \examxtitle{...} in content files
   % No hardcoded default title
 
-  % Content
-  \input{content/exams/exam01.tex}
+  % Content: dynamically loaded from metadata.tex configuration
+  % The actual exam file is specified by \examSourceFile in settings/metadata.tex
+  \ifx\examSourceFile\undefined
+    \PackageError{examx}{%
+      No examSourceFile defined in settings/metadata.tex.%
+    }{%
+      Please define \protect\examSourceFile in settings/metadata.tex to specify which exam to compile.%
+    }
+  \else
+    \ifx\examSourceFile\@empty
+      \PackageWarning{examx}{examSourceFile is empty, no content loaded}
+    \else
+      % Load the exam content specified in metadata
+      \input{\examSourceFile}
+    \fi
+  \fi
 \end{document}

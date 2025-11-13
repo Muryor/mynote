@@ -19,5 +19,21 @@
   % \maketitle is now empty due to cover=false option
   \tableofcontents
   \mainmatter
-  \input{content/handouts/ch01.tex}
+  
+  % Content: dynamically loaded from metadata.tex configuration
+  % The actual handout file is specified by \handoutSourceFile in settings/metadata.tex
+  \ifx\handoutSourceFile\undefined
+    \PackageError{handoutx}{%
+      No handoutSourceFile defined in settings/metadata.tex.%
+    }{%
+      Please define \protect\handoutSourceFile in settings/metadata.tex to specify which handout to compile.%
+    }
+  \else
+    \ifx\handoutSourceFile\@empty
+      \PackageWarning{handoutx}{handoutSourceFile is empty, no content loaded}
+    \else
+      % Load the handout content specified in metadata
+      \input{\handoutSourceFile}
+    \fi
+  \fi
 \end{document}

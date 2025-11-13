@@ -7,16 +7,33 @@
 ## 1) Modules
 
 ### Exam
+
 - **Class**: `exam-zh`
 - **Bridge**: `styles/examx.sty` — hooks `question`/`problem` end to render teacher block
-- **Content**: `content/exams/*.tex` (e.g. `exam02.tex` demo)
-- **Entry**: `main-exam.tex`
+- **Content**: `content/exams/` — organized by grade and semester/test type
+  - Grade 1-2: `g1/sem{1,2}/`, `g2/sem{1,2}/`
+  - Grade 3: `g3/` (stage tests, mock exams, etc.)
+- **Entry**: `main-exam.tex` — loads content via `settings/metadata.tex` (`\examSourceFile`)
+- **Compilation Target**: Configured in `settings/metadata.tex`
+  - Set `\examSourceFile` to the path of the exam you want to compile
+  - Supports English paths (recommended) and Chinese paths (macOS + XeLaTeX tested)
+  - Example: `\newcommand{\examSourceFile}{content/exams/exam01.tex}`
 
 ### Handout
+
 - **Class**: `ElegantBook`
 - **Extension**: `styles/handoutx.sty` — hooks `examplex` environment to render teacher metadata block
-- **Content**: `content/handouts/*.tex`
-- **Entry**: `main-handout.tex`
+- **Content**: `content/handouts/` — organized by grade and semester/topic
+  - Grade 1-2: `g1/sem{1,2}/`, `g2/sem{1,2}/`
+  - Grade 3: `g3/<topic>/` (11 major topics)
+    - functions（函数）, derivatives（导数）, conics（圆锥曲线）, sequences（数列）
+    - trigonometry（三角函数）, vectors（向量）, combinatorics（排列组合）
+    - probability_statistics（概率与统计）, solid_geometry（立体几何）
+    - sets_complex_inequalities（集合、复数、不等式）, comprehensive（综合）
+- **Entry**: `main-handout.tex` — loads content via `settings/metadata.tex` (`\handoutSourceFile`)
+- **Compilation Target**: Configured in `settings/metadata.tex`
+  - Set `\handoutSourceFile` to the path of the handout you want to compile
+  - Example: `\newcommand{\handoutSourceFile}{content/handouts/g3/functions/g3_functions_topic01_basic_concepts.tex}`
 - **Metadata**: Same system as exams; `examplex` (例题) environments support `\topics`, `\difficulty`, `\answer`, `\explain`, `\source`
 
 ---
