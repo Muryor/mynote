@@ -12,6 +12,7 @@
 \RequirePackage{unicode-math}
 \RequirePackage{xeCJK}
 \RequirePackage{ctex}
+\RequirePackage{lastpage} % provide \label{LastPage} for page references
 
 \defaultfontfeatures{Ligatures=TeX}
 
@@ -36,17 +37,22 @@
   }%
 }
 
-% Sans — Inter / TGHeros / Helvetica / Arial
-\IfFontExistsTF{Inter}{%
-  \setsansfont{Inter}%
+% Sans — TGHeros / Helvetica / Arial (Inter removed for compatibility)
+\IfFontExistsTF{TeX Gyre Heros}{%
+  \setsansfont{TeX Gyre Heros}%
 }{%
-  \IfFontExistsTF{TeX Gyre Heros}{%
-    \setsansfont{TeX Gyre Heros}%
+  \IfFontExistsTF{Helvetica}{%
+    \setsansfont{Helvetica}%
   }{%
-    \IfFontExistsTF{Helvetica}{%
-      \setsansfont{Helvetica}%
-    }{%
+    \IfFontExistsTF{Arial}{%
       \setsansfont{Arial}%
+    }{%
+      \IfFontExistsTF{Latin Modern Sans}{%
+        \setsansfont{Latin Modern Sans}%
+      }{%
+        % Final fallback: reuse a serif if no sans available
+        \setsansfont{Latin Modern Roman}%
+      }%
     }%
   }%
 }
