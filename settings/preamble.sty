@@ -151,3 +151,6 @@
 \RequirePackage{etoolbox}
 \providecommand\choicelabel{\Alph{choicesi}.}
 \AtBeginEnvironment{choices}{\setlength{\itemsep}{0.75em}}
+\AtBeginDocument{%
+  \renewcommand{\vec}[1]{\overrightarrow{#1}}%
+}

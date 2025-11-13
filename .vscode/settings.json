@@ -6,29 +6,62 @@
     "**/output/**": true
   },
 
-  // 只使用 Skim 外部查看器（禁用内置标签页）
+  // ===== PDF 查看器配置 =====
+  // 使用外部查看器（Skim）
   "latex-workshop.view.pdf.viewer": "external",
-
-  // 使用 Skim 的 displayline，支持 SyncTeX 正/反向搜索
+  
+  // 修复后的 Skim 正向搜索配置（简化参数避免 AppleScript 错误）
   "latex-workshop.view.pdf.external.viewer.command": "/Applications/Skim.app/Contents/SharedSupport/displayline",
-  "latex-workshop.view.pdf.external.viewer.args": ["-g", "%LINE%", "%PDF%", "%TEX%"],
-
-  // 引用/跳转也走外部查看器
+  "latex-workshop.view.pdf.external.viewer.args": [
+    "0",
+    "%PDF%"
+  ],
+  
+  // 引用跳转配置
   "latex-workshop.view.pdf.ref.viewer": "external",
 
-  // 构建后不要打开内置 PDF 标签
+  // 禁用内置 PDF 标签
   "latex-workshop.view.pdf.tab.openAfterBuild": false,
 
-  // 输出目录与清理策略
-  "latex-workshop.latex.outDir": "output",
+  // ===== 输出目录配置 =====
+  "latex-workshop.latex.outDir": "%DIR%/output",
+  
+  // ===== 自动清理配置 =====
   "latex-workshop.latex.autoClean.run": "onBuilt",
   "latex-workshop.latex.clean.fileTypes": [
-    "*.aux","*.bbl","*.bcf","*.blg","*.log","*.out","*.toc",
-    "*.run.xml","*.synctex.gz","*.fdb_latexmk","*.fls","*.xdv",
-    "*.nav","*.snm","*.vrb"
+    "*.aux", "*.bbl", "*.bcf", "*.blg", "*.log", "*.out", "*.toc",
+    "*.run.xml", "*.fdb_latexmk", "*.fls", "*.xdv",
+    "*.nav", "*.snm", "*.vrb"
   ],
 
-  // 质量优化（可选）
+  // ===== SyncTeX 配置 =====
   "latex-workshop.synctex.afterBuild.enabled": true,
-  "latex-workshop.view.pdf.zoom": "auto"
+  "latex-workshop.synctex.path": "synctex",
+  
+  // PDF 缩放
+  "latex-workshop.view.pdf.zoom": "auto",
+  
+  // ===== LaTeX 编译工具 =====
+  "latex-workshop.latex.tools": [
+    {
+      "name": "latexmk-xelatex",
+      "command": "latexmk",
+      "args": [
+        "-xelatex",
+        "-synctex=1",
+        "-interaction=nonstopmode",
+        "-file-line-error",
+        "-outdir=%OUTDIR%",
+        "%DOC%"
+      ]
+    }
+  ],
+  
+  // ===== LaTeX 编译配方 =====
+  "latex-workshop.latex.recipes": [
+    {
+      "name": "latexmk (XeLaTeX)",
+      "tools": ["latexmk-xelatex"]
+    }
+  ]
 }

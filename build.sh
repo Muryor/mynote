@@ -60,11 +60,11 @@ cleanup_artifacts() {
   # Remove minted directories
   rm -rf _minted-* */_minted-* "${OUT}/_minted-"* 2>/dev/null || true
   
-  # Remove specific artifact types, keep only PDFs
+  # Remove specific artifact types, keep PDFs and .synctex.gz for SyncTeX
   find "${OUT}" -type f \( \
     -name '*.aux' -o -name '*.log' -o -name '*.fls' -o \
     -name '*.fdb_latexmk' -o -name '*.out' -o -name '*.toc' -o \
-    -name '*.synctex.gz' -o -name '*.run.xml' -o -name '*.bcf' -o \
+    -name '*.run.xml' -o -name '*.bcf' -o \
     -name '*.xdv' -o -name '*.nav' -o -name '*.snm' -o \
     -name 'wrap-*.tex' \
   \) -delete 2>/dev/null || true

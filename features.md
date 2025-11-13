@@ -57,7 +57,7 @@
 ### Multiple-choice questions (native exam-zh)
 ```tex
 \begin{question}
-题干 \paren[C]
+题干
 \begin{choices}
   \item A \item B \item C \item D
 \end{choices}
