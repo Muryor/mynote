@@ -1,6 +1,6 @@
 # MyNote – Exam/Lecture LaTeX Notes
 
-基于 [`exam-zh`](https://ctan.org/pkg/exam-zh) 与自定义样式 `styles/examx.sty` 的中英混排**试卷/讲义**模板。提供教师版/学生版双输出，并在题目尾部按统一接口自动渲染"考点/难度/详解/来源"。
+基于 [`exam-zh`](https://ctan.org/pkg/exam-zh) 与自定义样式 `styles/examx.sty` 的中英混排**试卷/讲义**模板。提供教师版/学生版双输出，并在题目尾部按统一接口自动渲染"考点/难度/答案/详解/来源"。
 
 > 本项目仅文档与模板层改动，不引入破坏构建的依赖。提交前请本地通过 `./build.sh exam both` 和 `./build.sh handout both`。
 
@@ -8,11 +8,14 @@
 
 ## Features
 
-- Teacher / Student **双版本输出**
+- Teacher / Student **双版本输出**（试卷）+ Teacher-only **讲义输出**
 - 统一题目元数据渲染：答案 / 考点 / 难度 / 详解（来源可选）
 - 难度小数显示（默认 decimal，可配置为 percent）
 - `tcolorbox` 教师信息块（学生版完全不渲染）
 - **零侵入题面**：题面只写内容，元信息由 `examx` 自动排版
+- **行内数学统一使用 `\(...\)`**：避免与 TikZ 坐标计算冲突
+- **字体回退链**：Inter → TeX Gyre Heros → Helvetica → Arial → Latin Modern Sans
+- **TikZ 图形支持**：使用 `\path coordinate[pos=t]` 语法计算中点，避免 `$(...)$` 冲突
 
 详见 [`features.md`](./features.md)。
 
@@ -20,8 +23,16 @@
 
 ## Requirements
 
-- TeX Live **2024+**（recommended 2025）
+- TeX Live **2024+**（recommended 2025）with `xelatex` and `latexmk`
 - Packages: `exam-zh`, `tcolorbox`, `ctex` (and others from `settings/preamble.sty`)
+- **系统字体**:
+  - **CJK**: PingFang SC / Noto Serif CJK SC / Source Han Serif SC / STSong (任一可用)
+  - **Sans**: TeX Gyre Heros → Helvetica → Arial → Latin Modern Sans (回退链)
+  - **Mono**: JetBrains Mono / Fira Code / Latin Modern Mono / Monaco (可选)
+  - **数学**: STIX Two Math / Libertinus Math / Latin Modern Math (任一可用)
+- **注意**: 本项目已移除 Inter 字体依赖，使用 TeX 内置字体回退链，无需安装额外字体
+
+> 如遇 `mktexmf: font ... not found` 错误，检查 `settings/preamble.sty` 字体配置。
 
 ---
 
@@ -51,21 +62,23 @@ Use native `exam-zh` syntax with the `question` environment:
 
 ```tex
 \begin{question}
-已知集合 $A=\{x\mid \log_2 x < 1\},\, B=\{x\mid x<1\}$，则 $A\cap B$ 等于
+已知集合 \(A=\{x\mid \log_2 x < 1\},\, B=\{x\mid x<1\}\)，则 \(A\cap B\) 等于
 \begin{choices}
-  \item $(-\infty,1)$
-  \item $(0,1)$
-  \item $(-\infty,2)$
-  \item $(0,2)$
+  \item \((-\infty,1)\)
+  \item \((0,1)\)
+  \item \((-\infty,2)\)
+  \item \((0,2)\)
 \end{choices}
 \topics{交集；不等式与函数单调性}
 \difficulty{0.40}
 \answer{B}
-\explain{由 $\log_2 x<1\Rightarrow 0<x<2$，与 $x<1$ 取交得 $(0,1)$。}
+\explain{由 \(\log_2 x<1\Rightarrow 0<x<2\)，与 \(x<1\) 取交得 \((0,1)\)。}
 \end{question}
 ```
 
 **Key Points**:
+
+- **行内数学使用 `\(...\)`**: 避免 `$...$` 与 TikZ 坐标计算冲突
 - Answers are provided via **explicit metadata**: use `\answer{...}` (or `\answers{...}`) in the metadata section
 - For quick MCQs, use `\mcq[correct]{stem}{A}{B}{C}{D}` which automatically captures the answer
 - `\paren[...]` and `\fillin[...]` are **only for typesetting** and do NOT automatically capture answers
@@ -125,10 +138,29 @@ main-handout.tex          — handout entry point
 
 ## Troubleshooting
 
+### 编译错误
+
 - **Runaway argument / File ended while scanning use of ...**
   常为 `}` 被 `%` 注释吞掉；请检查最近改动。
 - **一串 `expl3` 命令未定义**
   确保 `\ExplSyntaxOn` / `\ExplSyntaxOff` 配对正确。
+- **`mktexmf: font Inter not found` 或类似字体错误**
+  - **原因**: 系统缺少字体，或 preamble.sty 引用了不存在的字体
+  - **解决**: 检查 `settings/preamble.sty` 字体配置，使用内置 TeX 字体回退链（已移除 Inter）
+  - 如需自定义字体，确保系统已安装或删除对应 `\IfFontExistsTF` 检查
+
+### TikZ 图形错误
+
+- **`No shape named '(A' is known` 或坐标计算错误**
+  - **原因**: 使用 `$...$` 包裹 TikZ 计算表达式 `$(...)$` 导致全局替换产生 `\((A)\)` 错误语法
+  - **解决**:
+    - TikZ 坐标计算使用 `($(A)+(0.7,0)$)` 语法，不要用 `$((A)+(0.7,0))$`
+    - 计算中点推荐 `\path (A) -- (B) coordinate[pos=0.5] (M);` 语法
+    - 行内数学使用 `\(...\)`，TikZ 图形中使用 `$(...)$` 坐标计算
+  - **示例**: 见 `content/exams/exam01.tex` Q4, Q12, Q13
+
+### 元信息显示问题
+
 - **学生版出现阴影方框**
   已修复：确保使用最新版 `qmeta.sty`。
 - **教师版缺失元信息**
@@ -137,6 +169,13 @@ main-handout.tex          — handout entry point
   确认在题目的元信息中显式调用了 `\answer{X}`（或使用了 `\mcq[X]`），并且元数据命令放在 `\end{question}` 之前。
 - **选择题选项不显示**
   `choices` 环境内应使用 `\item`（推荐）或 `\choice`（已提供别名）。两者等价。
+
+### 构建流程
+
+- **大规模重构后构建失败**
+  - 建议流程: 1) 备份原文件 2) 执行修改 3) 测试编译 4) 逐个修复错误 5) 验证两版本输出
+  - 使用 `./build.sh exam both` 同时编译教师/学生版，确保两版本都通过
+  - 检查 `output/` 目录生成的 PDF 文件大小和内容是否符合预期
 
 ---
 

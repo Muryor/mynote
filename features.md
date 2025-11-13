@@ -56,7 +56,7 @@
 ```tex
 \examxsetup{
   autoprint=true,     % 自动打印（仅教师版生效）
-  show-source=false,  % 是否显示“来源”
+  show-source=false,  % 是否显示"来源"
   boxed=true          % 使用 tcolorbox；false 为极简样式
 }
 ```
@@ -66,6 +66,29 @@
 ---
 
 ## 4) Authoring patterns
+
+### TikZ Graphics Best Practices
+
+**行内数学 vs TikZ 坐标计算**：
+- **行内数学使用 `\(...\)`**：避免全局 `$...$` → `\(...\)` 替换时与 TikZ 冲突
+- **TikZ 坐标计算使用 `$(...)$` 语法**：这是 TikZ calc 库的标准语法
+
+**示例**：
+
+```tex
+% ✅ 正确：TikZ 坐标计算
+\coordinate (M) at ($(A)!0.5!(B)$);  % 计算 A 和 B 的中点
+\draw ($(A)+(0.7,0)$) node[right] {$D$};  % 从 A 偏移
+
+% ✅ 推荐：使用 pos 参数（更稳健）
+\path (A) -- (B) coordinate[pos=0.5] (M);  % M 是 AB 中点
+\path (B) -- (C) coordinate[pos=0.5] (D);  % D 是 BC 中点
+
+% ❌ 错误：双层括号会被全局替换破坏
+\coordinate (M) at $((A)!0.5!(B))$;  % 替换后变成 \((A)!0.5!(B)\) 导致错误
+```
+
+**参考实现**：见 `content/exams/exam01.tex` Q4（向量图形）、Q12、Q13
 
 ### Multiple-choice questions (native exam-zh)
 ```tex
@@ -117,14 +140,32 @@
 
 ## 6) Changelog (highlights)
 
+- **2025-11-13: exam01.tex 大规模重构**
+  - 补充缺失的 Q11（数列λ-数列多选题）
+  - 扩展 Q15-Q19 解答详解，提供完整推导步骤
+  - 统一行内数学格式：所有 `$...$` → `\(...\)`，避免与 TikZ 坐标计算冲突
+  - 清理所有 `\explain{}` 字段：移除"分析：/详解：/答案："前缀
+  - 修复 Q4 缺失的向量图形（三角形 ABC 及中点 D、E）
+  - 修正 Q16 最小值 -1/2，Q19(1)(ii) a=0
+  - TikZ 图形使用 `coordinate[pos=0.5]` 语法计算中点，避免 `$(...)$` 坐标计算错误
+
+- **字体系统更新**
+  - 移除 Inter 字体依赖，使用 TeX 内置字体回退链
+  - Sans: TeX Gyre Heros → Helvetica → Arial → Latin Modern Sans → Latin Modern Roman
+  - Mono: JetBrains Mono → Fira Code → Latin Modern Mono → TeX Gyre Cursor → Courier New → Monaco
+  - 修复 `mktexmf: font Inter not found` 构建失败问题
+
 - **examx.sty**:
   - Default `show-paren=false` — inline answer markers "（A）" suppressed
   - `\mcq[<correct>]` macro available for quick MCQs (automatically calls `\answer{<correct>}`)
   - Teacher/student gating; empty-box suppression
   - **Removed automatic answer capture from `\paren` / `\fillin`** — answers must be explicit via `\answer{...}` or `\mcq[...]`
   - Both teacher and student builds hide exam-zh inline answers (show only in metadata box)
+
 - **qmeta.sty**:
   - Answer display in teacher box only
   - **Difficulty and Answer printed on same line** (e.g., 【难度】0.85  【答案】A)
   - Topics, Explanation, Source follow on separate lines
+
 - **content/exams/*.tex**: Uses explicit `\answer{...}` metadata for all questions
+  - **exam01.tex**: 江苏省无锡市 2025-2026 学年高三上学期期中考试数学试题（Q1-Q19 完整）
