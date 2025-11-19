@@ -512,7 +512,7 @@ mv settings/metadata.tex.bak settings/metadata.tex
 ---
 
 **最后提醒**：
-1. 始终遵守"【分析】全部舍弃，【详解】是 \explain{} 唯一来源"的核心规范
+1. 【详解】是 \explain{} 唯一来源"
 2. 每次遇到 ocr_to_examx.py 导致的问题都要详细记录
 3. 优先使用 `preprocess_docx.sh` 简化流程
 4. 编译失败时先查看 `output/last_error.log`

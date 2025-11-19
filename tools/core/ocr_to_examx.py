@@ -734,11 +734,32 @@ def convert_markdown_table_to_latex(text: str) -> str:
     return re.sub(table_pattern, convert_one_table, text)
 
 
+def normalize_fullwidth_brackets(text: str) -> str:
+    """🆕 v1.6.3：统一全角括号为半角
+
+    注意：不要替换用于 meta 标记的【】
+    """
+    pairs = {
+        "（": "(",
+        "）": ")",
+        "｛": "{",
+        "｝": "}",
+        # 不替换 ［］，避免影响某些 Markdown 语法
+    }
+    for fw, hw in pairs.items():
+        text = text.replace(fw, hw)
+    return text
+
+
 def clean_markdown(text: str) -> str:
     """清理 markdown 垃圾
-    
+
     🆕 v1.3 改进：统一中英文标点
+    🆕 v1.6.3：增强全角括号统一
     """
+    # 🆕 v1.6.3：首先统一全角括号
+    text = normalize_fullwidth_brackets(text)
+
     text = re.sub(
         r"<br><span class='markdown-page-line'>.*?</span><br><br>",
         "\n", text, flags=re.S,
@@ -747,10 +768,10 @@ def clean_markdown(text: str) -> str:
         r"<span id='page\d+' class='markdown-page-text'>\[.*?\]</span>",
         "", text,
     )
-    
+
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"\n{3,}", "\n\n", text)
-    
+
     # 🆕 v1.3 改进：统一中英文标点
     # 保护已有的LaTeX命令
     protected = []
@@ -758,30 +779,30 @@ def clean_markdown(text: str) -> str:
         protected.append(match.group(0))
         return f"@@LATEXCMD{len(protected)-1}@@"
     text = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', save_latex_cmd, text)
-    
-    # 统一括号（全角→半角）
+
+    # 统一括号（全角→半角）- 已在 normalize_fullwidth_brackets 中处理
     text = text.replace('（', '(').replace('）', ')')
     # 统一引号（弯引号→直引号）
     text = text.replace('"', '"').replace('"', '"')
     text = text.replace(''', "'").replace(''', "'")
-    
+
     # 恢复LaTeX命令
     for i, cmd in enumerate(protected):
         text = text.replace(f"@@LATEXCMD{i}@@", cmd)
-    
+
     # 清理代码块标记
     text = re.sub(r'```[a-z]*\n?', '', text)
     text = re.sub(r'```', '', text)
-    
+
     # 转换表格
     if '|' in text and '---' in text:
         text = convert_markdown_table_to_latex(text)
-    
+
     # 处理下划线
     text = text.replace(r'\_', '@@ESCAPED_UNDERSCORE@@')
     text = re.sub(r'(?<!\\)_(?![{_])', r'\\_', text)
     text = text.replace('@@ESCAPED_UNDERSCORE@@', r'\_')
-    
+
     return text.strip()
 
 
@@ -854,9 +875,9 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
 
     # 结果容器
     meta = {k: "" for k in META_PATTERNS}
-    # 将 analysis 与 explain 统一：后续把 analysis 并入 explain
+    # 🆕 修复：analysis 单独存在，后续会被丢弃
     meta_alias_map = {
-        "analysis": "explain",
+        "analysis": "analysis",  # analysis 单独存在，后面会被丢弃
         "explain": "explain",
         "answer": "answer",
         "difficulty": "difficulty",
@@ -872,12 +893,13 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
     quote_blank = re.compile(r"^>\s*$")
     env_cont_hint = re.compile(r"(\\\\\s*$)|\\begin\{|\\left|\\right")
 
-    # 将 META_PATTERNS 编译，并合并同义词“考点”→topics，“分析/详解”→explain
+    # 🆕 修复：将 META_PATTERNS 编译，分离 analysis 和 explain
     meta_starts = [
         ("answer", re.compile(r"^【\s*答案\s*】[:：]?\s*(.*)$")),
         ("difficulty", re.compile(r"^【\s*难度\s*】[:：]?\s*([\d.]+).*")),
         ("topics", re.compile(r"^【\s*(知识点|考点)\s*】[:：]?\s*(.*)$")),
-        ("explain", re.compile(r"^【\s*(详解|分析)\s*】[:：]?\s*(.*)$")),
+        ("analysis", re.compile(r"^【\s*分析\s*】[:：]?\s*(.*)$")),
+        ("explain", re.compile(r"^【\s*详解\s*】[:：]?\s*(.*)$")),
     ]
 
     # 状态
@@ -889,12 +911,18 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
         nonlocal current_meta_key, current_meta_lines
         if current_meta_key is None:
             return
+        # 归一化到别名键
+        key = meta_alias_map.get(current_meta_key, current_meta_key)
+        # 🆕 修复：遇到 analysis 时直接丢弃
+        if key == "analysis":
+            # 说明这是【分析】段，直接舍弃，不写入 meta 字典
+            current_meta_key = None
+            current_meta_lines = []
+            return
         # 合并清理
         text = "\n".join(current_meta_lines)
         # 去掉可能残留的标签前缀
         text = re.sub(r"^【?(?:答案|难度|知识点|考点|详解|分析)】?[:：]?\s*", "", text)
-        # 归一化到别名键
-        key = meta_alias_map.get(current_meta_key, current_meta_key)
         # 对于 explain 字段，保留原始格式（不折叠空行），让后续 remove_par_breaks_in_explain 处理
         # 其他字段压缩空行
         if key != "explain":
@@ -1081,12 +1109,17 @@ def parse_question_structure(content: str) -> Dict:
     
     for line in lines:
         stripped = line.strip()
-        
-        # 优先检查是否进入解析部分（避免解析文本混入选项）
-        # 仅当行以解析起始词开头或显式以【详解】【分析】【答案】等标签开头时，才判定为解析段落。
-        if any(stripped.startswith(marker) for marker in ANALYSIS_START_MARKERS) \
-           or re.match(r'^(?:【?详解】|【?分析】|【?答案】)[:：]?', stripped):
-            # 保存当前累积的选项
+
+        # 🆕 修复：只在遇到【详解】时进入解析模式，遇到【分析】时跳过
+        # 检查是否为【分析】标记 - 直接跳过
+        if re.match(r'^【?\s*分析\s*】[:：]?', stripped):
+            structure['in_choice'] = False
+            structure['in_analysis'] = False
+            # 不把这一行塞进任何地方，完全舍弃
+            continue
+
+        # 检查是否为【详解】标记 - 进入解析模式
+        if re.match(r'^【?\s*详解\s*】[:：]?', stripped):
             if structure['current_choice']:
                 structure['choices'].append(structure['current_choice'].strip())
                 structure['current_choice'] = ''
@@ -1094,6 +1127,12 @@ def parse_question_structure(content: str) -> Dict:
             structure['in_analysis'] = True
             structure['analysis_lines'].append(stripped)
             continue
+
+        # 保守处理：只在明确的解析起始词开头时进入解析（避免误判题干）
+        # 注意：不再使用 ANALYSIS_START_MARKERS 自动触发，避免"则"等词在题干中误判
+        if structure['in_analysis']:
+            # 已经在解析模式中，继续收集
+            pass
         
         # 匹配选项标记 (A. B. C. D.)
         m = choice_pattern.match(stripped)
@@ -1223,16 +1262,50 @@ def handle_subquestions(content: str) -> str:
     return '\n'.join(result_lines)
 
 
-def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
-    """统一处理文本
-    
-    🆕 v1.5 改进：添加双重包裹修正
-    🆕 v1.3 改进：更强的"故选"清理规则
-    🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
+def fix_inline_math_glitches(text: str) -> str:
+    """🆕 修复行内数学的各种异常模式
+
+    修复：
+    - 空的 $$
+    - $$$x$ → $x$
+    - \therefore$$ → \therefore
+    - \because$$ → \because
     """
     if not text:
         return text
-    
+
+    # 1. 去掉完全空的 $$
+    text = re.sub(r'\$\s*\$', '', text)
+
+    # 2. 修复 $$$x$ → $x$
+    text = re.sub(r'\$\s*\$\s*(\\\()', r'\1', text)
+
+    # 3. 特例：\therefore$$ → \therefore
+    text = re.sub(r'(\\therefore)\s*\$\s*\$', r'\1', text)
+
+    # 4. 特例：\because$$ → \because
+    text = re.sub(r'(\\because)\s*\$\s*\$', r'\1', text)
+
+    return text
+
+
+def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
+    """统一处理文本
+
+    🆕 v1.5 改进：添加双重包裹修正
+    🆕 v1.3 改进：更强的"故选"清理规则
+    🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
+    🆕 v1.6.3：修复 *$x$* 和空 math delimiter 问题
+    """
+    if not text:
+        return text
+
+    # 🆕 v1.6.3：在进行 inline math 转换之前，先处理 Markdown 强调
+    # 把 *$x$* 这种"星号包着数学"的形式改成纯数学
+    text = re.sub(r'\*\s*(\$[^$]+\$)\s*\*', r'\1', text)
+    # 把 *x* / *a* 这种简单强调，改成 \emph{x}，避免后续被误识别为数学
+    text = re.sub(r'\*([A-Za-z0-9])\*', r'\\emph{\1}', text)
+
     # 🆕 v1.3 改进：更强的"故选"清理规则
     # 清理结尾的"故选"（支持多种标点）
     text = re.sub(r'[,，。\.;；]\s*故选[:：][ABCD]+[.。]?\s*$', '', text)
@@ -1249,7 +1322,7 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
         text,
         flags=re.MULTILINE,
     )
-    # 进一步：清理句末的“，故选：X”之类尾巴（保留前面的解析内容）
+    # 进一步：清理句末的"，故选：X"之类尾巴（保留前面的解析内容）
     text = re.sub(
         r'[，,]?\s*故选[:：]\s*[ABCD]+[。．.]*\s*$',
         '',
@@ -1258,7 +1331,7 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     )
     # 清理"【详解】"标记
     text = re.sub(r'^【?详解】?[:：]?\s*', '', text)
-    
+
     # 🆕 v1.5.1：预处理 - 修复 OCR 常见的 \right.\\) 模式
     # 这个问题出现在 array 环境结尾，需要在 smart_inline_math 之前修复
     text = re.sub(r'\\\\right\.\s*\\\\\\\)', r'\\\\right.', text)
@@ -1268,19 +1341,22 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     # 数学环境内的替换由 sanitize_math 再次保证
     if '∵' in text or '∴' in text:
         text = text.replace('∵', '$\\because$').replace('∴', '$\\therefore$')
-    
+
     if not is_math_heavy:
         text = escape_latex_special(text, in_math_mode=False)
-    
+
     text = smart_inline_math(text)
     # 🆕 v1.5 新增：修正可能的双重包裹
     text = fix_double_wrapped_math(text)
     text = wrap_math_variables(text)
-    
+
     # 🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
     if is_math_heavy:
         text = sanitize_math(text)
-    
+
+    # 🆕 v1.6.3：最后兜底清理各种空/多余 inline math
+    text = fix_inline_math_glitches(text)
+
     return text
 
 
@@ -1340,14 +1416,28 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
     return "\n".join(lines)
 
 
-def convert_md_to_examx(md_text: str, title: str) -> str:
-    """主转换函数（增强版）"""
+def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_detection: bool = True) -> str:
+    """主转换函数（增强版）
+
+    🆕 v1.6.3：增加问题检测和日志记录
+
+    Args:
+        md_text: Markdown 文本
+        title: 试卷标题
+        slug: 试卷 slug（用于日志文件名）
+        enable_issue_detection: 是否启用问题检测
+    """
     md_text = clean_markdown(md_text)
     sections = split_sections(md_text)
+
+    # 🆕 v1.6.3：初始化问题日志
+    if enable_issue_detection and slug:
+        init_issue_log(slug)
 
     out_lines = []
     out_lines.append(f"\\examxtitle{{{title}}}")
 
+    q_index = 0  # 全局题号计数器
     for raw_title, body in sections:
         sec_label = SECTION_MAP.get(raw_title, raw_title)
         out_lines.append("")
@@ -1356,24 +1446,33 @@ def convert_md_to_examx(md_text: str, title: str) -> str:
         for block in split_questions(body):
             if not block.strip():
                 continue
-            
+
+            q_index += 1  # 题号递增
+            raw_block = block  # 保存原始 Markdown 片段
+
             content, meta, images = extract_meta_and_images(block)
-            
+
             # 使用增强的转换函数（返回3个值）
             stem, options, extracted_analysis = convert_choices(content)
-            
+
             # 合并提取的解析和元信息中的解析
             if extracted_analysis and not meta.get('explain'):
                 meta['explain'] = extracted_analysis
             elif extracted_analysis:
                 meta['explain'] = meta['explain'] + '\n' + extracted_analysis
-            
+
             q_tex = build_question_tex(stem, options, meta, images, sec_label)
+
+            # 🆕 v1.6.3：检测问题并记录日志
+            if enable_issue_detection and slug:
+                issues = detect_question_issues(slug, q_index, raw_block, q_tex)
+                append_issue_log(slug, q_index, raw_block, q_tex, issues)
+
             out_lines.append("")
             out_lines.append(q_tex)
 
     out_lines.append("")
-    
+
     # 最终处理：清理空行和分割超长行
     result = "\n".join(out_lines)
     result = remove_blank_lines_in_macro_args(result)
@@ -1387,64 +1486,191 @@ def convert_md_to_examx(md_text: str, title: str) -> str:
     result = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', result, flags=re.DOTALL)
     # 2) 清理任何残留的孤立 $$（避免编译错误）
     result = result.replace('$$', '')
-    
+
     # 🆕 后备占位符转换：清理任何残留的 Markdown 图片标记
     result = cleanup_remaining_image_markers(result)
-    
+
     # 🆕 v1.6：清理宏参数内的"故选"残留（分两步）
     result = cleanup_guxuan_in_macros(result)
-    
+
     # 🆕 v1.6.1：全局清理任何残留的"故选"（兜底方案）
     # 清理各种形式的"故选：X"，无论在什么位置
     result = re.sub(r'故选[:：][ABCD]+\.?[^\n}]*', '', result)
     # 清理"故答案为"
     result = re.sub(r'故答案为[:：]?[ABCD]*\.?', '', result)
-    
+
     return result
+
+
+# ==================== 🆕 v1.6.3 新增：问题检测与日志系统 ====================
+
+def detect_question_issues(slug: str, q_index: int, raw_block: str, tex_block: str) -> List[str]:
+    """🆕 v1.6.3：检测题目中的可疑模式
+
+    Args:
+        slug: 试卷 slug（如 "nanjing_2026_sep"）
+        q_index: 题号（从 1 开始）
+        raw_block: 原始 Markdown 片段
+        tex_block: 生成的 TeX 片段
+
+    Returns:
+        问题列表
+    """
+    issues = []
+
+    # 1) 检测 meta 形式的【分析】（不应该出现）
+    if "【分析】" in raw_block and "【分析】" in tex_block:
+        issues.append("Contains meta 【分析】 in both raw and tex (should be discarded)")
+    elif "【分析】" in tex_block:
+        issues.append("Contains meta 【分析】 in tex (should be discarded)")
+
+    # 2) 检测 *$x$* 或其他星号+math 模式
+    if re.search(r'\*\s*\$', tex_block) or re.search(r'\$\s*\*', tex_block):
+        issues.append("Star-emphasis around inline math, e.g. *$x$*")
+
+    # 3) 检测空 $$ 或 $$$x$ 模式
+    if re.search(r'\$\s*\$', tex_block):
+        issues.append("Empty inline math $$")
+    if re.search(r'\$\s*\$\s*\\\(', tex_block):
+        issues.append("Suspicious pattern $$\\(")
+
+    # 4) 检测行内 math 分隔符数量明显不匹配
+    open_count = tex_block.count(r'\(')
+    close_count = tex_block.count(r'\)')
+    if open_count != close_count:
+        issues.append(f"Unbalanced inline math delimiters: \\( {open_count} vs \\) {close_count}")
+
+    # 5) 检测全角括号残留
+    if '（' in tex_block or '）' in tex_block:
+        issues.append("Fullwidth brackets （）found in tex")
+
+    # 6) 检测"故选"残留
+    if re.search(r'故选[:：][ABCD]+', tex_block):
+        issues.append("'故选' pattern found in tex")
+
+    return issues
+
+
+def append_issue_log(slug: str, q_index: int, raw_block: str, tex_block: str, issues: List[str]) -> None:
+    """🆕 v1.6.3：将问题记录到 debug 日志
+
+    Args:
+        slug: 试卷 slug
+        q_index: 题号
+        raw_block: 原始 Markdown 片段
+        tex_block: 生成的 TeX 片段
+        issues: 问题列表
+    """
+    if not issues:
+        return
+
+    debug_dir = Path("word_to_tex/output/debug")
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    log_file = debug_dir / f"{slug}_issues.log"
+
+    with log_file.open("a", encoding="utf-8") as f:
+        f.write(f"\n{'='*80}\n")
+        f.write(f"# Question {q_index}\n")
+        f.write(f"{'='*80}\n\n")
+        f.write("## Issues:\n")
+        for issue in issues:
+            f.write(f"- {issue}\n")
+        f.write("\n## Raw Markdown:\n")
+        f.write("```markdown\n")
+        f.write(raw_block.strip() + "\n")
+        f.write("```\n\n")
+        f.write("## Generated TeX:\n")
+        f.write("```tex\n")
+        f.write(tex_block.strip() + "\n")
+        f.write("```\n")
+
+
+def init_issue_log(slug: str) -> None:
+    """🆕 v1.6.3：初始化问题日志文件
+
+    Args:
+        slug: 试卷 slug
+    """
+    debug_dir = Path("word_to_tex/output/debug")
+    debug_dir.mkdir(parents=True, exist_ok=True)
+    log_file = debug_dir / f"{slug}_issues.log"
+
+    # 清空旧日志
+    with log_file.open("w", encoding="utf-8") as f:
+        f.write(f"# Issue Detection Log for {slug}\n")
+        f.write(f"# Generated: {Path(__file__).name} v{VERSION}\n")
+        f.write(f"# Date: {__import__('datetime').datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("\n")
 
 
 # ==================== 🆕 v1.3 新增：自动验证函数 ====================
 
+def assert_no_analysis_meta_in_auto_tex(slug: str) -> None:
+    """🆕 v1.6.3：检查 auto 目录中是否残留【分析】meta 段
+
+    Args:
+        slug: 试卷 slug（如 "nanjing_2026_sep"）
+
+    Raises:
+        RuntimeError: 如果发现【分析】残留
+    """
+    root = Path("content/exams/auto") / slug
+    if not root.exists():
+        return
+
+    for tex in root.rglob("*.tex"):
+        txt = tex.read_text(encoding="utf-8")
+        # 只拦类似【分析】这类 meta 段，而不是自然语言中的"分析"二字
+        if re.search(r"【\s*分析\s*】", txt):
+            raise RuntimeError(f"[ANALYSIS-META-LEFTOVER] {tex} still contains 【分析】.")
+
+
 def validate_latex_output(tex_content: str) -> List[str]:
     """
     🆕 v1.3 新增：验证LaTeX输出，返回警告列表
-    
+    🆕 v1.6.3：增加【分析】残留检查
+
     Args:
         tex_content: 生成的LaTeX内容
-    
+
     Returns:
         警告信息列表
     """
     warnings = []
-    
+
+    # 🆕 检查0：【分析】meta 段残留
+    analysis_meta = re.findall(r'【\s*分析\s*】', tex_content)
+    if analysis_meta:
+        warnings.append(f"❌ 发现 {len(analysis_meta)} 处【分析】meta 段残留（应已被丢弃）")
+
     # 检查1：残留的 $ 符号
     dollar_matches = re.findall(r'(?<!\\)\$[^\$]+\$', tex_content)
     if dollar_matches:
         warnings.append(f"⚠️  发现 {len(dollar_matches)} 处残留的 $ 格式")
         for i, match in enumerate(dollar_matches[:3], 1):  # 只显示前3个
             warnings.append(f"     示例{i}: {match}")
-    
+
     # 检查2：残留的"故选"
     guxuan_matches = re.findall(r'故选[:：][ABCD]+', tex_content)
     if guxuan_matches:
         warnings.append(f"⚠️  发现 {len(guxuan_matches)} 处残留的'故选'")
-    
+
     # 检查3：中文括号
     chinese_paren = re.findall(r'[（）]', tex_content)
     if chinese_paren:
         warnings.append(f"⚠️  发现 {len(chinese_paren)} 处中文括号")
-    
+
     # 检查4：环境闭合
     begin_count = tex_content.count(r'\begin{question}')
     end_count = tex_content.count(r'\end{question}')
     if begin_count != end_count:
         warnings.append(f"❌ question 环境不匹配: {begin_count} 个 begin, {end_count} 个 end")
-    
+
     begin_choices = tex_content.count(r'\begin{choices}')
     end_choices = tex_content.count(r'\end{choices}')
     if begin_choices != end_choices:
         warnings.append(f"❌ choices 环境不匹配: {begin_choices} 个 begin, {end_choices} 个 end")
-    
+
     # 检查5：空行在宏参数中
     problematic_macros = []
     for macro in ['explain', 'topics', 'answer']:
@@ -1453,7 +1679,7 @@ def validate_latex_output(tex_content: str) -> List[str]:
             problematic_macros.append(macro)
     if problematic_macros:
         warnings.append(f"⚠️  以下宏参数中可能有空行: {', '.join(problematic_macros)}")
-    
+
     return warnings
 
 
@@ -1526,12 +1752,16 @@ def main():
                 title = input_path.name
             else:
                 title = md_file.stem.replace('_local', '')
-        
+
+        # 🆕 v1.6.3：提取 slug 用于问题日志
+        slug = md_file.stem.replace('_local', '').replace('_preprocessed', '').replace('_raw', '')
+
         print(f"\n📖 正在转换...")
         print(f"📝 标题: {title}")
-        
+        print(f"🏷️  Slug: {slug}")
+
         md_text = md_file.read_text(encoding='utf-8')
-        tex_text = convert_md_to_examx(md_text, title)
+        tex_text = convert_md_to_examx(md_text, title, slug=slug, enable_issue_detection=True)
         
         # 🆕 v1.3：验证输出
         warnings = validate_latex_output(tex_text)
@@ -1566,6 +1796,16 @@ def main():
         print(f"  ✅ 数学变量智能检测")
         print(f"  ✅ 选项解析增强")
         
+        # 🆕 v1.6.3：显示问题日志信息
+        debug_log = Path("word_to_tex/output/debug") / f"{slug}_issues.log"
+        if debug_log.exists():
+            log_size = debug_log.stat().st_size
+            if log_size > 100:  # 如果日志文件有实质内容
+                print(f"\n📋 问题检测日志: {debug_log}")
+                print(f"   文件大小: {log_size:,} 字节")
+            else:
+                print(f"\n✅ 未检测到问题（日志为空）")
+
         # 🆕 v1.3：显示验证结果
         if warnings:
             print(f"\n⚠️  验证发现 {len(warnings)} 个潜在问题:")
@@ -1574,12 +1814,14 @@ def main():
             print("\n💡 建议：使用 AI Agent 进行人工检查")
         else:
             print(f"\n✅ 验证通过：未发现明显问题")
-        
+
         print("\n💡 下一步:")
         print("  1. AI Agent 读取此文件进行精修")
         print("  2. AI Agent 查看 images/ 中的图片")
         print("  3. AI Agent 生成 TikZ 代码")
         print("  4. 输出最终的 exam_final.tex")
+        if debug_log.exists() and debug_log.stat().st_size > 100:
+            print(f"  5. 查看问题日志: {debug_log}")
         
         return 0
         
@@ -1590,6 +1832,105 @@ def main():
         return 1
 
 
+# ==================== 🆕 v1.6.3 新增：简单单元测试 ====================
+
+def run_self_tests() -> bool:
+    """🆕 v1.6.3：运行简单的自测用例
+
+    Returns:
+        True if all tests pass, False otherwise
+    """
+    print("🧪 运行自测用例...")
+    print("=" * 60)
+
+    all_passed = True
+
+    # 测试 1：【分析】段被正确丢弃
+    print("\n测试 1: 【分析】段被正确丢弃")
+    test_md = """
+# 一、单选题
+
+1. 测试题目
+
+A. 选项A
+B. 选项B
+
+【分析】这是分析内容，应该被丢弃
+【详解】这是详解内容，应该被保留
+【答案】A
+"""
+    result = convert_md_to_examx(test_md, "测试", slug="", enable_issue_detection=False)
+    if "【分析】" in result:
+        print("  ❌ FAILED: 【分析】未被丢弃")
+        all_passed = False
+    elif "这是分析内容" in result:
+        print("  ❌ FAILED: 分析内容未被丢弃")
+        all_passed = False
+    elif "这是详解内容" not in result:
+        print("  ❌ FAILED: 详解内容未被保留")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 2：【详解】被正确保留到 \explain{}
+    print("\n测试 2: 【详解】被正确保留到 \\explain{}")
+    if "\\explain{" in result and "这是详解内容" in result:
+        print("  ✅ PASSED")
+    else:
+        print("  ❌ FAILED: 详解未正确保留")
+        all_passed = False
+
+    # 测试 3：*$x$* 模式被正确修复
+    print("\n测试 3: *$x$* 模式被正确修复")
+    test_text = "这是一个 *$x$* 变量和 *y* 强调"
+    result_text = process_text_for_latex(test_text, is_math_heavy=True)
+    if "*$" in result_text or "$*" in result_text:
+        print(f"  ❌ FAILED: *$x$* 模式未被修复")
+        print(f"     结果: {result_text}")
+        all_passed = False
+    elif "\\emph{y}" not in result_text:
+        print(f"  ❌ FAILED: *y* 未转换为 \\emph{{y}}")
+        print(f"     结果: {result_text}")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 4：全角括号被统一
+    print("\n测试 4: 全角括号被统一")
+    test_text = "这是（全角括号）和｛花括号｝"
+    result_text = normalize_fullwidth_brackets(test_text)
+    if "（" in result_text or "）" in result_text or "｛" in result_text or "｝" in result_text:
+        print(f"  ❌ FAILED: 全角括号未被统一")
+        print(f"     结果: {result_text}")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 5：空 $$ 被清理
+    print("\n测试 5: 空 $$ 被清理")
+    test_text = "这是 $$ 空数学和 $x$ 正常数学"
+    result_text = fix_inline_math_glitches(test_text)
+    if "$$" in result_text:
+        print(f"  ❌ FAILED: 空 $$ 未被清理")
+        print(f"     结果: {result_text}")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    print("\n" + "=" * 60)
+    if all_passed:
+        print("✅ 所有测试通过！")
+        return True
+    else:
+        print("❌ 部分测试失败")
+        return False
+
+
 if __name__ == "__main__":
-    exit(main())
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "--selftest":
+        success = run_self_tests()
+        exit(0 if success else 1)
+    else:
+        exit(main())
 
