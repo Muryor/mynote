@@ -56,10 +56,13 @@ def parse_kv_line(line: str) -> Dict[str, str]:
         {'id': 'test-Q1-img1', 'path': 'media/img.png', 'width': '60%', 'inline': 'false'}
     """
     kv_dict = {}
-    # 匹配 key=value 模式，value 可以包含路径字符
-    pattern = r'(\w+)=([\w\-./]+%?)'
+    # 匹配 key=value 模式，value 可以包含路径字符（包括转义的下划线 \_）
+    # 修复：支持 LaTeX 转义字符，如 word\_to\_tex
+    pattern = r'(\w+)=([\w\-./\\]+%?)'
     matches = re.findall(pattern, line)
     for key, value in matches:
+        # 将 LaTeX 转义的下划线还原为普通下划线
+        value = value.replace(r'\_', '_')
         kv_dict[key] = value
     return kv_dict
 
