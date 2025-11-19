@@ -71,14 +71,28 @@ extract_errors() {
   # 提取 LaTeX 错误
   if grep -q "LaTeX Error" "$logfile"; then
     echo "【LaTeX 错误】" >> "$error_log"
-    grep -A 3 "LaTeX Error" "$logfile" | head -20 >> "$error_log"
+    grep -B 2 -A 5 "LaTeX Error" "$logfile" | head -30 >> "$error_log"
     echo "" >> "$error_log"
   fi
   
   # 提取文件错误位置 (! 开头的错误)
   if grep -q "^! " "$logfile"; then
     echo "【语法错误】" >> "$error_log"
-    grep "^! " "$logfile" | head -10 >> "$error_log"
+    grep -B 1 -A 3 "^! " "$logfile" | head -20 >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+  
+  # 🆕 提取编译卡住的位置（最后处理的文件行号）
+  if grep -q "l\.[0-9]" "$logfile"; then
+    echo "【编译中断位置】" >> "$error_log"
+    grep "l\.[0-9]" "$logfile" | tail -5 >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+  
+  # 🆕 提取最后读取的内容文件
+  if grep -q "converted_exam.tex" "$logfile"; then
+    echo "【问题文件】" >> "$error_log"
+    grep "converted_exam.tex" "$logfile" | tail -3 >> "$error_log"
     echo "" >> "$error_log"
   fi
   
@@ -139,6 +153,14 @@ compile() {
       echo ""
       echo "❌ 编译失败！"
       echo ""
+      
+      # 🆕 尝试定位具体错误位置
+      if grep -q "l\.[0-9]" "$logfile"; then
+        echo "📍 编译中断位置："
+        grep "l\.[0-9]" "$logfile" | tail -3
+        echo ""
+      fi
+      
       tail -50 "${OUT}/build.log"
       echo ""
       extract_errors "$logfile"
