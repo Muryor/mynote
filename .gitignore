@@ -1,6 +1,7 @@
-# build
+# Build outputs
 output/
-# LaTeX aux
+
+# LaTeX auxiliary files
 *.aux
 *.bbl
 *.bcf
@@ -11,16 +12,43 @@ output/
 *.run.xml
 *.synctex.gz
 *.fdb_latexmk
-*.flsßß
+*.fls
 *.xdv
 
+# Patches and diffs
 *.patch
 *.diff
 
-.claude
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+
 # OS/Editor
 .DS_Store
-vscode/
+**/.DS_Store
+.vscode/
+.idea/
+.claude
+
+# Project-specific (keep source, ignore generated)
 ocr_to_tex/
-content/
-word_to_tex/
+content/exams/auto/*/converted_exam.tex
+content/exams/auto/*/figures/
+
+# word_to_tex: keep source, ignore build artifacts
+word_to_tex/venv/
+word_to_tex/output/*_raw.md
+word_to_tex/output/*_preprocessed.md
+word_to_tex/output/*_examx.tex
+word_to_tex/output/figures/
+word_to_tex/figures/raw/
+
+# Temporary backups
+tmp/

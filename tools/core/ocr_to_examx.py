@@ -55,6 +55,20 @@ META_PATTERNS = {
     "explain": r"^【详解】(.*)$",
 }
 
+# 🆕 扩展图片检测：支持绝对路径、相对路径、多行属性块
+# 匹配两种形式：
+#   1) 带ID: ![@@@id](path){...}
+#   2) 无ID: ![](path){...}
+# 属性块可跨多行，可选
+IMAGE_PATTERN_WITH_ID = re.compile(
+    r"!\[@@@([^\]]+)\]\(([^)]+)\)(?:\s*\{[^}]*\})?",
+    re.MULTILINE | re.DOTALL,
+)
+IMAGE_PATTERN_NO_ID = re.compile(
+    r"!\[\]\(([^)]+)\)(?:\s*\{[^}]*\})?",
+    re.MULTILINE | re.DOTALL,
+)
+# 兼容旧版（保留用于简单场景）
 IMAGE_PATTERN = re.compile(r"!\[\]\((images/[^)]+)\)(?:\{width=(\d+)%\})?")
 
 LATEX_SPECIAL_CHARS = {
@@ -72,6 +86,13 @@ ANALYSIS_MARKERS = [
     '综上', '故', '即', '则', '可得'
 ]
 
+
+# 更严格的解析起始词，只用于判断是否进入解析段落（避免像“则”这样在题干中出现时被误判）
+ANALYSIS_START_MARKERS = [
+    '根据', '由题意', '因为', '所以', '故选', '答案',
+    '分析', '详解', '解答', '证明', '计算可得',
+    '显然', '易知', '可知', '不难看出', '由此可得', '综上'
+]
 
 # ==================== 文件夹处理函数 ====================
 
@@ -168,8 +189,15 @@ def smart_inline_math(text: str) -> str:
     # 步骤3: 保护TikZ坐标 $(A)$ 或 $(A)!0.5!(B)$ 或 $(A)+(1,2)$
     tikz_coords = []
     def save_tikz_coord(match):
-        tikz_coords.append(match.group(0))
-        return f"@@TIKZCOORD{len(tikz_coords)-1}@@"
+        block = match.group(0)      # 形如 '$(A)!0.5!(B)$' 或 '$(0,1)$'
+        inner = block[2:-2]         # 去掉外层 '$(' 和 ')$'
+        # 仅当内部包含 '!' 或 大写字母 时，认为是 TikZ 坐标表达式
+        if '!' in inner or re.search(r'[A-Z]', inner):
+            tikz_coords.append(block)
+            return f"@@TIKZCOORD{len(tikz_coords)-1}@@"
+        else:
+            # 否则认为是普通数学坐标/区间，原样返回
+            return block
     # 匹配 TikZ 坐标：$(...)$ 内部是简单的坐标计算表达式
     # 包含字母、数字、括号、加减乘除、点、感叹号、冒号等但不包含复杂数学
     text = re.sub(r'\$\([A-Za-z0-9!+\-*/\.\(\):,\s]+\)\$', save_tikz_coord, text)
@@ -233,8 +261,13 @@ def wrap_math_variables(text: str) -> str:
     # 保护 TikZ 坐标
     tikz_coords = []
     def save_tikz(match):
-        tikz_coords.append(match.group(0))
-        return f"@@TIKZ{len(tikz_coords)-1}@@"
+        block = match.group(0)      # 形如 '$(A)$' 或 '$(0,1)$'
+        inner = block[2:-2]
+        if '!' in inner or re.search(r'[A-Z]', inner):
+            tikz_coords.append(block)
+            return f"@@TIKZ{len(tikz_coords)-1}@@"
+        else:
+            return block
     text = re.sub(r'\$\([\d\w\s,+\-*/\.]+\)\$', save_tikz, text)
     
     # 规则1：单字母变量 + 运算符/下标/上标
@@ -266,6 +299,106 @@ def wrap_math_variables(text: str) -> str:
         text = text.replace(f"@@MATH{i}@@", math)
     
     return text
+
+
+def _sanitize_math_block(block: str) -> str:
+    """修正数学块内部的 OCR 错误
+    
+    修复：
+    - \\left / \\right 不匹配时降级为普通括号
+    - \\right.\\ ) 等畸形组合
+    """
+    if not block:
+        return block
+    
+    # 统一数学环境内的中文标点为英文标点
+    block = (block
+             .replace('，', ',')
+             .replace('：', ':')
+             .replace('；', ';')
+             .replace('。', '.')
+             .replace('、', ','))
+
+    # 替换常见的 Unicode 符号为 LaTeX 命令（避免缺字形）
+    block = block.replace('∵', r'\\because').replace('∴', r'\\therefore')
+
+    # 将上下标中的中文包装为 \text{...}
+    # 形式一：_[{...中文...}] 或 ^[{...中文...}]
+    def _wrap_cjk_in_braced_subsup(m: re.Match) -> str:
+        lead = m.group(1)
+        inner = m.group(2)
+        if '\\text{' in inner:
+            return f"{lead}{{{inner}}}"
+        return f"{lead}{{\\text{{{inner}}}}}"
+    block = re.sub(r'([_^])\{([^{}]*?[\u4e00-\u9fff]+[^{}]*?)\}', _wrap_cjk_in_braced_subsup, block)
+
+    # 形式二：单字符上下标：_水 或 ^高
+    block = re.sub(r'([_^])([\u4e00-\u9fff])', r'\1{\\text{\2}}', block)
+
+    # 数学内常见中文连接词，替换为 \text{...}（保守集）
+    for w in ['且', '或', '则', '即', '故', '所以', '因为']:
+        block = re.sub(fr'(?<!\\text\{{){re.escape(w)}(?![^\{{]*\}})', rf'\\text{{{w}}}', block)
+    
+    # 统计 left/right 数量
+    left_count = len(re.findall(r'\\left\b', block))
+    right_count = len(re.findall(r'\\right\b', block))
+    
+    # 修复畸形 \right.\ ) 和 \right.\\)
+    block = re.sub(r'\\right\.\s*\\\s*\)', r'\\right.', block)
+    # 修复 \right.\\\) 模式（array结尾的常见OCR错误）
+    block = re.sub(r'\\right\.\\\\+\)', r'\\right.', block)
+    
+    # 如果 left/right 不匹配，降级为普通括号
+    if left_count != right_count:
+        block = re.sub(r'\\left\s*([\(\[\{])', r'\1', block)
+        block = re.sub(r'\\right\s*([\)\]\}])', r'\1', block)
+        block = re.sub(r'\\left\.', '', block)
+        block = re.sub(r'\\right\.', '', block)
+    
+    return block
+
+
+def sanitize_math(text: str) -> str:
+    """扫描全文，仅修正数学环境内的 OCR 错误
+    
+    只处理 \\(...\\) 和 \\[...\\] 内部的内容。
+    """
+    if not text:
+        return text
+    
+    result = []
+    i = 0
+    n = len(text)
+    
+    while i < n:
+        # 匹配 \(..\)
+        if text.startswith(r"\(", i):
+            j = text.find(r"\)", i + 2)
+            if j == -1:
+                result.append(text[i:])
+                break
+            inner = text[i+2:j]
+            inner = _sanitize_math_block(inner)
+            result.append(r"\(" + inner + r"\)")
+            i = j + 2
+            continue
+        
+        # 匹配 \[..\]
+        if text.startswith(r"\[", i):
+            j = text.find(r"\]", i + 2)
+            if j == -1:
+                result.append(text[i:])
+                break
+            inner = text[i+2:j]
+            inner = _sanitize_math_block(inner)
+            result.append(r"\[" + inner + r"\]")
+            i = j + 2
+            continue
+        
+        result.append(text[i])
+        i += 1
+    
+    return "".join(result)
 
 
 def remove_blank_lines_in_macro_args(text: str) -> str:
@@ -349,9 +482,12 @@ def split_long_lines_in_explain(text: str, max_length: int = 800) -> str:
 
 
 def remove_par_breaks_in_explain(text: str) -> str:
-    """移除 \explain{...} 中的空段落（严格基于大括号计数）
+    r"""移除 \explain{...} 中的空段落（严格基于大括号计数）
     解决 TeX 中段落断开导致的 "Paragraph ended before \explain code was complete"。
     """
+    # 规范化换行符
+    text = text.replace("\r\n", "\n").replace("\r", "\n")
+    
     out = []
     i = 0
     n = len(text)
@@ -397,6 +533,165 @@ def remove_par_breaks_in_explain(text: str) -> str:
             out.append(text[i])
             i += 1
     return ''.join(out)
+
+
+def cleanup_remaining_image_markers(text: str) -> str:
+    """🆕 后备占位符转换：清理任何残留的 Markdown 图片标记
+    
+    🆕 v1.6.2：增强内联公式处理
+    - 独立成行的图片 → TikZ占位符块（大图）
+    - 内联图片（公式）→ 简单文本占位符 [公式:filename]
+    
+    将残留的 Markdown 图片标记替换为占位符，避免在 PDF 中显示
+    为原始路径文本。支持：
+      - ![@@@id](path){...}
+      - ![](path){...}
+    """
+    if not text:
+        return text
+    
+    def _make_tikz_placeholder(label: str) -> str:
+        """创建 TikZ 占位符块（用于独立图片）"""
+        label = label.strip() or "image"
+        return (
+            "\n\\begin{center}\n"
+            "\\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]\n"
+            f"  \\node[draw, minimum width=6cm, minimum height=4cm] {{图略（图 ID: {label}）}};\n"
+            "\\end{tikzpicture}\n"
+            "\\end{center}\n"
+        )
+    
+    def _make_inline_placeholder(label: str) -> str:
+        """创建内联占位符（用于公式图片）"""
+        label = label.strip() or "formula"
+        # 使用简单的文本占位符，可以在后续被识别和替换
+        return f"[公式:{label}]"
+    
+    def is_standalone_line(match_obj: re.Match, full_text: str) -> bool:
+        """判断匹配是否为独立成行的图片"""
+        # 获取匹配前后的文本
+        start = match_obj.start()
+        end = match_obj.end()
+        
+        # 向前查找到行首
+        line_start = start
+        while line_start > 0 and full_text[line_start - 1] not in '\n':
+            line_start -= 1
+        
+        # 向后查找到行尾
+        line_end = end
+        while line_end < len(full_text) and full_text[line_end] not in '\n':
+            line_end += 1
+        
+        # 检查行内容：去除空白后是否只有这个图片标记
+        line_content = full_text[line_start:line_end].strip()
+        match_content = match_obj.group(0).strip()
+        
+        return line_content == match_content
+    
+    # 处理带ID的图片标记
+    def repl_with_id(m: re.Match) -> str:
+        img_id = m.group(1)
+        basename = os.path.basename(img_id) if img_id else "image"
+        if is_standalone_line(m, text):
+            return _make_tikz_placeholder(basename)
+        else:
+            return _make_inline_placeholder(basename)
+    
+    import os  # 确保导入
+    text = IMAGE_PATTERN_WITH_ID.sub(repl_with_id, text)
+    
+    # 处理无ID的图片标记
+    def repl_no_id(m: re.Match) -> str:
+        path = m.group(1).strip()
+        basename = os.path.basename(path)
+        label = basename if basename else "image"
+        if is_standalone_line(m, text):
+            return _make_tikz_placeholder(label)
+        else:
+            return _make_inline_placeholder(label)
+    
+    text = IMAGE_PATTERN_NO_ID.sub(repl_no_id, text)
+    
+    return text
+
+
+def cleanup_guxuan_in_macros(text: str) -> str:
+    """🆕 v1.6：清理宏参数内的"故选"残留
+    
+    针对 \\topics{...} 和 \\explain{...} 等宏参数内的"故选：X"进行清理。
+    
+    Args:
+        text: LaTeX 文本
+        
+    Returns:
+        清理后的文本
+    """
+    if not text or '故选' not in text:
+        return text
+    
+    # 定义要清理的宏列表
+    macros = ['topics', 'explain', 'keywords', 'analysis']
+    
+    for macro_name in macros:
+        # 匹配 \macro{content}，使用递归匹配嵌套大括号
+        # 由于Python re不支持递归，我们使用更宽松的匹配+手工解析
+        pattern = rf'\\{macro_name}\{{'
+        
+        pos = 0
+        result_parts = []
+        
+        while True:
+            start_idx = text.find(pattern, pos)
+            if start_idx == -1:
+                result_parts.append(text[pos:])
+                break
+            
+            # 添加前面的文本
+            result_parts.append(text[pos:start_idx])
+            
+            # 手工解析嵌套大括号
+            brace_count = 0
+            content_start = start_idx + len(pattern)
+            i = content_start
+            
+            while i < len(text):
+                if text[i] == '{':
+                    brace_count += 1
+                elif text[i] == '}':
+                    if brace_count == 0:
+                        # 找到匹配的右大括号
+                        content = text[content_start:i]
+                        
+                        # 清理各种形式的"故选"
+                        # 1. 清理行末的"故选：X"（含各种标点组合和可能的后续文本）
+                        content = re.sub(r'[,，。\.;；、]?\s*故选[:：][ABCD]+\.?[^\n]*$', '', content, flags=re.MULTILINE)
+                        # 2. 清理单独一行的"故选：X"
+                        content = re.sub(r'^\s*故选[:：][ABCD]+\.?[^\n]*$', '', content, flags=re.MULTILINE)
+                        # 3. 清理换行符后的"故选：X"
+                        content = re.sub(r'\n+故选[:：][ABCD]+\.?[^\n]*(?=\n|$)', '', content)
+                        # 4. 清理任意位置的"故选：X"（更激进）
+                        content = re.sub(r'故选[:：][ABCD]+\.?[^\n]*', '', content)
+                        # 5. 清理"故答案为"
+                        content = re.sub(r'[,，。\.;；、]?\s*故答案为[:：]?[ABCD]*[.。]?\s*', '', content)
+                        
+                        result_parts.append(rf'\{macro_name}{{{content}}}')
+                        pos = i + 1
+                        break
+                    else:
+                        brace_count -= 1
+                elif text[i] == '\\' and i + 1 < len(text):
+                    # 跳过转义字符
+                    i += 1
+                i += 1
+            else:
+                # 没找到匹配的右大括号，保留原文
+                result_parts.append(text[start_idx:])
+                break
+        
+        text = ''.join(result_parts)
+    
+    return text
 
 
 def convert_markdown_table_to_latex(text: str) -> str:
@@ -544,13 +839,13 @@ def split_questions(section_body: str) -> List[str]:
 
 
 def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
-    """提取元信息与图片（状态机重构：防止跨题累积）
+    r"""提取元信息与图片（状态机重构：防止跨题累积）
 
     目标：避免上一题的多行【详解】/【分析】错误吞并下一题题干。
     关键边界：
       - 新的 meta 开始（答案/难度/知识点/详解/分析）
-      - 题号开始：^\s*>?\s*\d+[\.．、]\s+
-      - 章节标题：^#{1,6}\s*(一、|二、|三、|四、|五、|六、)
+      - 题号开始：^\s*>?\s*(?:\d+[\.．、]\s+|（\d+）\s+|\d+\)\s+)
+      - 章节标题：^#{1,6}\s*(第?[一二三四五六七八九十]+[、．.].*)$
       - 空行 + lookahead 为题号时，作为安全边界（若上一行像环境续行则跳过该空行边界）
       - 引述空行 ^>\s*$ 忽略
     """
@@ -571,9 +866,9 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
     content_lines: List[str] = []
     images: List[Dict] = []
 
-    # 编译边界正则
-    question_start_perm = re.compile(r"^\s*>?\s*\d{1,3}[\.．、]\s+")
-    section_header = re.compile(r"^#{1,6}\s*(一、|二、|三、|四、|五、|六、)")
+    # 编译边界正则（增强版：支持更多题号格式和章节标题）
+    question_start_perm = re.compile(r"^\s*>?\s*(?:\d{1,3}[\.．、]\s+|（\d{1,3}）\s+|\d{1,3}\)\s+)")
+    section_header = re.compile(r"^#{1,6}\s*(第?[一二三四五六七八九十]+[、．.].*)$")
     quote_blank = re.compile(r"^>\s*$")
     env_cont_hint = re.compile(r"(\\\\\s*$)|\\begin\{|\\left|\\right")
 
@@ -596,11 +891,14 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
             return
         # 合并清理
         text = "\n".join(current_meta_lines)
-        text = re.sub(r"\n\s*\n+", "\n", text)
         # 去掉可能残留的标签前缀
         text = re.sub(r"^【?(?:答案|难度|知识点|考点|详解|分析)】?[:：]?\s*", "", text)
         # 归一化到别名键
         key = meta_alias_map.get(current_meta_key, current_meta_key)
+        # 对于 explain 字段，保留原始格式（不折叠空行），让后续 remove_par_breaks_in_explain 处理
+        # 其他字段压缩空行
+        if key != "explain":
+            text = re.sub(r"\n\s*\n+", "\n", text)
         # 合并：若已有 explain，则追加一行
         if key == "explain" and meta.get("explain"):
             meta["explain"] = (meta["explain"] + "\n" + text.strip()).strip()
@@ -617,7 +915,19 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
         return bool(section_header.match(s))
 
     def image_match(s: str):
-        return IMAGE_PATTERN.search(s)
+        # 优先匹配带ID的图片
+        m = IMAGE_PATTERN_WITH_ID.search(s)
+        if m:
+            return ('with_id', m)
+        # 然后匹配无ID的图片
+        m = IMAGE_PATTERN_NO_ID.search(s)
+        if m:
+            return ('no_id', m)
+        # 最后尝试旧版简单格式
+        m = IMAGE_PATTERN.search(s)
+        if m:
+            return ('simple', m)
+        return None
 
     # 查找上一条非空行（用于环境续行判断）
     def find_prev_nonempty(idx: int) -> Optional[str]:
@@ -642,15 +952,34 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
         line = lines[i]
         stripped = line.strip()
 
-        # 图片行：任意状态下都提取，且不打断 IN_META（仅跳过该行）
-        m_img = image_match(stripped)
-        if m_img:
-            images.append({
-                "path": m_img.group(1),
-                "width": int(m_img.group(2)) if m_img.group(2) else 50,
-            })
-            i += 1
-            continue
+        # 🆕 v1.6.2：图片行识别增强 - 区分独立图片块 vs 内联公式图片
+        # 只有当图片"独占一行"且是完整匹配时，才提取为图片块
+        # 内联图片（如 "已知集合![](image2.wmf)，则..."）保留在文本中
+        img_result = image_match(stripped)
+        if img_result:
+            img_type, m_img = img_result
+            # 检查是否为独立图片行：整行只有一个图片标记
+            is_standalone = (m_img.group(0).strip() == stripped)
+            
+            if is_standalone:
+                # 独立图片块：提取到images列表
+                if img_type == 'with_id':
+                    # ![@@@id](path){...}
+                    img_id = m_img.group(1)
+                    path = m_img.group(2).strip()
+                    images.append({"path": path, "width": 50, "id": img_id})
+                elif img_type == 'no_id':
+                    # ![](path){...}
+                    path = m_img.group(1).strip()
+                    images.append({"path": path, "width": 50})
+                else:
+                    # 简单格式: ![](images/...)
+                    path = m_img.group(1)
+                    width = int(m_img.group(2)) if m_img.group(2) else 50
+                    images.append({"path": path, "width": width})
+                i += 1
+                continue
+            # else: 内联图片，保留在文本流中，不做特殊处理（fallthrough）
 
         # 引述空行：丢弃
         if quote_blank.match(stripped):
@@ -754,7 +1083,9 @@ def parse_question_structure(content: str) -> Dict:
         stripped = line.strip()
         
         # 优先检查是否进入解析部分（避免解析文本混入选项）
-        if any(marker in stripped for marker in ANALYSIS_MARKERS):
+        # 仅当行以解析起始词开头或显式以【详解】【分析】【答案】等标签开头时，才判定为解析段落。
+        if any(stripped.startswith(marker) for marker in ANALYSIS_START_MARKERS) \
+           or re.match(r'^(?:【?详解】|【?分析】|【?答案】)[:：]?', stripped):
             # 保存当前累积的选项
             if structure['current_choice']:
                 structure['choices'].append(structure['current_choice'].strip())
@@ -897,6 +1228,7 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     
     🆕 v1.5 改进：添加双重包裹修正
     🆕 v1.3 改进：更强的"故选"清理规则
+    🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
     """
     if not text:
         return text
@@ -910,8 +1242,32 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     text = re.sub(r'^\s*故选[:：][ABCD]+[.。]?\s*', '', text)
     # 清理"故答案为"
     text = re.sub(r'\n+故答案为[:：]', '', text)
+    # 额外：删除"单独一行"的"故选：X"
+    text = re.sub(
+        r'^\s*故选[:：][ABCD]+[.。]?\s*$',
+        '',
+        text,
+        flags=re.MULTILINE,
+    )
+    # 进一步：清理句末的“，故选：X”之类尾巴（保留前面的解析内容）
+    text = re.sub(
+        r'[，,]?\s*故选[:：]\s*[ABCD]+[。．.]*\s*$',
+        '',
+        text,
+        flags=re.MULTILINE,
+    )
     # 清理"【详解】"标记
     text = re.sub(r'^【?详解】?[:：]?\s*', '', text)
+    
+    # 🆕 v1.5.1：预处理 - 修复 OCR 常见的 \right.\\) 模式
+    # 这个问题出现在 array 环境结尾，需要在 smart_inline_math 之前修复
+    text = re.sub(r'\\\\right\.\s*\\\\\\\)', r'\\\\right.', text)
+    text = re.sub(r'\\\\right\.\\\\\+\)', r'\\\\right.', text)
+
+    # 将文本中的 Unicode ∵/∴ 替换为可编译的数学符号（包裹为行内数学）
+    # 数学环境内的替换由 sanitize_math 再次保证
+    if '∵' in text or '∴' in text:
+        text = text.replace('∵', '$\\because$').replace('∴', '$\\therefore$')
     
     if not is_math_heavy:
         text = escape_latex_special(text, in_math_mode=False)
@@ -920,6 +1276,10 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     # 🆕 v1.5 新增：修正可能的双重包裹
     text = fix_double_wrapped_math(text)
     text = wrap_math_variables(text)
+    
+    # 🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
+    if is_math_heavy:
+        text = sanitize_math(text)
     
     return text
 
@@ -1027,6 +1387,18 @@ def convert_md_to_examx(md_text: str, title: str) -> str:
     result = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', result, flags=re.DOTALL)
     # 2) 清理任何残留的孤立 $$（避免编译错误）
     result = result.replace('$$', '')
+    
+    # 🆕 后备占位符转换：清理任何残留的 Markdown 图片标记
+    result = cleanup_remaining_image_markers(result)
+    
+    # 🆕 v1.6：清理宏参数内的"故选"残留（分两步）
+    result = cleanup_guxuan_in_macros(result)
+    
+    # 🆕 v1.6.1：全局清理任何残留的"故选"（兜底方案）
+    # 清理各种形式的"故选：X"，无论在什么位置
+    result = re.sub(r'故选[:：][ABCD]+\.?[^\n}]*', '', result)
+    # 清理"故答案为"
+    result = re.sub(r'故答案为[:：]?[ABCD]*\.?', '', result)
     
     return result
 

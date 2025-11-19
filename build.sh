@@ -1,13 +1,38 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+
 usage() {
   cat <<'USAGE'
 Usage: ./build.sh {exam|handout} {teacher|student|both}
+       ./build.sh clean
+       ./build.sh test-batch [docx...]
 All PDFs will be placed in ./output
 USAGE
   exit 1
 }
+
+
+if [[ "${1:-}" == "clean" ]]; then
+  ROOT="$(cd "$(dirname "$0")" && pwd)"
+  OUT="${ROOT}/output"
+  echo "Cleaning intermediate files in $OUT ..."
+  # Remove all non-pdf, non-synctex.gz files in output/
+  find "$OUT" -type f ! \( -name '*.pdf' -o -name '*.synctex.gz' \) -delete
+  # Remove .aux subdir contents but keep the dir
+  [[ -d "$OUT/.aux" ]] && rm -rf "$OUT/.aux"/* 2>/dev/null || true
+  echo "✅ Clean complete."
+  exit 0
+fi
+
+# Run batch tests with timeouts and logging
+if [[ "${1:-}" == "test-batch" ]]; then
+  ROOT="$(cd "$(dirname "$0")" && pwd)"
+  shift 1
+  # Pass remaining args (docx paths) through to the runner
+  python3 "${ROOT}/tools/testing/run_batch_tests.py" "$@"
+  exit $?
+fi
 
 TYPE="${1:-}"; MODE="${2:-}"
 [[ -z "${TYPE}" || -z "${MODE}" ]] && usage

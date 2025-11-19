@@ -17,8 +17,8 @@ if __name__ == "__main__":
         print(f"Input not found: {input_md}")
         sys.exit(2)
 
-    sys.path.insert(0, str(Path(__file__).parent))
-    from ocr_to_examx import convert_md_to_examx
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from core.ocr_to_examx import convert_md_to_examx
 
     md_text = input_md.read_text(encoding='utf-8')
     tex = convert_md_to_examx(md_text, title)
