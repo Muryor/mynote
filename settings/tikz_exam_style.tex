@@ -1,0 +1,103 @@
+% ===================================================================
+% settings/tikz_exam_style.tex
+% ===================================================================
+% Unified TikZ style for exam figures
+% 使用方法: 在 settings/preamble.sty 中 \input{settings/tikz_exam_style.tex}
+% ===================================================================
+
+% ===== 全局样式定义 =====
+\tikzset{
+  % 实线 (边、线段、曲线)
+  examline/.style={
+    line width=0.8pt,
+    line cap=round,
+    line join=round
+  },
+  % 虚线 (辅助线、隐藏线)
+  examdashed/.style={
+    line width=0.8pt,
+    dash pattern=on 3pt off 2pt,
+    line cap=round
+  },
+  % 坐标轴
+  examaxis/.style={
+    line width=0.8pt,
+    -{Stealth[length=2.5mm,width=1.6mm]},
+    line cap=round
+  },
+  % 点 (顶点、交点)
+  examdot/.style={
+    circle,
+    fill=black,
+    inner sep=0pt,
+    minimum size=2pt
+  },
+  % 空心点
+  examdot hollow/.style={
+    circle,
+    draw=black,
+    fill=white,
+    inner sep=0pt,
+    minimum size=2pt,
+    line width=0.6pt
+  },
+  % 标签文字
+  examlabel/.style={
+    font=\small,
+    inner sep=1pt
+  },
+  % 向量箭头
+  examarrow/.style={
+    line width=0.8pt,
+    -{Stealth[length=2.5mm,width=1.6mm]},
+    line cap=round
+  },
+  % 直角标记
+  examrightangle/.style={
+    line width=0.6pt
+  },
+  % 填充区域
+  examfill/.style={
+    fill=black!10,
+    draw=none
+  },
+  % 网格
+  examgrid/.style={
+    line width=0.3pt,
+    gray!50
+  }
+}
+
+% ===== 自定义命令 =====
+
+% 直角标记 (三点定义: \examRightAngle{B}{A}{C} 表示角BAC为直角)
+\newcommand{\examRightAngle}[4][0.3cm]{%
+  % #1 = 大小 (可选, 默认0.3cm)
+  % #2 = 顶点
+  % #3 = 角的第一边上的点
+  % #4 = 角的第二边上的点
+  \draw[examrightangle] 
+    ($(#2)!#1!(#3)$) -- 
+    ($(#2)!#1!(#3)!#1!90:(#3)$) -- 
+    ($(#2)!#1!(#4)$);
+}
+
+% ===================================================================
+% 使用示例 (在实际文档中):
+% \begin{tikzpicture}[scale=1]
+%   % 坐标轴
+%   \draw[examaxis] (-1,0) -- (4,0) node[below] {$x$};
+%   \draw[examaxis] (0,-1) -- (0,3) node[left] {$y$};
+%   
+%   % 线段和点
+%   \draw[examline] (0,0) -- (2,2) -- (3,0);
+%   \node[examdot,label=above:$A$] at (2,2) {};
+%   \node[examdot,label=right:$B$] at (3,0) {};
+%   
+%   % 直角标记
+%   \examRightAngle{(2,2)}{(0,0)}{(3,0)}
+%   
+%   % 虚线
+%   \draw[examdashed] (0,2) -- (2,2);
+% \end{tikzpicture}
+% ===================================================================

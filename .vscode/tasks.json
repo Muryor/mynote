@@ -1,89 +1,140 @@
 {
-  "version": "2.0.0",
-  "tasks": [
-    {
-      "label": "Build: Exam (teacher)",
-      "type": "shell",
-      "command": "./build.sh",
-      "args": ["exam", "teacher"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      },
-      "group": "build",
-      "problemMatcher": {
-        "owner": "latex",
-        "fileLocation": ["relative", "${workspaceFolder}"],
-        "pattern": {
-          "regexp": "^(.*?):(\\d+): (.+)$",
-          "file": 1,
-          "line": 2,
-          "message": 3
-        }
-      }
-    },
-    {
-      "label": "Build: Exam (student)",
-      "type": "shell",
-      "command": "./build.sh",
-      "args": ["exam", "student"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      },
-      "group": "build",
-      "problemMatcher": "$gcc"
-    },
-    {
-      "label": "Build: Exam (both)",
-      "type": "shell",
-      "command": "./build.sh",
-      "args": ["exam", "both"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      },
-      "group": { "kind": "build", "isDefault": true },
-      "problemMatcher": "$gcc"
-    },
-    {
-      "label": "Build: Handout (teacher)",
-      "type": "shell",
-      "command": "./build.sh",
-      "args": ["handout", "teacher"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      },
-      "group": "build",
-      "problemMatcher": "$gcc"
-    },
-    {
-      "label": "Build: Handout (student)",
-      "type": "shell",
-      "command": "./build.sh",
-      "args": ["handout", "student"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      },
-      "group": "build",
-      "problemMatcher": "$gcc"
-    },
-    {
-      "label": "Build: Handout (both)",
-      "type": "shell",
-      "command": "./build.sh",
-      "args": ["handout", "both"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      },
-      "group": "build",
-      "problemMatcher": "$gcc"
-    },
-    {
-      "label": "Clean aux (latexmk -C)",
-      "type": "shell",
-      "command": "latexmk",
-      "args": ["-C"],
-      "options": {
-        "env": { "PATH": "/Library/TeX/texbin:${env:PATH}" }
-      }
-    }
-  ]
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Build: Exam (teacher)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"exam",
+				"teacher"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"group": "build",
+			"problemMatcher": {
+				"owner": "latex",
+				"fileLocation": [
+					"relative",
+					"${workspaceFolder}"
+				],
+				"pattern": {
+					"regexp": "^(.*?):(\\d+): (.+)$",
+					"file": 1,
+					"line": 2,
+					"message": 3
+				}
+			}
+		},
+		{
+			"label": "Build: Exam (student)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"exam",
+				"student"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"group": "build",
+			"problemMatcher": "$gcc"
+		},
+		{
+			"label": "Build: Exam (both)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"exam",
+				"both"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": "$gcc"
+		},
+		{
+			"label": "Build: Handout (teacher)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"handout",
+				"teacher"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"group": "build",
+			"problemMatcher": "$gcc"
+		},
+		{
+			"label": "Build: Handout (student)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"handout",
+				"student"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"group": "build",
+			"problemMatcher": "$gcc"
+		},
+		{
+			"label": "Build: Handout (both)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"handout",
+				"both"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"group": "build",
+			"problemMatcher": "$gcc"
+		},
+		{
+			"label": "Clean aux (latexmk -C)",
+			"type": "shell",
+			"command": "latexmk",
+			"args": [
+				"-C"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			}
+		},
+		{
+			"label": "Analyze Nanjing Docx Structure",
+			"type": "shell",
+			"command": "cd word_to_tex/exam_converter && python analyze_docx.py"
+		},
+		{
+			"label": "Run Quick Test",
+			"type": "shell",
+			"command": "cd word_to_tex/exam_converter && python3 quick_test.py",
+			"isBackground": false
+		}
+	]
 }

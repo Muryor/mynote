@@ -152,6 +152,27 @@
 }
 
 % =========================
+% TikZ 绘图支持
+% =========================
+\RequirePackage{xcolor}       % 颜色支持 (TikZ 需要)
+\RequirePackage{tikz}
+\RequirePackage{tikz-3dplot}  % 3D 图形支持
+
+\usetikzlibrary{
+  arrows.meta,      % 箭头样式
+  calc,             % 坐标计算
+  intersections,    % 交点
+  angles,           % 角度标记
+  quotes,           % 引用标签
+  patterns,         % 填充图案
+  positioning,      % 节点定位
+  decorations.markings  % 路径装饰
+}
+
+% 加载统一样式
+\input{settings/tikz_exam_style.tex}
+
+% =========================
 % MCQ safety net (global)
 % =========================
 \RequirePackage{etoolbox}

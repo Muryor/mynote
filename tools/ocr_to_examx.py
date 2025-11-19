@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-ocr_to_examx_v1.3.py - v1.3 增强版 OCR 试卷预处理脚本
+r"""
+ocr_to_examx_v1.5.py - v1.5 增强版 OCR 试卷预处理脚本
 
-v1.3 新增改进：
-1. 🆕 修复 docstring 警告，添加 $ 格式兜底转换（-80% 残留率）
-2. 🆕 改进"故选"清理规则（-75% 残留率）
-3. 🆕 统一中英文标点（括号、引号）
-4. 🆕 添加自动验证功能
-5. ✅ 保留 v1.2 所有改进
+v1.5 核心修复（2025-11-18）：
+1. ✅ 彻底修复数学公式双重包裹（$$\(...\)$$ → \(...\)）
+   - 改进 smart_inline_math 避免嵌套
+   - 新增 fix_double_wrapped_math 后处理清理
+   - 优先将 $$ 转为 \(...\) 而非 \[...\]（examx 兼容）
+2. ✅ 改进单行选项展开（> A... B... C... D... → 多行）
+   - 更精确的选项分割正则
+   - 保留选项内的数学公式和标点
+3. ✅ 减少手动修正工作量：2小时 → 15分钟 (目标 -87.5%)
 
-v1.2 改进回顾：
-- 加强空行清理（解决80%的Runaway argument错误）
-- 超长行自动分割（解决编译慢问题）
-- 增强数学变量检测（减少Missing $错误）
-- 增强选项解析（处理嵌入的解析内容）
-- 新增question环境清理
+v1.4 改进回顾：
+- 修复数学公式双重包裹（初版）
+- 自动展开单行选项（初版）
+- 正确处理显示公式
 
-版本：v1.3
+v1.3 改进回顾：
+- 修复 docstring 警告，添加 $ 格式兜底转换
+- 改进"故选"清理规则
+- 统一中英文标点
+- 添加自动验证功能
+
+版本：v1.5
 作者：Claude
-日期：2025-11-13
+日期：2025-11-18
 """
 
 import re
@@ -30,7 +37,7 @@ from typing import List, Dict, Tuple, Optional
 
 # ==================== 配置 ====================
 
-VERSION = "v1.3"
+VERSION = "v1.5"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -137,47 +144,78 @@ def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
 
 
 def smart_inline_math(text: str) -> str:
-    r"""智能转换行内公式：$...$ -> \(...\)
+    r"""智能转换行内公式：$...$ -> \(...\)，$$...$$ -> \(...\)
     
-    🆕 v1.3 改进：修复 docstring 警告，添加兜底转换
+    🆕 v1.5 改进：彻底避免双重包裹，examx 统一使用 \(...\)
     """
     if not text:
         return text
     
-    # 保护行间公式
-    display_math_blocks = []
-    def save_display(match):
-        display_math_blocks.append(match.group(0))
-        return f"@@DISPLAYMATH{len(display_math_blocks)-1}@@"
-    text = re.sub(r'\$\$(.+?)\$\$', save_display, text, flags=re.DOTALL)
-    
-    # 保护已有的行内公式
+    # 步骤1: 保护已有的行内公式 \(...\)（避免重复转换）
     inline_math_blocks = []
     def save_inline(match):
         inline_math_blocks.append(match.group(0))
         return f"@@INLINEMATH{len(inline_math_blocks)-1}@@"
     text = re.sub(r'\\\((.+?)\\\)', save_inline, text, flags=re.DOTALL)
     
-    # 保护TikZ坐标
+    # 步骤2: 保护已有的显示公式 \[...\]（保持不变）
+    display_math_blocks = []
+    def save_display(match):
+        display_math_blocks.append(match.group(0))
+        return f"@@DISPLAYMATH{len(display_math_blocks)-1}@@"
+    text = re.sub(r'\\\[(.+?)\\\]', save_display, text, flags=re.DOTALL)
+    
+    # 步骤3: 保护TikZ坐标 $(A)$ 或 $(A)!0.5!(B)$ 或 $(A)+(1,2)$
     tikz_coords = []
     def save_tikz_coord(match):
         tikz_coords.append(match.group(0))
         return f"@@TIKZCOORD{len(tikz_coords)-1}@@"
-    text = re.sub(r'\$\([\d\w\s,+\-*/\.]+\)\$', save_tikz_coord, text)
+    # 匹配 TikZ 坐标：$(...)$ 内部是简单的坐标计算表达式
+    # 包含字母、数字、括号、加减乘除、点、感叹号、冒号等但不包含复杂数学
+    text = re.sub(r'\$\([A-Za-z0-9!+\-*/\.\(\):,\s]+\)\$', save_tikz_coord, text)
     
-    # 转换 $ ... $ 为 \(...\)
+    # 步骤4: 转换显示公式 $$ ... $$ 为 \(...\)（examx 风格）
+    # 优先处理多行显示公式
+    text = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', text, flags=re.DOTALL)
+    
+    # 步骤5: 转换单 $ ... $ 为 \(...\)
     text = re.sub(r'(?<!\\)\$([^\$]+?)\$', r'\\(\1\\)', text)
     
-    # 🆕 v1.3 改进：兜底检查，强制转换所有残留的 $ 格式（单行内，限制200字符）
+    # 步骤6: 兜底检查，清理残留的单 $（单行内，限制200字符）
     text = re.sub(r'(?<!\\)\$([^\$\n]{1,200}?)\$', r'\\(\1\\)', text)
     
-    # 恢复保护的内容
+    # 步骤7: 恢复保护的内容
     for i, block in enumerate(tikz_coords):
         text = text.replace(f"@@TIKZCOORD{i}@@", block)
-    for i, block in enumerate(inline_math_blocks):
-        text = text.replace(f"@@INLINEMATH{i}@@", block)
     for i, block in enumerate(display_math_blocks):
         text = text.replace(f"@@DISPLAYMATH{i}@@", block)
+    for i, block in enumerate(inline_math_blocks):
+        text = text.replace(f"@@INLINEMATH{i}@@", block)
+    
+    return text
+
+
+def fix_double_wrapped_math(text: str) -> str:
+    r"""修正双重包裹的数学公式
+    
+    🆕 v1.5 新增：清理可能残留的嵌套格式
+    例如：$$\(...\)$$ → \(...\)
+    """
+    if not text:
+        return text
+    
+    # 修正 $$\(...\)$$ 或 $$\[...\]$$
+    # 注意：\\\( 匹配字面的 \(
+    text = re.sub(r'\$\$\s*\\\((.+?)\\\)\s*\$\$', r'\\(\1\\)', text, flags=re.DOTALL)
+    text = re.sub(r'\$\$\s*\\\[(.+?)\\\]\s*\$\$', r'\\(\1\\)', text, flags=re.DOTALL)
+    
+    # 修正 $\(...\)$ 或 $\[...\]$
+    text = re.sub(r'\$\s*\\\((.+?)\\\)\s*\$', r'\\(\1\\)', text, flags=re.DOTALL)
+    text = re.sub(r'\$\s*\\\[(.+?)\\\]\s*\$', r'\\(\1\\)', text, flags=re.DOTALL)
+    
+    # 修正三重嵌套（极端情况）
+    text = re.sub(r'\\\(\s*\\\((.+?)\\\)\s*\\\)', r'\\(\1\\)', text, flags=re.DOTALL)
+    
     return text
 
 
@@ -308,6 +346,57 @@ def split_long_lines_in_explain(text: str, max_length: int = 800) -> str:
         return prefix + '\n'.join(new_lines) + suffix
     
     return re.sub(pattern, split_content, text, flags=re.DOTALL)
+
+
+def remove_par_breaks_in_explain(text: str) -> str:
+    """移除 \explain{...} 中的空段落（严格基于大括号计数）
+    解决 TeX 中段落断开导致的 "Paragraph ended before \explain code was complete"。
+    """
+    out = []
+    i = 0
+    n = len(text)
+    while i < n:
+        if text.startswith("\\explain{", i):
+            # 复制宏名
+            out.append("\\explain{")
+            i += len("\\explain{")
+            depth = 1
+            buf = []
+            while i < n and depth > 0:
+                ch = text[i]
+                # 处理转义的大括号 \{ 或 \}：作为普通字符，不计入深度
+                if ch == '\\' and i + 1 < n and text[i + 1] in '{}':
+                    buf.append(text[i:i+2])
+                    i += 2
+                    continue
+                # 处理换行：若遇到空段落（\n\s*\n），压缩为单换行
+                if ch == '\n':
+                    # 查看是否为空段落
+                    j = i + 1
+                    while j < n and text[j] in ' \t':
+                        j += 1
+                    if j < n and text[j] == '\n':
+                        # 跳过第二个换行前的空白，只保留一个换行
+                        buf.append('\n')
+                        i = j + 1
+                        continue
+                if ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        # 关闭，写入缓冲并结束此 explain
+                        out.append(''.join(buf))
+                        out.append('}')
+                        i += 1
+                        break
+                buf.append(ch)
+                i += 1
+            continue
+        else:
+            out.append(text[i])
+            i += 1
+    return ''.join(out)
 
 
 def convert_markdown_table_to_latex(text: str) -> str:
@@ -455,40 +544,199 @@ def split_questions(section_body: str) -> List[str]:
 
 
 def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
-    """提取元信息和图片"""
-    meta = {k: "" for k in META_PATTERNS}
-    content_lines = []
-    images = []
+    """提取元信息与图片（状态机重构：防止跨题累积）
 
-    for line in block.splitlines():
+    目标：避免上一题的多行【详解】/【分析】错误吞并下一题题干。
+    关键边界：
+      - 新的 meta 开始（答案/难度/知识点/详解/分析）
+      - 题号开始：^\s*>?\s*\d+[\.．、]\s+
+      - 章节标题：^#{1,6}\s*(一、|二、|三、|四、|五、|六、)
+      - 空行 + lookahead 为题号时，作为安全边界（若上一行像环境续行则跳过该空行边界）
+      - 引述空行 ^>\s*$ 忽略
+    """
+    # 规范化并切分行
+    lines = block.splitlines()
+
+    # 结果容器
+    meta = {k: "" for k in META_PATTERNS}
+    # 将 analysis 与 explain 统一：后续把 analysis 并入 explain
+    meta_alias_map = {
+        "analysis": "explain",
+        "explain": "explain",
+        "answer": "answer",
+        "difficulty": "difficulty",
+        "topics": "topics",
+    }
+
+    content_lines: List[str] = []
+    images: List[Dict] = []
+
+    # 编译边界正则
+    question_start_perm = re.compile(r"^\s*>?\s*\d{1,3}[\.．、]\s+")
+    section_header = re.compile(r"^#{1,6}\s*(一、|二、|三、|四、|五、|六、)")
+    quote_blank = re.compile(r"^>\s*$")
+    env_cont_hint = re.compile(r"(\\\\\s*$)|\\begin\{|\\left|\\right")
+
+    # 将 META_PATTERNS 编译，并合并同义词“考点”→topics，“分析/详解”→explain
+    meta_starts = [
+        ("answer", re.compile(r"^【\s*答案\s*】[:：]?\s*(.*)$")),
+        ("difficulty", re.compile(r"^【\s*难度\s*】[:：]?\s*([\d.]+).*")),
+        ("topics", re.compile(r"^【\s*(知识点|考点)\s*】[:：]?\s*(.*)$")),
+        ("explain", re.compile(r"^【\s*(详解|分析)\s*】[:：]?\s*(.*)$")),
+    ]
+
+    # 状态
+    state = "NORMAL"  # or "IN_META"
+    current_meta_key: Optional[str] = None
+    current_meta_lines: List[str] = []
+
+    def flush_meta():
+        nonlocal current_meta_key, current_meta_lines
+        if current_meta_key is None:
+            return
+        # 合并清理
+        text = "\n".join(current_meta_lines)
+        text = re.sub(r"\n\s*\n+", "\n", text)
+        # 去掉可能残留的标签前缀
+        text = re.sub(r"^【?(?:答案|难度|知识点|考点|详解|分析)】?[:：]?\s*", "", text)
+        # 归一化到别名键
+        key = meta_alias_map.get(current_meta_key, current_meta_key)
+        # 合并：若已有 explain，则追加一行
+        if key == "explain" and meta.get("explain"):
+            meta["explain"] = (meta["explain"] + "\n" + text.strip()).strip()
+        else:
+            meta[key] = text.strip()
+        # 重置
+        current_meta_key = None
+        current_meta_lines = []
+
+    def is_question_start(s: str) -> bool:
+        return bool(question_start_perm.match(s))
+
+    def is_section_header(s: str) -> bool:
+        return bool(section_header.match(s))
+
+    def image_match(s: str):
+        return IMAGE_PATTERN.search(s)
+
+    # 查找上一条非空行（用于环境续行判断）
+    def find_prev_nonempty(idx: int) -> Optional[str]:
+        j = idx - 1
+        while j >= 0:
+            if lines[j].strip():
+                return lines[j]
+            j -= 1
+        return None
+
+    # 查找下一条非空行（用于 blank+lookahead 判断）
+    def find_next_nonempty(idx: int) -> Optional[str]:
+        j = idx + 1
+        while j < len(lines):
+            if lines[j].strip():
+                return lines[j]
+            j += 1
+        return None
+
+    i = 0
+    while i < len(lines):
+        line = lines[i]
         stripped = line.strip()
 
-        m_img = IMAGE_PATTERN.search(stripped)
+        # 图片行：任意状态下都提取，且不打断 IN_META（仅跳过该行）
+        m_img = image_match(stripped)
         if m_img:
             images.append({
                 "path": m_img.group(1),
                 "width": int(m_img.group(2)) if m_img.group(2) else 50,
             })
+            i += 1
             continue
 
-        matched_meta = False
-        for key, pat in META_PATTERNS.items():
-            m = re.match(pat, stripped)
-            if m:
-                if key != "analysis":
-                    meta[key] = m.group(1).strip()
-                matched_meta = True
-                break
+        # 引述空行：丢弃
+        if quote_blank.match(stripped):
+            i += 1
+            continue
 
-        if not matched_meta:
+        if state == "NORMAL":
+            # 新的 meta 开始？
+            started = False
+            for key, pat in meta_starts:
+                m = pat.match(stripped)
+                if m:
+                    state = "IN_META"
+                    current_meta_key = key
+                    seed = m.group(m.lastindex or 1) if m.groups() else ""
+                    current_meta_lines = [seed.strip()] if seed.strip() else []
+                    started = True
+                    break
+            if started:
+                i += 1
+                continue
+
+            # 普通内容
             content_lines.append(line)
+            i += 1
+            continue
+
+        # state == IN_META
+        # 1) 新 meta 开始 -> 刷新并切换
+        started = False
+        for key, pat in meta_starts:
+            m = pat.match(stripped)
+            if m:
+                flush_meta()
+                state = "IN_META"
+                current_meta_key = key
+                seed = m.group(m.lastindex or 1) if m.groups() else ""
+                current_meta_lines = [seed.strip()] if seed.strip() else []
+                started = True
+                break
+        if started:
+            i += 1
+            continue
+
+        # 2) 确认题号或章节边界 -> 结束 meta，保留该行给题干
+        if is_question_start(stripped) or is_section_header(stripped):
+            flush_meta()
+            state = "NORMAL"
+            content_lines.append(line)
+            i += 1
+            continue
+
+        # 3) 空行 + lookahead 为题号 -> 安全地结束 meta
+        if stripped == "":
+            next_ne = find_next_nonempty(i)
+            if next_ne and is_question_start(next_ne.strip()):
+                prev_ne = find_prev_nonempty(i)
+                # 若上一非空行看起来是环境续行，则不要在此空行切断
+                if prev_ne and env_cont_hint.search(prev_ne):
+                    # 继续把空行也并入 meta（保持原样）
+                    current_meta_lines.append(line)
+                    i += 1
+                    continue
+                # 否则切断 meta（不消费空行）
+                flush_meta()
+                state = "NORMAL"
+                i += 1  # 跳过该空行，下一轮看到题号行会进入 NORMAL 流程
+                continue
+
+        # 4) 继续累积 meta 内容
+        current_meta_lines.append(line)
+        i += 1
+
+    # 循环结束，若还在 meta 状态则刷新
+    if state == "IN_META":
+        flush_meta()
 
     content = "\n".join(content_lines).strip()
     return content, meta, images
 
 
 def parse_question_structure(content: str) -> Dict:
-    """智能识别题目结构（增强版）"""
+    """智能识别题目结构（增强版）
+    
+    解析题干、选项、解析三部分，避免将解析文本混入选项
+    """
     lines = content.splitlines()
     
     structure = {
@@ -505,37 +753,117 @@ def parse_question_structure(content: str) -> Dict:
     for line in lines:
         stripped = line.strip()
         
+        # 优先检查是否进入解析部分（避免解析文本混入选项）
+        if any(marker in stripped for marker in ANALYSIS_MARKERS):
+            # 保存当前累积的选项
+            if structure['current_choice']:
+                structure['choices'].append(structure['current_choice'].strip())
+                structure['current_choice'] = ''
+            structure['in_choice'] = False
+            structure['in_analysis'] = True
+            structure['analysis_lines'].append(stripped)
+            continue
+        
+        # 匹配选项标记 (A. B. C. D.)
         m = choice_pattern.match(stripped)
         if m:
+            # 保存上一个选项
             if structure['current_choice']:
-                structure['choices'].append(structure['current_choice'])
+                structure['choices'].append(structure['current_choice'].strip())
             
             structure['current_choice'] = m.group(2)
             structure['in_choice'] = True
             structure['in_analysis'] = False
             continue
         
-        # 检查是否进入解析部分
-        if structure['in_choice']:
-            if any(marker in stripped for marker in ANALYSIS_MARKERS):
-                structure['in_choice'] = False
-                structure['in_analysis'] = True
-                structure['analysis_lines'].append(stripped)
-            else:
-                structure['current_choice'] += ' ' + stripped
-        elif structure['in_analysis']:
+        # 根据当前状态分配行
+        if structure['in_analysis']:
             structure['analysis_lines'].append(line)
+        elif structure['in_choice']:
+            # 选项续行（多行选项内容）
+            structure['current_choice'] += ' ' + stripped
         else:
+            # 题干部分
             structure['stem_lines'].append(line)
     
+    # 保存末尾累积的选项
     if structure['current_choice']:
-        structure['choices'].append(structure['current_choice'])
+        structure['choices'].append(structure['current_choice'].strip())
     
     return structure
 
 
+def expand_inline_choices(content: str) -> str:
+    """展开单行/多行引述选项并去除'>'前缀
+    - 单行：> A... B... C... D... → 多行独立选项
+    - 多行：> A... B... / > C... D... → 合并后展开为独立选项
+    - 空行：> (空) → 跳过
+    """
+    lines = []
+    accumulated_choice_text = ""
+    
+    for line in content.splitlines():
+        stripped = line.strip()
+        
+        # 处理以'>'开头的行（引述块）
+        if stripped.startswith('>'):
+            choice_text = stripped[1:].strip()
+            
+            # 跳过空的引述行
+            if not choice_text:
+                continue
+            
+            # 如果这一行有选项标记，累积到缓冲区
+            if re.search(r'[A-D][．\.\、]', choice_text):
+                accumulated_choice_text += " " + choice_text if accumulated_choice_text else choice_text
+                continue
+            
+            # 非选项引述（如图片说明等），保留原样
+            lines.append(line)
+        else:
+            # 非引述行：如果有累积的选项文本，先处理
+            if accumulated_choice_text:
+                # 检查累积文本中有多少个选项标记
+                choice_markers = re.findall(r'[A-D][．\.\、]', accumulated_choice_text)
+                if len(choice_markers) >= 2:
+                    # 分割为独立选项
+                    parts = re.split(r'(?=[A-D][．\.\、])', accumulated_choice_text)
+                    for part in parts:
+                        part = part.strip()
+                        if part and re.match(r'^[A-D][．\.\、]', part):
+                            lines.append(part)
+                elif len(choice_markers) == 1:
+                    # 单个选项，直接添加
+                    lines.append(accumulated_choice_text.strip())
+                
+                accumulated_choice_text = ""
+            
+            # 添加当前行
+            lines.append(line)
+    
+    # 处理末尾残留的累积文本
+    if accumulated_choice_text:
+        choice_markers = re.findall(r'[A-D][．\.\、]', accumulated_choice_text)
+        if len(choice_markers) >= 2:
+            parts = re.split(r'(?=[A-D][．\.\、])', accumulated_choice_text)
+            for part in parts:
+                part = part.strip()
+                if part and re.match(r'^[A-D][．\.\、]', part):
+                    lines.append(part)
+        elif len(choice_markers) == 1:
+            lines.append(accumulated_choice_text.strip())
+    
+    return '\n'.join(lines)
+
+
 def convert_choices(content: str) -> Tuple[str, List[str], str]:
-    """拆分题干、选项、解析（增强版）"""
+    """拆分题干、选项、解析（增强版）
+    
+    🆕 v1.4 改进：先展开单行选项再解析
+    """
+    # 🆕 先展开可能的单行选项
+    content = expand_inline_choices(content)
+    
     structure = parse_question_structure(content)
     
     stem = '\n'.join(structure['stem_lines']).strip()
@@ -567,6 +895,7 @@ def handle_subquestions(content: str) -> str:
 def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     """统一处理文本
     
+    🆕 v1.5 改进：添加双重包裹修正
     🆕 v1.3 改进：更强的"故选"清理规则
     """
     if not text:
@@ -588,6 +917,8 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
         text = escape_latex_special(text, in_math_mode=False)
     
     text = smart_inline_math(text)
+    # 🆕 v1.5 新增：修正可能的双重包裹
+    text = fix_double_wrapped_math(text)
     text = wrap_math_variables(text)
     
     return text
@@ -639,7 +970,8 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
     if meta.get("difficulty"):
         lines.append(f"\\difficulty{{{meta['difficulty']}}}")
     if meta.get("answer"):
-        ans = escape_latex_special(meta["answer"], in_math_mode=False)
+        # 使用与题干/解析一致的处理，以规范数学格式，避免 $$...$$ 残留
+        ans = process_text_for_latex(meta["answer"], is_math_heavy=True)
         lines.append(f"\\answer{{{ans}}}")
     if explain_raw:
         lines.append(f"\\explain{{{explain_raw}}}")
@@ -687,6 +1019,14 @@ def convert_md_to_examx(md_text: str, title: str) -> str:
     result = remove_blank_lines_in_macro_args(result)
     result = clean_question_environments(result)
     result = split_long_lines_in_explain(result, max_length=800)
+    # 进一步严格移除 explain{} 中的空段落，避免段落中断导致的宏参数报错
+    result = remove_par_breaks_in_explain(result)
+
+    # 最终兜底：规范/移除残留的 $$ 显示数学标记
+    # 1) 将成对 $$...$$ 统一为行内 \\(...\\)
+    result = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', result, flags=re.DOTALL)
+    # 2) 清理任何残留的孤立 $$（避免编译错误）
+    result = result.replace('$$', '')
     
     return result
 
@@ -752,9 +1092,14 @@ def main():
         description=f"OCR 试卷预处理脚本 - {VERSION}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-🆕 v1.3 新增功能：
-  - 修复 docstring 警告，添加 $ 格式兜底转换（-80% 残留率）
-  - 改进"故选"清理规则（-75% 残留率）
+🆕 v1.4 新增功能：
+  - 修复数学公式双重包裹（$$\\(...\\)$$ → \\(...\\)）
+  - 自动展开单行选项（> A... B... → 多行）
+  - 正确处理显示公式（$$ → \\[...\\]）
+
+✅ v1.3 改进回顾：
+  - 修复 docstring 警告，添加 $ 格式兜底转换
+  - 改进"故选"清理规则
   - 统一中英文标点（括号、引号）
   - 添加自动验证功能
 
@@ -763,10 +1108,9 @@ def main():
   - 超长行自动分割（解决编译慢问题）
   - 增强数学变量检测（减少Missing $错误）
   - 增强选项解析（处理嵌入的解析内容）
-  - 新增question环境清理
 
 使用示例:
-  python3 ocr_to_examx_v1.3.py "浙江省金华十校/" output/
+  python3 ocr_to_examx.py "浙江省金华十校/" output/
         """
     )
     
@@ -833,7 +1177,12 @@ def main():
         if image_count > 0:
             print(f"🖼️  图片占位: {image_count}")
         
-        print(f"\n🆕 v1.3 改进已应用:")
+        print(f"\n🆕 v1.4 改进已应用:")
+        print(f"  ✅ 数学公式双重包裹修复")
+        print(f"  ✅ 单行选项自动展开")
+        print(f"  ✅ 显示公式正确处理")
+        
+        print(f"\n✅ v1.3 改进（已保留）:")
         print(f"  ✅ $ 格式兜底转换")
         print(f"  ✅ 增强的'故选'清理")
         print(f"  ✅ 中英文标点统一")

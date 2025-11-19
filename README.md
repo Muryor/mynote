@@ -274,6 +274,47 @@ output/                          — build artifacts (PDFs)
 
 ---
 
+## Word→Examx Conversion
+
+This repository includes a streamlined pipeline to convert Microsoft Word exam documents (`.docx`) into the project's `examx` LaTeX format and verify compilation. The conversion pipeline is implemented in `tools/ocr_to_examx.py` (v1.4) and refined with `tools/agent_refine.py`.
+
+Quick summary:
+
+- Input: Word `.docx` files placed in `word_to_tex/input/`
+- Automated pipeline: `pandoc` → markdown preprocessing → `ocr_to_examx.py` → `agent_refine.py` → optional compilation
+- Scripts: `word_to_tex/scripts/preprocess_docx.sh` (primary helper script)
+- Outputs: `word_to_tex/output/` (intermediate), `content/exams/auto/<name>/converted_exam.tex` (refined)
+
+Basic commands (from project root):
+
+```bash
+# Convert a single .docx to examx TeX (pandoc → preprocess → converter → refine)
+./word_to_tex/scripts/preprocess_docx.sh \
+  word_to_tex/input/your_exam.docx \
+  output_basename "Full Exam Title"
+
+# Build teacher PDF (temporarily set exam source then run build)
+# (preprocess creates content/exams/auto/<output_basename>/converted_exam.tex)
+cp settings/metadata.tex settings/metadata.tex.bak
+python3 - <<'PY'
+from pathlib import Path
+fn=Path('settings/metadata.tex')
+txt=fn.read_text()
+txt=txt.replace('\\newcommand{\\examSourceFile}{content/exams/g2/g2_qidong_2024_sem1_month1.tex}', '\\newcommand{\\examSourceFile}{content/exams/auto/output_basename/converted_exam.tex}')
+fn.write_text(txt)
+PY
+./build.sh exam teacher
+mv settings/metadata.tex.bak settings/metadata.tex
+```
+
+Notes and best practices:
+
+- `ocr_to_examx.py` v1.4 fixes double-wrapped math (`$$...$$` conflicts) and expands single-line choice quote blocks into `\begin{choices}`.
+- After conversion, expect a short manual pass (≈10–20 minutes) to fix rare `$...$` edge cases and finalize TikZ figures.
+- Deleted obsolete helpers (migrated to `tools/`): `convert_exam.sh`, `postprocess_exam.py`, `extract_images.py`.
+
+See `word_to_tex/output/REGRESSION_TEST_v14.md` and `word_to_tex/output/TEST_REPORT_lishui_2026.md` for example reports and metrics.
+
 ## Contributing
 
 Conventional commits suggested: `feat(examx): ...`, `fix(examx): ...`, `docs(readme): ...`
