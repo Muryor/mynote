@@ -7,7 +7,7 @@ v1.5 核心修复（2025-11-18）：
 1. ✅ 彻底修复数学公式双重包裹（$$\(...\)$$ → \(...\)）
    - 改进 smart_inline_math 避免嵌套
    - 新增 fix_double_wrapped_math 后处理清理
-   - 优先将 $$ 转为 \(...\) 而非 \[...\]（examx 兼容）
+   - 统一将所有 $$...$$ 转换为行内 \(...\)（examx 兼容）
 2. ✅ 改进单行选项展开（> A... B... C... D... → 多行）
    - 更精确的选项分割正则
    - 保留选项内的数学公式和标点
@@ -16,7 +16,7 @@ v1.5 核心修复（2025-11-18）：
 v1.4 改进回顾：
 - 修复数学公式双重包裹（初版）
 - 自动展开单行选项（初版）
-- 正确处理显示公式
+- 统一数学公式格式（$$...$$ → \(...\)）
 
 v1.3 改进回顾：
 - 修复 docstring 警告，添加 $ 格式兜底转换
@@ -166,8 +166,12 @@ def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
 
 def smart_inline_math(text: str) -> str:
     r"""智能转换行内公式：$...$ -> \(...\)，$$...$$ -> \(...\)
-    
+
     🆕 v1.5 改进：彻底避免双重包裹，examx 统一使用 \(...\)
+
+    注意：所有 $$...$$ 显示公式都会被转换为行内 \(...\) 格式，
+    这是为了与 examx 包的兼容性。如果需要真正的显示公式，
+    应在后续手动调整为 \[...\] 格式。
     """
     if not text:
         return text
@@ -202,8 +206,8 @@ def smart_inline_math(text: str) -> str:
     # 包含字母、数字、括号、加减乘除、点、感叹号、冒号等但不包含复杂数学
     text = re.sub(r'\$\([A-Za-z0-9!+\-*/\.\(\):,\s]+\)\$', save_tikz_coord, text)
     
-    # 步骤4: 转换显示公式 $$ ... $$ 为 \(...\)（examx 风格）
-    # 优先处理多行显示公式
+    # 步骤4: 转换显示公式 $$ ... $$ 为 \(...\)（examx 统一风格）
+    # 注意：所有 $$...$$ 都转为行内格式，不生成 \[...\]
     text = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', text, flags=re.DOTALL)
     
     # 步骤5: 转换单 $ ... $ 为 \(...\)
@@ -859,8 +863,37 @@ def split_questions(section_body: str) -> List[str]:
     return blocks
 
 
-def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
+def extract_context_around_image(text: str, img_match_start: int, img_match_end: int,
+                                  context_len: int = 50) -> Tuple[str, str]:
+    """提取图片前后的上下文文本
+
+    Args:
+        text: 完整文本
+        img_match_start: 图片匹配的起始位置
+        img_match_end: 图片匹配的结束位置
+        context_len: 上下文长度（字符数）
+
+    Returns:
+        (context_before, context_after) 元组
+    """
+    # 提取前文
+    before_start = max(0, img_match_start - context_len)
+    context_before = text[before_start:img_match_start].strip()
+    # 清理换行符和多余空格
+    context_before = ' '.join(context_before.split())
+
+    # 提取后文
+    after_end = min(len(text), img_match_end + context_len)
+    context_after = text[img_match_end:after_end].strip()
+    context_after = ' '.join(context_after.split())
+
+    return context_before, context_after
+
+
+def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "") -> Tuple[str, Dict, List]:
     r"""提取元信息与图片（状态机重构：防止跨题累积）
+
+    🆕 新增参数：question_index 和 slug 用于生成图片 ID
 
     目标：避免上一题的多行【详解】/【分析】错误吞并下一题题干。
     关键边界：
@@ -983,31 +1016,113 @@ def extract_meta_and_images(block: str) -> Tuple[str, Dict, List]:
         # 🆕 v1.6.2：图片行识别增强 - 区分独立图片块 vs 内联公式图片
         # 只有当图片"独占一行"且是完整匹配时，才提取为图片块
         # 内联图片（如 "已知集合![](image2.wmf)，则..."）保留在文本中
-        img_result = image_match(stripped)
+        # 🆕 Prompt 3: 统一处理所有图片（独立和内联）
+        # 检查整行是否包含图片标记
+        img_result = image_match(line)  # 注意：使用完整行而非stripped
         if img_result:
             img_type, m_img = img_result
             # 检查是否为独立图片行：整行只有一个图片标记
             is_standalone = (m_img.group(0).strip() == stripped)
-            
+
+            # 🆕 生成图片 ID 和提取上下文
+            img_counter = len(images) + 1
+            generated_id = f"{slug}-Q{question_index}-img{img_counter}" if slug else f"Q{question_index}-img{img_counter}"
+
+            # 提取上下文
+            full_text = "\n".join(lines)
+            img_start = full_text.find(m_img.group(0))
+            img_end = img_start + len(m_img.group(0))
+            context_before, context_after = extract_context_around_image(full_text, img_start, img_end)
+
             if is_standalone:
                 # 独立图片块：提取到images列表
                 if img_type == 'with_id':
                     # ![@@@id](path){...}
                     img_id = m_img.group(1)
                     path = m_img.group(2).strip()
-                    images.append({"path": path, "width": 50, "id": img_id})
+                    images.append({
+                        "path": path,
+                        "width": 60,
+                        "id": generated_id,
+                        "inline": False,
+                        "question_index": question_index,
+                        "sub_index": 1,
+                        "context_before": context_before,
+                        "context_after": context_after
+                    })
                 elif img_type == 'no_id':
                     # ![](path){...}
                     path = m_img.group(1).strip()
-                    images.append({"path": path, "width": 50})
+                    images.append({
+                        "path": path,
+                        "width": 60,
+                        "id": generated_id,
+                        "inline": False,
+                        "question_index": question_index,
+                        "sub_index": 1,
+                        "context_before": context_before,
+                        "context_after": context_after
+                    })
                 else:
                     # 简单格式: ![](images/...)
                     path = m_img.group(1)
-                    width = int(m_img.group(2)) if m_img.group(2) else 50
-                    images.append({"path": path, "width": width})
+                    width = int(m_img.group(2)) if m_img.group(2) else 60
+                    images.append({
+                        "path": path,
+                        "width": width,
+                        "id": generated_id,
+                        "inline": False,
+                        "question_index": question_index,
+                        "sub_index": 1,
+                        "context_before": context_before,
+                        "context_after": context_after
+                    })
                 i += 1
                 continue
-            # else: 内联图片，保留在文本流中，不做特殊处理（fallthrough）
+            else:
+                # 内联图片：替换为占位符，记录到images列表
+                if img_type == 'with_id':
+                    img_id = m_img.group(1)
+                    path = m_img.group(2).strip()
+                    images.append({
+                        "path": path,
+                        "width": 60,
+                        "id": generated_id,
+                        "inline": True,
+                        "question_index": question_index,
+                        "sub_index": 1,
+                        "context_before": context_before,
+                        "context_after": context_after
+                    })
+                elif img_type == 'no_id':
+                    path = m_img.group(1).strip()
+                    images.append({
+                        "path": path,
+                        "width": 60,
+                        "id": generated_id,
+                        "inline": True,
+                        "question_index": question_index,
+                        "sub_index": 1,
+                        "context_before": context_before,
+                        "context_after": context_after
+                    })
+                else:
+                    path = m_img.group(1)
+                    width = int(m_img.group(2)) if m_img.group(2) else 60
+                    images.append({
+                        "path": path,
+                        "width": width,
+                        "id": generated_id,
+                        "inline": True,
+                        "question_index": question_index,
+                        "sub_index": 1,
+                        "context_before": context_before,
+                        "context_after": context_after
+                    })
+
+                # 替换图片标记为占位符（使用新的 ID 格式）
+                line = line.replace(m_img.group(0), f"<<IMAGE_INLINE:{generated_id}>>")
+                # 继续处理该行（fallthrough）
 
         # 引述空行：丢弃
         if quote_blank.match(stripped):
@@ -1360,19 +1475,86 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     return text
 
 
-def build_question_tex(stem: str, options: List, meta: Dict, images: List, 
-                       section_type: str) -> str:
-    """生成 question 环境"""
+def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = False) -> str:
+    """生成新格式的 IMAGE_TODO 占位块
+
+    Args:
+        img: 图片信息字典，包含 id, path, width, inline, question_index, sub_index
+        stem_text: 题干文本，用于提取上下文
+        is_inline: 是否为内联图片
+
+    Returns:
+        格式化的 IMAGE_TODO 占位块
+    """
+    img_id = img.get('id', 'unknown')
+    path = img.get('path', '')
+    width = img.get('width', 60)
+    inline = 'true' if img.get('inline', False) else 'false'
+    q_idx = img.get('question_index', 0)
+    sub_idx = img.get('sub_index', 1)
+
+    # 提取上下文（简化版：取图片前后各50个字符）
+    context_before = img.get('context_before', '').strip()
+    context_after = img.get('context_after', '').strip()
+
+    # 构建占位块
+    if is_inline:
+        # 内联图片：不使用 center 环境
+        block = (
+            f"\n% IMAGE_TODO_START id={img_id} path={path} width={width}% inline={inline} "
+            f"question_index={q_idx} sub_index={sub_idx}\n"
+        )
+        if context_before:
+            block += f"% CONTEXT_BEFORE: {context_before}\n"
+        if context_after:
+            block += f"% CONTEXT_AFTER: {context_after}\n"
+        block += (
+            "\\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]\n"
+            f"  % TODO: AI_AGENT_REPLACE_ME (id={img_id})\n"
+            "\\end{tikzpicture}\n"
+            f"% IMAGE_TODO_END id={img_id}\n"
+        )
+    else:
+        # 独立图片：使用 center 环境
+        block = (
+            "\\begin{center}\n"
+            f"% IMAGE_TODO_START id={img_id} path={path} width={width}% inline={inline} "
+            f"question_index={q_idx} sub_index={sub_idx}\n"
+        )
+        if context_before:
+            block += f"% CONTEXT_BEFORE: {context_before}\n"
+        if context_after:
+            block += f"% CONTEXT_AFTER: {context_after}\n"
+        block += (
+            "\\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]\n"
+            f"  % TODO: AI_AGENT_REPLACE_ME (id={img_id})\n"
+            "\\end{tikzpicture}\n"
+            f"% IMAGE_TODO_END id={img_id}\n"
+            "\\end{center}"
+        )
+
+    return block
+
+
+def build_question_tex(stem: str, options: List, meta: Dict, images: List,
+                       section_type: str, question_index: int = 0, slug: str = "") -> str:
+    """生成 question 环境
+
+    🆕 Prompt 3: 支持内联图片占位符替换
+    🆕 新格式: 使用 IMAGE_TODO_START/END 带 ID 的占位块
+    """
+    # 先处理文本，但保留占位符
+    stem_raw = stem  # 保存原始文本用于上下文提取
     stem = process_text_for_latex(stem, is_math_heavy=True)
-    
+
     if section_type == "解答题" and re.search(r'\(\d+\)', stem):
         stem = handle_subquestions(stem)
-    
+
     explain_raw = meta.get("explain", "").strip()
     if explain_raw:
         explain_raw = re.sub(r'^【?详解】?[:：]?\s*', '', explain_raw)
         explain_raw = process_text_for_latex(explain_raw, is_math_heavy=True)
-    
+
     topics_raw = meta.get("topics", "").strip()
     if topics_raw:
         topics_raw = topics_raw.replace("、", "；")
@@ -1380,7 +1562,7 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
 
     lines = []
     lines.append(r"\begin{question}")
-    
+
     if stem:
         lines.append(stem)
 
@@ -1391,15 +1573,24 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
             lines.append(f"  \\item {opt_processed}")
         lines.append(r"\end{choices}")
 
-    for img in images:
-        lines.append("")
-        lines.append(r"\begin{center}")
-        lines.append(f"% IMAGE_TODO: {img['path']} (width={img['width']}%)")
-        lines.append(r"\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]")
-        lines.append(r"  % TODO: AI Agent 将使用 view 工具查看此图片并生成 TikZ 代码")
-        lines.append(f"  % view {img['path']}")
-        lines.append(r"\end{tikzpicture}")
-        lines.append(r"\end{center}")
+    # 🆕 新格式: 使用 IMAGE_TODO_START/END 占位块
+    for idx, img in enumerate(images):
+        # 生成新格式的占位块
+        img_todo_block = generate_image_todo_block(img, stem_raw, img.get('inline', False))
+
+        if img.get('inline', False):
+            # 内联图片：替换占位符
+            placeholder = f"<<IMAGE_INLINE:{img.get('id', f'img{idx}')}>>"
+            stem = stem.replace(placeholder, img_todo_block)
+            explain_raw = explain_raw.replace(placeholder, img_todo_block) if explain_raw else explain_raw
+            # 更新已处理的选项
+            for i, line in enumerate(lines):
+                if placeholder in line:
+                    lines[i] = line.replace(placeholder, img_todo_block)
+        else:
+            # 独立图片：追加到题目末尾
+            lines.append("")
+            lines.append(img_todo_block)
 
     if topics_raw:
         lines.append(f"\\topics{{{topics_raw}}}")
@@ -1450,7 +1641,8 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
             q_index += 1  # 题号递增
             raw_block = block  # 保存原始 Markdown 片段
 
-            content, meta, images = extract_meta_and_images(block)
+            # 🆕 传递 question_index 和 slug 用于生成图片 ID
+            content, meta, images = extract_meta_and_images(block, question_index=q_index, slug=slug)
 
             # 使用增强的转换函数（返回3个值）
             stem, options, extracted_analysis = convert_choices(content)
@@ -1461,7 +1653,9 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
             elif extracted_analysis:
                 meta['explain'] = meta['explain'] + '\n' + extracted_analysis
 
-            q_tex = build_question_tex(stem, options, meta, images, sec_label)
+            # 🆕 传递 question_index 和 slug 到 build_question_tex
+            q_tex = build_question_tex(stem, options, meta, images, sec_label,
+                                      question_index=q_index, slug=slug)
 
             # 🆕 v1.6.3：检测问题并记录日志
             if enable_issue_detection and slug:
@@ -1482,7 +1676,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     result = remove_par_breaks_in_explain(result)
 
     # 最终兜底：规范/移除残留的 $$ 显示数学标记
-    # 1) 将成对 $$...$$ 统一为行内 \\(...\\)
+    # 1) 将成对 $$...$$ 统一为行内 \(...\)（与 smart_inline_math 行为一致）
     result = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', result, flags=re.DOTALL)
     # 2) 清理任何残留的孤立 $$（避免编译错误）
     result = result.replace('$$', '')
@@ -1690,10 +1884,15 @@ def main():
         description=f"OCR 试卷预处理脚本 - {VERSION}",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-🆕 v1.4 新增功能：
+🆕 v1.5 核心功能：
   - 修复数学公式双重包裹（$$\\(...\\)$$ → \\(...\\)）
+  - 统一数学公式格式：所有 $$...$$ 转换为行内 \\(...\\)
   - 自动展开单行选项（> A... B... → 多行）
-  - 正确处理显示公式（$$ → \\[...\\]）
+  - 强制检查【分析】残留（确保已被丢弃）
+
+✅ v1.4 改进回顾：
+  - 数学公式双重包裹修复（初版）
+  - 单行选项自动展开（初版）
 
 ✅ v1.3 改进回顾：
   - 修复 docstring 警告，添加 $ 格式兜底转换
@@ -1822,7 +2021,17 @@ def main():
         print("  4. 输出最终的 exam_final.tex")
         if debug_log.exists() and debug_log.stat().st_size > 100:
             print(f"  5. 查看问题日志: {debug_log}")
-        
+
+        # 🆕 Prompt 1: 强制检查【分析】残留
+        if slug:
+            print(f"\n🔍 检查【分析】残留...")
+            try:
+                assert_no_analysis_meta_in_auto_tex(slug)
+                print(f"✅ 未发现【分析】残留")
+            except RuntimeError as e:
+                print(f"❌ {e}")
+                raise
+
         return 0
         
     except Exception as e:
@@ -1916,6 +2125,103 @@ B. 选项B
         all_passed = False
     else:
         print("  ✅ PASSED")
+
+    # 测试 6：内联图片被正确处理（旧版）
+    print("\n测试 6: 内联图片被正确处理（旧版）")
+    test_md = """
+# 一、单选题
+
+1. 已知集合![](image2.wmf)，则 A∩B 等于
+
+A. 选项A
+B. 选项B
+
+【答案】A
+"""
+    result = convert_md_to_examx(test_md, "测试", slug="", enable_issue_detection=False)
+    # 检查：不应该有残留的 ![](image2.wmf)
+    if "![](image2.wmf)" in result:
+        print(f"  ❌ FAILED: 内联图片标记未被转换")
+        all_passed = False
+    # 检查：应该有 IMAGE_TODO 注释
+    elif "IMAGE_TODO" not in result or "image2.wmf" not in result:
+        print(f"  ❌ FAILED: 内联图片未生成 IMAGE_TODO 占位符")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 7：新格式 IMAGE_TODO_START/END 占位块
+    print("\n测试 7: 新格式 IMAGE_TODO_START/END 占位块")
+    test_md_new = """
+# 一、单选题
+
+1. 已知函数 f(x) 在区间 [0,1] 上单调递增，如图所示：
+
+![](media/graph1.png)
+
+则下列结论中正确的是
+
+A. f(0) < f(1)
+B. f(0) > f(1)
+
+【答案】A
+
+2. 集合 A={x|x>0}，集合 B 如图![](media/venn.wmf)所示，则 A∩B 等于
+
+A. 选项A
+B. 选项B
+
+【答案】B
+"""
+    result_new = convert_md_to_examx(test_md_new, "测试新格式", slug="test2025", enable_issue_detection=False)
+
+    # 检查1：不应该有残留的 Markdown 图片语法
+    if "![](media/graph1.png)" in result_new or "![](media/venn.wmf)" in result_new:
+        print(f"  ❌ FAILED: Markdown 图片语法未被转换")
+        all_passed = False
+    # 检查2：应该有两个 IMAGE_TODO_START 标记
+    elif result_new.count("IMAGE_TODO_START") != 2:
+        print(f"  ❌ FAILED: IMAGE_TODO_START 数量不正确 (期望2个，实际{result_new.count('IMAGE_TODO_START')}个)")
+        all_passed = False
+    # 检查3：应该有两个 IMAGE_TODO_END 标记
+    elif result_new.count("IMAGE_TODO_END") != 2:
+        print(f"  ❌ FAILED: IMAGE_TODO_END 数量不正确")
+        all_passed = False
+    # 检查4：第一个图片应该是独立图片 (inline=false)
+    elif "inline=false" not in result_new:
+        print(f"  ❌ FAILED: 未找到独立图片标记 (inline=false)")
+        all_passed = False
+    # 检查5：第二个图片应该是内联图片 (inline=true)
+    elif "inline=true" not in result_new:
+        print(f"  ❌ FAILED: 未找到内联图片标记 (inline=true)")
+        all_passed = False
+    # 检查6：应该包含 question_index 字段
+    elif "question_index=" not in result_new:
+        print(f"  ❌ FAILED: 未找到 question_index 字段")
+        all_passed = False
+    # 检查7：应该包含 AI_AGENT_REPLACE_ME 标记
+    elif "AI_AGENT_REPLACE_ME" not in result_new:
+        print(f"  ❌ FAILED: 未找到 AI_AGENT_REPLACE_ME 标记")
+        all_passed = False
+    # 检查8：应该包含 CONTEXT_BEFORE 或 CONTEXT_AFTER
+    elif "CONTEXT_BEFORE" not in result_new and "CONTEXT_AFTER" not in result_new:
+        print(f"  ❌ FAILED: 未找到上下文信息 (CONTEXT_BEFORE/AFTER)")
+        all_passed = False
+    # 检查9：ID 应该包含 slug 和题号
+    elif "test2025-Q1" not in result_new or "test2025-Q2" not in result_new:
+        print(f"  ❌ FAILED: 图片 ID 格式不正确 (应包含 slug-Q{n})")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+        # 打印一个示例供检查
+        print("\n  示例输出片段:")
+        lines = result_new.split('\n')
+        for i, line in enumerate(lines):
+            if 'IMAGE_TODO_START' in line:
+                # 打印该行及后续5行
+                for j in range(i, min(i+6, len(lines))):
+                    print(f"    {lines[j]}")
+                break
 
     print("\n" + "=" * 60)
     if all_passed:
