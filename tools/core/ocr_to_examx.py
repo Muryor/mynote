@@ -1,7 +1,11 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-ocr_to_examx_v1.5.py - v1.5 增强版 OCR 试卷预处理脚本
+ocr_to_examx_v1.6.py - v1.6 P0 修复版
+
+🆕 v1.6 P0 修复（2025-11-19）：
+1. ✅ 修复数组环境闭合错误（\right.\\) → \right.\)）
+2. ✅ 清理图片属性残留（{width="..." height="..."}）
 
 v1.5 核心修复（2025-11-18）：
 1. ✅ 彻底修复数学公式双重包裹（$$\(...\)$$ → \(...\)）
@@ -24,9 +28,9 @@ v1.3 改进回顾：
 - 统一中英文标点
 - 添加自动验证功能
 
-版本：v1.5
+版本：v1.6
 作者：Claude
-日期：2025-11-18
+日期：2025-11-19
 """
 
 import re
@@ -37,7 +41,7 @@ from typing import List, Dict, Tuple, Optional
 
 # ==================== 配置 ====================
 
-VERSION = "v1.5"
+VERSION = "v1.6"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -230,6 +234,7 @@ def smart_inline_math(text: str) -> str:
 def fix_double_wrapped_math(text: str) -> str:
     r"""修正双重包裹的数学公式
     
+    🆕 v1.6 增强：清理更多嵌套模式
     🆕 v1.5 新增：清理可能残留的嵌套格式
     例如：$$\(...\)$$ → \(...\)
     """
@@ -247,6 +252,60 @@ def fix_double_wrapped_math(text: str) -> str:
     
     # 修正三重嵌套（极端情况）
     text = re.sub(r'\\\(\s*\\\((.+?)\\\)\s*\\\)', r'\\(\1\\)', text, flags=re.DOTALL)
+    
+    # 🆕 v1.6 P0 修复：清理 \because\(\) 或 \therefore\(\) 的空嵌套
+    text = re.sub(r'\\because\\\(\\\)', r'\\because', text)
+    text = re.sub(r'\\therefore\\\(\\\)', r'\\therefore', text)
+    
+    # 🆕 v1.6 P0 修复：清理 \(\because\(\) 或 \(\therefore\(\) 形式
+    text = re.sub(r'\\\(\\because\\\(\\\)', r'\\(\\because', text)
+    text = re.sub(r'\\\(\\therefore\\\(\\\)', r'\\(\\therefore', text)
+    
+    # 🆕 v1.6 P0 修复：修正 \(...\(\)...\) 形式的嵌套（空占位符）
+    # 迭代清理，最多3次
+    for _ in range(3):
+        before = text
+        text = re.sub(r'\\\(([^)]*?)\\\(\\\)([^)]*?)\\\)', r'\\(\1\2\\)', text, flags=re.DOTALL)
+        if text == before:
+            break
+    
+    return text
+
+
+def fix_array_boundaries(text: str) -> str:
+    r"""修复 array 环境的边界符错误
+    
+    🆕 v1.6 P0 修复：修正 \right.\\) → \right.\)
+    """
+    # 修正 \right. 后的双反斜杠
+    text = re.sub(r'\\right\.\\\\\)', r'\\right.\\)', text)
+    
+    # 修正其他边界符
+    text = re.sub(r'\\right\)\\\\\)', r'\\right)\\)', text)
+    text = re.sub(r'\\right\]\\\\\)', r'\\right]\\)', text)
+    text = re.sub(r'\\right\}\\\\\)', r'\\right}\\)', text)
+    
+    # 同样修正 \left 的情况（如果存在）
+    text = re.sub(r'\\\\\(\\left', r'\\(\\left', text)
+    
+    return text
+
+
+def clean_residual_image_attrs(text: str) -> str:
+    r"""清理残留的图片属性块
+    
+    🆕 v1.6 P0 修复：清理 Pandoc 生成的图片属性
+    """
+    # 清理单独成行的属性块开始
+    text = re.sub(r'^\s*\{width="[^"]*"\s*$', '', text, flags=re.MULTILINE)
+    # 清理单独成行的属性块结束
+    text = re.sub(r'^\s*height="[^"]*"\}\s*$', '', text, flags=re.MULTILINE)
+    
+    # 清理跨行的属性块
+    text = re.sub(r'\{width="[^"]*"\s*\n\s*height="[^"]*"\}', '', text, flags=re.MULTILINE)
+    
+    # 清理单行完整属性块
+    text = re.sub(r'\{width="[^"]*"\s+height="[^"]*"\}', '', text)
     
     return text
 
@@ -1961,6 +2020,10 @@ def main():
 
         md_text = md_file.read_text(encoding='utf-8')
         tex_text = convert_md_to_examx(md_text, title, slug=slug, enable_issue_detection=True)
+        
+        # 🆕 v1.6 P0 修复：后处理清理
+        tex_text = fix_array_boundaries(tex_text)
+        tex_text = clean_residual_image_attrs(tex_text)
         
         # 🆕 v1.3：验证输出
         warnings = validate_latex_output(tex_text)
