@@ -53,9 +53,70 @@ ensure_dirs() {
 
 ensure_dirs
 
+extract_errors() {
+  local logfile="$1"
+  local error_log="${OUT}/last_error.log"
+  
+  if [[ ! -f "$logfile" ]]; then
+    echo "⚠️  日志文件不存在: $logfile"
+    return 1
+  fi
+  
+  # 提取错误信息
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" > "$error_log"
+  echo "编译错误摘要 ($(date '+%Y-%m-%d %H:%M:%S'))" >> "$error_log"
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$error_log"
+  echo "" >> "$error_log"
+  
+  # 提取 LaTeX 错误
+  if grep -q "LaTeX Error" "$logfile"; then
+    echo "【LaTeX 错误】" >> "$error_log"
+    grep -A 3 "LaTeX Error" "$logfile" | head -20 >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+  
+  # 提取文件错误位置 (! 开头的错误)
+  if grep -q "^! " "$logfile"; then
+    echo "【语法错误】" >> "$error_log"
+    grep "^! " "$logfile" | head -10 >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+  
+  # 提取未定义引用
+  if grep -q "undefined" "$logfile"; then
+    echo "【未定义的引用】" >> "$error_log"
+    grep "undefined" "$logfile" | head -10 >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+  
+  # 显示错误摘要
+  cat "$error_log"
+  echo ""
+  echo "💾 完整错误日志已保存到: $error_log"
+}
+
+cleanup_on_error() {
+  local role="$1"
+  echo ""
+  echo "🧹 清理编译失败的中间文件..."
+  
+  # 删除这次编译的所有中间文件
+  find "${OUT}" -type f \( \
+    -name "wrap-${TYPE}-${role}.*" -o \
+    -name "*.aux" -o -name "*.fls" -o \
+    -name "*.fdb_latexmk" -o -name "*.xdv" \
+  \) -delete 2>/dev/null || true
+  
+  [[ -d "${OUT}/.aux" ]] && rm -rf "${OUT}/.aux"/* 2>/dev/null || true
+  
+  echo "✅ 中间文件已清理"
+}
+
 compile() {
   local role="$1"   # teacher | student
   local wrap="${OUT}/wrap-${TYPE}-${role}.tex"
+  local logfile="${OUT}/.aux/wrap-${TYPE}-${role}.log"
+  
   printf "%% auto wrapper\n"           >  "${wrap}"
   if [[ "$role" == "teacher" ]]; then
     printf "\\PassOptionsToPackage{teacher}{styles/examx}\n" >> "${wrap}"
@@ -63,47 +124,97 @@ compile() {
     printf "\\PassOptionsToPackage{student}{styles/examx}\n" >> "${wrap}"
   fi
   printf "\\input{%s}\n" "${MAIN}"     >> "${wrap}"
-  latexmk -xelatex -interaction=nonstopmode -file-line-error -outdir="${OUT}" "${wrap}"
-\
-  # Fallback: if XeLaTeX wrote only XDV, convert to PDF
-  if ls "${OUT}/"*.xdv >/dev/null 2>&1; then
-    for xdv in "${OUT}/"*.xdv; do
-      pdf="${xdv%.xdv}.pdf"
-      if [[ ! -f "$pdf" ]]; then
-        echo "[info] Converting $(basename "$xdv") -> $(basename "$pdf")"
-        xdvipdfmx -q -E -o "$pdf" "$xdv" || {
-          echo "[warn] xdvipdfmx failed for $xdv"; exit 1; }
-      fi
-    done
+  
+  echo "📝 编译 ${TYPE} (${role} 模式)..."
+  
+  # 运行 latexmk，捕获返回值
+  local ret=0
+  latexmk -xelatex -interaction=nonstopmode -file-line-error \
+          -outdir="${OUT}/.aux" "${wrap}" > "${OUT}/build.log" 2>&1 || ret=$?
+  
+  # 检查是否有真正的错误（不只是警告）
+  if [[ $ret -ne 0 ]] && [[ -f "$logfile" ]]; then
+    if grep -q "LaTeX Error" "$logfile" || grep -q "^! " "$logfile"; then
+      # 真正的错误
+      echo ""
+      echo "❌ 编译失败！"
+      echo ""
+      tail -50 "${OUT}/build.log"
+      echo ""
+      extract_errors "$logfile"
+      cleanup_on_error "$role"
+      return 1
+    elif grep -q "undefined" "$logfile"; then
+      # 只是引用未定义的警告，强制完成编译
+      echo "ℹ️  检测到未定义的引用，使用 -f 强制完成编译..."
+      latexmk -xelatex -f -interaction=nonstopmode -file-line-error \
+              -outdir="${OUT}/.aux" "${wrap}" >> "${OUT}/build.log" 2>&1 || true
+    fi
+  fi
+  
+  # 移动 PDF 到 output 根目录
+  local pdf_name="wrap-${TYPE}-${role}.pdf"
+  if [[ -f "${OUT}/.aux/${pdf_name}" ]]; then
+    mv "${OUT}/.aux/${pdf_name}" "${OUT}/${pdf_name}"
+    echo "✅ PDF 已生成: ${OUT}/${pdf_name}"
+    return 0
+  else
+    echo "❌ PDF 文件未生成"
+    extract_errors "$logfile"
+    cleanup_on_error "$role"
+    return 1
   fi
 }
 
 cleanup_artifacts() {
-  # Clean with latexmk
-  latexmk -C -outdir="${OUT}" 2>/dev/null || true
+  echo "🧹 清理中间文件..."
   
   # Remove minted directories
   rm -rf _minted-* */_minted-* "${OUT}/_minted-"* 2>/dev/null || true
   
-  # Remove specific artifact types, keep PDFs and .synctex.gz for SyncTeX
-  find "${OUT}" -type f \( \
-    -name '*.aux' -o -name '*.log' -o -name '*.fls' -o \
-    -name '*.fdb_latexmk' -o -name '*.out' -o -name '*.toc' -o \
-    -name '*.run.xml' -o -name '*.bcf' -o \
-    -name '*.xdv' -o -name '*.nav' -o -name '*.snm' -o \
-    -name 'wrap-*.tex' \
+  # Keep only PDFs, synctex.gz, and last_error.log in output root
+  find "${OUT}" -maxdepth 1 -type f ! \( \
+    -name '*.pdf' -o -name '*.synctex.gz' -o -name 'last_error.log' -o -name 'build.log' \
   \) -delete 2>/dev/null || true
   
-  # Clean .aux subdirectory but keep the directory itself
+  # Clean .aux subdirectory but keep it for next build
   [[ -d "${OUT}/.aux" ]] && rm -rf "${OUT}/.aux"/* 2>/dev/null || true
+  
+  echo "✅ 清理完成"
 }
 
 case "${MODE}" in
-  teacher) compile teacher ;;
-  student) compile student ;;
-  both)    compile teacher; compile student ;;
+  teacher) 
+    if ! compile teacher; then
+      echo ""
+      echo "❌ 编译失败，请查看上面的错误信息"
+      exit 1
+    fi
+    ;;
+  student) 
+    if ! compile student; then
+      echo ""
+      echo "❌ 编译失败，请查看上面的错误信息"
+      exit 1
+    fi
+    ;;
+  both)    
+    if ! compile teacher; then
+      echo ""
+      echo "❌ teacher 模式编译失败"
+      exit 1
+    fi
+    if ! compile student; then
+      echo ""
+      echo "❌ student 模式编译失败"
+      exit 1
+    fi
+    ;;
   *) usage ;;
 esac
 
 cleanup_artifacts
-echo "✅ Done. PDFs in ./output"
+echo ""
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+echo "✅ 编译成功！PDF 文件在 ./output 目录"
+echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
