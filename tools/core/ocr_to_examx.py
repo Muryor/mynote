@@ -254,12 +254,16 @@ def fix_double_wrapped_math(text: str) -> str:
     text = re.sub(r'\\\(\s*\\\((.+?)\\\)\s*\\\)', r'\\(\1\\)', text, flags=re.DOTALL)
     
     # 🆕 v1.6 P0 修复：清理 \because\(\) 或 \therefore\(\) 的空嵌套
-    text = re.sub(r'\\because\\\(\\\)', r'\\because ', text)
-    text = re.sub(r'\\therefore\\\(\\\)', r'\\therefore ', text)
+    # 注意：替换后保留空格，避免与后续字母连接
+    text = re.sub(r'\\because\s*\\\(\\\)\s*', r'\\because ', text)
+    text = re.sub(r'\\therefore\s*\\\(\\\)\s*', r'\\therefore ', text)
     
     # 🆕 v1.6 P0 修复：清理 \(\because\(\) 或 \(\therefore\(\) 形式
-    text = re.sub(r'\\\(\\because\\\(\\\)', r'\\(\\because ', text)
-    text = re.sub(r'\\\(\\therefore\\\(\\\)', r'\\(\\therefore ', text)
+    text = re.sub(r'\\\(\\because\s*\\\(\\\)\s*', r'\\(\\because ', text)
+    text = re.sub(r'\\\(\\therefore\s*\\\(\\\)\s*', r'\\(\\therefore ', text)
+    
+    # 🆕 v1.6 P0 修复：清理独立的空括号 \(\)（可能出现在任何位置）
+    text = re.sub(r'\\\(\s*\\\)', r'', text)
     
     # 🆕 v1.6 P0 修复：修正 \(...\(\)...\) 形式的嵌套（空占位符）
     # 迭代清理，最多3次
