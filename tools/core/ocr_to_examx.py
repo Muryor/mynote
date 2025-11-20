@@ -1,9 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-ocr_to_examx_v1.7.py - v1.7 改进版
+ocr_to_examx_v1.8.py - v1.8 改进版
 
-🆕 v1.7 改进（2025-11-20）：
+🆕 v1.8 P0/P1 修复（2025-11-20）：
+1. ✅ 修复数学模式边界解析错误：\right.\ $$ → \right.\) （P0）
+   - 修复分段函数/矩阵后紧跟文本时的数学模式闭合问题
+   - 避免中文文本被错误地放入数学模式
+2. ✅ 增强题干缺失检测：自动插入 TODO 注释（P1）
+   - 检测直接从 \item 开始的题目
+   - 在 \begin{question} 后自动添加警告注释
+
+v1.7 改进（2025-11-20）：
 1. ✅ 题干检测与警告：检测缺少题干的题目（直接从 \item 开始）
 2. ✅ 清理 Markdown 图片属性残留：删除 height="..." 和 width="..." 残留
 3. ✅ 小问编号格式统一：不自动添加 \mathrm，使用普通文本
@@ -216,7 +224,11 @@ def smart_inline_math(text: str) -> str:
     # 匹配 TikZ 坐标：$(...)$ 内部是简单的坐标计算表达式
     # 包含字母、数字、括号、加减乘除、点、感叹号、冒号等但不包含复杂数学
     text = re.sub(r'\$\([A-Za-z0-9!+\-*/\.\(\):,\s]+\)\$', save_tikz_coord, text)
-    
+
+    # 步骤3.5: 🆕 v1.8 修复 \right.\ $$ 边界问题
+    # 将 \right.\ $$ 转换为 \right.\) （闭合当前数学模式）
+    text = re.sub(r'\\right\.\\\s+\$\$', r'\\right.\\) ', text)
+
     # 步骤4: 转换显示公式 $$ ... $$ 为 \(...\)（examx 统一风格）
     # 注意：所有 $$...$$ 都转为行内格式，不生成 \[...\]
     text = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', text, flags=re.DOTALL)
@@ -368,8 +380,10 @@ def wrap_math_variables(text: str) -> str:
     for func in math_functions:
         text = re.sub(rf'(?<!\\)\b{func}\b(?!\w)', rf'\\{func}', text)
     
-    # 规则3：虚数单位 i
-    text = re.sub(r'(?<!\\)\bi\b(?=[^a-zA-Z])', r'\\mathrm{i}', text)
+    # 规则3：虚数单位 i（避免误转换罗马数字）
+    # 只在明确的数学上下文中转换，避免 (i), (ii) 等罗马数字被转换
+    # 匹配：独立的 i 后面跟着数学运算符或结束，但不在括号内
+    text = re.sub(r'(?<!\\)(?<!\()\bi\b(?=[^a-zA-Z\)])', r'\\mathrm{i}', text)
     
     # 恢复保护的内容
     for i, coord in enumerate(tikz_coords):
@@ -511,19 +525,27 @@ def remove_blank_lines_in_macro_args(text: str) -> str:
 
 
 def clean_question_environments(text: str) -> str:
-    """清理 question 环境内部的多余空行"""
+    """清理 question 环境内部的多余空行，并检测缺少题干的题目"""
     pattern = r'(\\begin\{question\})(.*?)(\\end\{question\})'
-    
+
     def clean_env(match):
         begin = match.group(1)
         content = match.group(2)
         end = match.group(3)
-        
+
         # 删除连续的3个以上换行
         content = re.sub(r'\n{3,}', '\n\n', content)
-        
+
+        # 🆕 v1.8: 检测缺少题干的题目（直接从 \item 开始）
+        # 去除前导空白后检查是否以 \item 开头
+        content_stripped = content.lstrip()
+        if content_stripped.startswith('\\item'):
+            # 在 \begin{question} 后插入 TODO 注释
+            warning = '\n% ⚠️ TODO: 补充题干 - 此题直接从 \\item 开始，请在上方添加题目主干描述\n'
+            content = warning + content
+
         return begin + content + end
-    
+
     return re.sub(pattern, clean_env, text, flags=re.DOTALL)
 
 
@@ -1545,11 +1567,13 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     text = smart_inline_math(text)
     # 🆕 v1.5 新增：修正可能的双重包裹
     text = fix_double_wrapped_math(text)
-    text = wrap_math_variables(text)
+    # 🆕 v1.8: 禁用 wrap_math_variables - 它会破坏已正确包裹的数学模式
+    # text = wrap_math_variables(text)
 
     # 🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
-    if is_math_heavy:
-        text = sanitize_math(text)
+    # 🆕 v1.8: 禁用 sanitize_math - 它的查找逻辑会破坏已正确的数学模式配对
+    # if is_math_heavy:
+    #     text = sanitize_math(text)
 
     # 🆕 v1.6.3：最后兜底清理各种空/多余 inline math
     text = fix_inline_math_glitches(text)
@@ -1859,14 +1883,14 @@ def detect_question_issues(
     question_content = tex_block
     if r'\begin{question}' in question_content:
         # 提取 \begin{question} 和 \begin{choices} 之间的内容
-        match = re.search(r'\\begin\{question\}(.*?)(?:\\begin\{choices\}|\\end\{question\})',
+        match = re.search(r'\\begin\{question\}(.*?)(?:\\begin\{choices\}|\\item|\\end\{question\})',
                          question_content, re.DOTALL)
         if match:
             content_between = match.group(1).strip()
             # 如果内容为空或只有注释，则缺少题干
             # 移除注释行
             content_no_comments = re.sub(r'^\s*%.*$', '', content_between, flags=re.MULTILINE).strip()
-            if not content_no_comments or content_no_comments.startswith(r'\item'):
+            if not content_no_comments:
                 issues.append("⚠️ CRITICAL: 题目缺少题干，直接从 \\item 开始 - 请在 Markdown 中补充题干内容")
 
     # ---------- 1) 原有检查逻辑（保留 & 复刻） ----------

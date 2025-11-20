@@ -74,7 +74,21 @@ def preprocess_markdown_content(text: str) -> str:
     # 5. 清理多余空行（连续3个以上空行 → 2个空行）
     result = '\n'.join(lines)
     result = re.sub(r'\n{4,}', '\n\n\n', result)
-    
+
+    # 6. 🆕 清理孤立的 $$ 标记（P2 修复）
+    # 移除空的 $$ 对
+    result = re.sub(r'\$\$\s*\n\s*\$\$', '', result)
+    # 移除行首/行尾的孤立 $$
+    result = re.sub(r'^\$\$\s*$', '', result, flags=re.MULTILINE)
+    # 移除单独的 $$（前后都是空白）
+    result = re.sub(r'\s+\$\$\s+', ' ', result)
+
+    # 7. 🆕 修复 \right.\ $$ 模式（导致数学模式断裂）
+    # 将 \right.\ $$ 替换为 \right.$$（移除多余的反斜杠空格）
+    result = re.sub(r'\\right\.\\\\ \$\$', r'\\right.$$', result)
+    # 同样修复 \left 的情况
+    result = re.sub(r'\$\$ \\\\left', r'$$\\left', result)
+
     return result
 
 
