@@ -186,7 +186,8 @@
                   % Allow paragraph breaks and set formatting
                   \parskip=0.4\baselineskip
                   \parindent=2em
-                  \textbf{【详解】}~\l__qmeta_explain_tl
+                  % Title followed by content on same line, no indent on first paragraph
+                  \noindent\textbf{【详解】}~\l__qmeta_explain_tl
                   \group_end:
                   \par
                 }
