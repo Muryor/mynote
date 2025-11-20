@@ -39,7 +39,8 @@ env/
 
 # Project-specific (keep source, ignore generated)
 ocr_to_tex/
-content/exams/auto/*/converted_exam.tex
+# Allow committed fixed exam conversions when explicitly needed
+#!content/exams/auto/*/converted_exam.tex
 content/exams/auto/*/figures/
 
 # word_to_tex: keep source, ignore build artifacts

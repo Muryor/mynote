@@ -82,9 +82,36 @@ extract_errors() {
     echo "" >> "$error_log"
   fi
   
+  # Runaway argument / environment scanning issues
+  if grep -q "Runaway argument" "$logfile"; then
+    echo "【Runaway argument】" >> "$error_log"
+    grep -B 3 -A 5 "Runaway argument" "$logfile" | tail -40 >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+
+  if grep -q "File ended while scanning use of" "$logfile"; then
+    echo "【环境提前结束扫描】" >> "$error_log"
+    grep -B 2 -A 6 "File ended while scanning use of" "$logfile" >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+
+  if grep -q "Argument of \\environment question  has an extra }" "$logfile"; then
+    echo "【question 环境多余的 }】" >> "$error_log"
+    grep -B 2 -A 5 "Argument of \\environment question  has an extra }" "$logfile" >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+
+  # 提取 "Paragraph ended before" 类型的错误（通常是未闭合的花括号）
+  if grep -q "Paragraph ended before" "$logfile"; then
+    echo "【未闭合的环境/命令】" >> "$error_log"
+    grep -B 3 -A 5 "Paragraph ended before" "$logfile" >> "$error_log"
+    echo "" >> "$error_log"
+  fi
+  
   # 🆕 提取编译卡住的位置（最后处理的文件行号）
   if grep -q "l\.[0-9]" "$logfile"; then
     echo "【编译中断位置】" >> "$error_log"
+    echo "LaTeX 在以下位置停止处理：" >> "$error_log"
     grep "l\.[0-9]" "$logfile" | tail -5 >> "$error_log"
     echo "" >> "$error_log"
   fi
@@ -148,7 +175,7 @@ compile() {
   
   # 检查是否有真正的错误（不只是警告）
   if [[ $ret -ne 0 ]] && [[ -f "$logfile" ]]; then
-    if grep -q "LaTeX Error" "$logfile" || grep -q "^! " "$logfile"; then
+    if grep -q "LaTeX Error" "$logfile" || grep -q "^! " "$logfile" || grep -q "Paragraph ended before" "$logfile"; then
       # 真正的错误
       echo ""
       echo "❌ 编译失败！"
@@ -158,6 +185,12 @@ compile() {
       if grep -q "l\.[0-9]" "$logfile"; then
         echo "📍 编译中断位置："
         grep "l\.[0-9]" "$logfile" | tail -3
+        echo ""
+      fi
+      
+      # 提示未闭合的环境错误
+      if grep -q "Paragraph ended before" "$logfile"; then
+        echo "⚠️  检测到未闭合的命令或环境（可能缺少 } 花括号）"
         echo ""
       fi
       
