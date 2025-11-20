@@ -45,6 +45,7 @@ esac
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 OUT="${ROOT}/output"
+SKIP_ERROR_CLEANUP="${SKIP_ERROR_CLEANUP:-}"  # If set (non-empty), retain .aux artifacts on error for forensic analysis.
 
 # Ensure output directories exist
 ensure_dirs() {
@@ -53,86 +54,108 @@ ensure_dirs() {
 
 ensure_dirs
 
+# ---------------------------------------------------------------
+# Error pattern definitions (fatal vs undefined reference warnings)
+# ---------------------------------------------------------------
+# fatal_pattern: real TeX fatal errors that require user intervention.
+# Matches:
+#   - Line starting with '!'
+#   - Runaway argument issues
+#   - Environment/file premature end while scanning
+#   - Undefined control sequence
+#   - Generic Fatal error markers
+#
+# undefref_pattern: only undefined reference warnings (non‑fatal, safe to retry with -f)
+#   - LaTeX Warning: Reference `...` on page ... undefined
+#   - LaTeX Warning: There were undefined references.
+# ---------------------------------------------------------------
+fatal_pattern='^! |Runaway argument|File ended while scanning use of|Undefined control sequence|Fatal error'
+undefref_pattern='LaTeX Warning: Reference `.*` on page .* undefined|LaTeX Warning: There were undefined references\.'
+
 extract_errors() {
   local logfile="$1"
+  local role="${2:-unknown}"
   local error_log="${OUT}/last_error.log"
-  
+
+  # Always truncate/create fresh error log to avoid stale content.
+  : > "$error_log"
+
   if [[ ! -f "$logfile" ]]; then
+    {
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo "编译错误摘要 ($(date '+%Y-%m-%d %H:%M:%S'))"
+      echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+      echo ""
+      echo "Type: ${TYPE}" 
+      echo "Role: ${role}" 
+      echo "Log: ${logfile}" 
+      echo "Generated: $(date '+%Y-%m-%d %H:%M:%S')" 
+      echo ""
+      echo "Log file missing; no details available."
+    } >> "$error_log"
     echo "⚠️  日志文件不存在: $logfile"
+    echo "💾 完整错误日志已保存到: $error_log"
     return 1
   fi
-  
-  # 提取错误信息
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" > "$error_log"
-  echo "编译错误摘要 ($(date '+%Y-%m-%d %H:%M:%S'))" >> "$error_log"
-  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$error_log"
-  echo "" >> "$error_log"
-  
-  # 提取 LaTeX 错误
-  if grep -q "LaTeX Error" "$logfile"; then
-    echo "【LaTeX 错误】" >> "$error_log"
-    grep -B 2 -A 5 "LaTeX Error" "$logfile" | head -30 >> "$error_log"
+
+  {
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "编译错误摘要 ($(date '+%Y-%m-%d %H:%M:%S'))"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo ""
+    echo "Type: ${TYPE}" 
+    echo "Role: ${role}" 
+    echo "Log: ${logfile}" 
+    echo "Generated: $(date '+%Y-%m-%d %H:%M:%S')" 
+    echo ""
+  } >> "$error_log"
+
+  # Classification summary
+  if grep -Eq "$fatal_pattern" "$logfile" 2>/dev/null; then
+    echo "Detected fatal TeX error pattern(s) matching: $fatal_pattern" >> "$error_log"
     echo "" >> "$error_log"
-  fi
-  
-  # 提取文件错误位置 (! 开头的错误)
-  if grep -q "^! " "$logfile"; then
-    echo "【语法错误】" >> "$error_log"
-    grep -B 1 -A 3 "^! " "$logfile" | head -20 >> "$error_log"
+  elif grep -Eq "$undefref_pattern" "$logfile" 2>/dev/null; then
+    echo "Only undefined reference warnings detected (will allow forced recompile)." >> "$error_log"
     echo "" >> "$error_log"
-  fi
-  
-  # Runaway argument / environment scanning issues
-  if grep -q "Runaway argument" "$logfile"; then
-    echo "【Runaway argument】" >> "$error_log"
-    grep -B 3 -A 5 "Runaway argument" "$logfile" | tail -40 >> "$error_log"
+  else
+    echo "No explicit fatal TeX error pattern found; inspect tail for context." >> "$error_log"
     echo "" >> "$error_log"
   fi
 
-  if grep -q "File ended while scanning use of" "$logfile"; then
-    echo "【环境提前结束扫描】" >> "$error_log"
-    grep -B 2 -A 6 "File ended while scanning use of" "$logfile" >> "$error_log"
+  # Show first explicit '!' error context if present
+  if grep -n -E "^! " "$logfile" >/dev/null 2>&1; then
+    echo "--- First TeX error (context) ---" >> "$error_log"
+    grep -n -E "^! " "$logfile" | head -1 | cut -d: -f1 | while read -r lineno; do
+      local start=$(( lineno > 10 ? lineno - 10 : 1 ))
+      sed -n "${start},$((lineno + 10))p" "$logfile" >> "$error_log"
+    done
     echo "" >> "$error_log"
   fi
 
-  if grep -q "Argument of \\environment question  has an extra }" "$logfile"; then
-    echo "【question 环境多余的 }】" >> "$error_log"
-    grep -B 2 -A 5 "Argument of \\environment question  has an extra }" "$logfile" >> "$error_log"
-    echo "" >> "$error_log"
-  fi
+  # Fatal phrase matches (extended list)
+  local extra_fatal=("Runaway argument" "File ended while scanning use of" "Missing } inserted" "Extra }, or forgotten \\endgroup" "TeX capacity exceeded" "Emergency stop" "Undefined control sequence" "Fatal error")
+  for p in "${extra_fatal[@]}"; do
+    if grep -q "$p" "$logfile" 2>/dev/null; then
+      echo "--- Fatal pattern: $p ---" >> "$error_log"
+      grep -n -C3 "$p" "$logfile" >> "$error_log" || true
+      echo "" >> "$error_log"
+    fi
+  done
 
-  # 提取 "Paragraph ended before" 类型的错误（通常是未闭合的花括号）
-  if grep -q "Paragraph ended before" "$logfile"; then
-    echo "【未闭合的环境/命令】" >> "$error_log"
-    grep -B 3 -A 5 "Paragraph ended before" "$logfile" >> "$error_log"
-    echo "" >> "$error_log"
+  echo "--- Log tail (last 80 lines) ---" >> "$error_log"
+  tail -n 80 "$logfile" >> "$error_log" || true
+
+  # Console summary
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+  echo "Compilation summary: type=${TYPE} role=${role}"
+  if grep -Eq "$fatal_pattern" "$logfile" 2>/dev/null; then
+    echo "Main issue: fatal TeX error detected (see ${OUT}/last_error.log)"
+  elif grep -Eq "$undefref_pattern" "$logfile" 2>/dev/null; then
+    echo "Main issue: undefined references (warnings)"
+  else
+    echo "Main issue: no fatal error pattern matched; review tail (see ${OUT}/last_error.log)"
   fi
-  
-  # 🆕 提取编译卡住的位置（最后处理的文件行号）
-  if grep -q "l\.[0-9]" "$logfile"; then
-    echo "【编译中断位置】" >> "$error_log"
-    echo "LaTeX 在以下位置停止处理：" >> "$error_log"
-    grep "l\.[0-9]" "$logfile" | tail -5 >> "$error_log"
-    echo "" >> "$error_log"
-  fi
-  
-  # 🆕 提取最后读取的内容文件
-  if grep -q "converted_exam.tex" "$logfile"; then
-    echo "【问题文件】" >> "$error_log"
-    grep "converted_exam.tex" "$logfile" | tail -3 >> "$error_log"
-    echo "" >> "$error_log"
-  fi
-  
-  # 提取未定义引用
-  if grep -q "undefined" "$logfile"; then
-    echo "【未定义的引用】" >> "$error_log"
-    grep "undefined" "$logfile" | head -10 >> "$error_log"
-    echo "" >> "$error_log"
-  fi
-  
-  # 显示错误摘要
-  cat "$error_log"
-  echo ""
+  echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "💾 完整错误日志已保存到: $error_log"
 }
 
@@ -173,37 +196,56 @@ compile() {
   latexmk -xelatex -interaction=nonstopmode -file-line-error \
           -outdir="${OUT}/.aux" "${wrap}" > "${OUT}/build.log" 2>&1 || ret=$?
   
-  # 检查是否有真正的错误（不只是警告）
+  # Enhanced error classification & handling
   if [[ $ret -ne 0 ]] && [[ -f "$logfile" ]]; then
-    if grep -q "LaTeX Error" "$logfile" || grep -q "^! " "$logfile" || grep -q "Paragraph ended before" "$logfile"; then
-      # 真正的错误
-      echo ""
-      echo "❌ 编译失败！"
-      echo ""
-      
-      # 🆕 尝试定位具体错误位置
-      if grep -q "l\.[0-9]" "$logfile"; then
+    if grep -Eq "$fatal_pattern" "$logfile" 2>/dev/null; then
+      echo ""; echo "❌ 检测到 TeX 致命错误，终止编译（${role} 模式）"; echo ""
+      if grep -q "l\.[0-9]" "$logfile" 2>/dev/null; then
         echo "📍 编译中断位置："
         grep "l\.[0-9]" "$logfile" | tail -3
         echo ""
       fi
-      
-      # 提示未闭合的环境错误
-      if grep -q "Paragraph ended before" "$logfile"; then
-        echo "⚠️  检测到未闭合的命令或环境（可能缺少 } 花括号）"
+      extract_errors "$logfile" "$role"
+      echo "BUILD_STATUS role=${role} type=${TYPE} status=error"
+      if [[ -z "$SKIP_ERROR_CLEANUP" ]]; then
+        cleanup_on_error "$role"
+      else
+        echo "🔍 保留中间文件用于错误分析 (SKIP_ERROR_CLEANUP=1)"
+      fi
+      return 1
+    elif grep -Eq "$undefref_pattern" "$logfile" 2>/dev/null; then
+      echo "ℹ️  仅检测到未定义引用相关警告，尝试使用 -f 强制完成编译..."
+      local ret2=0
+      latexmk -xelatex -f -interaction=nonstopmode -file-line-error \
+              -outdir="${OUT}/.aux" "${wrap}" >> "${OUT}/build.log" 2>&1 || ret2=$?
+      if [[ $ret2 -ne 0 ]]; then
+        echo ""; echo "❌ 强制编译失败 (second pass)"; echo ""
+        extract_errors "$logfile" "$role"
+        echo "BUILD_STATUS role=${role} type=${TYPE} status=error"
+        if [[ -z "$SKIP_ERROR_CLEANUP" ]]; then
+          cleanup_on_error "$role"
+        else
+          echo "🔍 保留中间文件用于错误分析 (SKIP_ERROR_CLEANUP=1)"
+        fi
+        return 1
+      else
+        echo "ℹ️  强制编译成功，继续后续处理"
+      fi
+    else
+      echo ""; echo "❌ 编译返回码非 0，未匹配致命错误模式但仍失败（${role} 模式）"; echo ""
+      if grep -q "l\.[0-9]" "$logfile" 2>/dev/null; then
+        echo "📍 编译中断位置："
+        grep "l\.[0-9]" "$logfile" | tail -3
         echo ""
       fi
-      
-      tail -50 "${OUT}/build.log"
-      echo ""
-      extract_errors "$logfile"
-      cleanup_on_error "$role"
+      extract_errors "$logfile" "$role"
+      echo "BUILD_STATUS role=${role} type=${TYPE} status=error"
+      if [[ -z "$SKIP_ERROR_CLEANUP" ]]; then
+        cleanup_on_error "$role"
+      else
+        echo "🔍 保留中间文件用于错误分析 (SKIP_ERROR_CLEANUP=1)"
+      fi
       return 1
-    elif grep -q "undefined" "$logfile"; then
-      # 只是引用未定义的警告，强制完成编译
-      echo "ℹ️  检测到未定义的引用，使用 -f 强制完成编译..."
-      latexmk -xelatex -f -interaction=nonstopmode -file-line-error \
-              -outdir="${OUT}/.aux" "${wrap}" >> "${OUT}/build.log" 2>&1 || true
     fi
   fi
   
@@ -212,10 +254,14 @@ compile() {
   if [[ -f "${OUT}/.aux/${pdf_name}" ]]; then
     mv "${OUT}/.aux/${pdf_name}" "${OUT}/${pdf_name}"
     echo "✅ PDF 已生成: ${OUT}/${pdf_name}"
+    # Optional: remove stale last_error.log on success
+    [[ -f "${OUT}/last_error.log" ]] && rm -f "${OUT}/last_error.log"
+    echo "BUILD_STATUS role=${role} type=${TYPE} status=success"
     return 0
   else
     echo "❌ PDF 文件未生成"
-    extract_errors "$logfile"
+    extract_errors "$logfile" "$role"
+    echo "BUILD_STATUS role=${role} type=${TYPE} status=error"
     cleanup_on_error "$role"
     return 1
   fi

@@ -315,6 +315,47 @@ Notes and best practices:
 
 See `word_to_tex/output/REGRESSION_TEST_v14.md` and `word_to_tex/output/TEST_REPORT_lishui_2026.md` for example reports and metrics.
 
+### Image → TikZ Automation Pipeline
+
+For converting embedded images into native TikZ diagrams, a modular pipeline is available:
+
+- **Stage 1**: Word → `converted_exam.tex` (with `IMAGE_TODO` placeholders) — handled by `ocr_to_examx.py`
+- **Stage 2**: Image jobs extraction → AI generation → snippet writing → LaTeX replacement
+- **Tools**:
+  - `export_image_jobs.py` — extract `image_jobs.jsonl` from `IMAGE_TODO` blocks
+  - `write_snippets_from_jsonl.py` — write AI-generated TikZ to exam-specific `tikz_snippets/` directory
+  - `apply_tikz_snippets.py` — replace placeholders with snippet content
+- **Directory convention**: All TikZ snippets are stored in `content/exams/auto/<exam_prefix>/tikz_snippets/{id}.tex` (pushed by utils helpers)
+- **Documentation**:
+  - Detailed field spec and directory rules: [`docs/IMAGE_JOBS_FORMAT.md`](./docs/IMAGE_JOBS_FORMAT.md)
+  - Full pipeline guide: [`docs/WORKFLOW_TESTING_PROMPT.md`](./docs/WORKFLOW_TESTING_PROMPT.md) (Section 9)
+
+Example workflow:
+
+```bash
+# 1. Generate image jobs metadata
+python3 tools/images/export_image_jobs.py \
+  --files content/exams/auto/nanjing_2026_sep/converted_exam.tex
+
+# 2. AI agent generates TikZ code → generated_tikz.jsonl
+
+# 3. Write snippets to exam directory
+python3 tools/images/write_snippets_from_jsonl.py \
+  --jobs-file content/exams/auto/nanjing_2026_sep/image_jobs.jsonl \
+  --tikz-file generated_tikz.jsonl
+
+# 4. Apply snippets to TeX file
+python3 tools/images/apply_tikz_snippets.py \
+  --tex-file content/exams/auto/nanjing_2026_sep/converted_exam.tex
+
+# 5. Build final PDF
+./build.sh exam teacher
+```
+
+This pipeline enforces a **single source of truth** for TikZ directory inference (`utils.get_tikz_snippets_dir`) and standardized logging. External agents or scripts must follow the same fallback rules (see `IMAGE_JOBS_FORMAT.md`).
+
+---
+
 ## Contributing
 
 Conventional commits suggested: `feat(examx): ...`, `fix(examx): ...`, `docs(readme): ...`

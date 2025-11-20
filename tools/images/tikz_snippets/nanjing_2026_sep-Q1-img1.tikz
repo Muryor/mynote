@@ -1,5 +1,0 @@
-% Sample TikZ for Q1 image
-\\begin{tikzpicture}[scale=1]
-  \\draw[thick] (0,0) circle (1cm);
-  \\node at (0,0) {Q1};
-\\end{tikzpicture}

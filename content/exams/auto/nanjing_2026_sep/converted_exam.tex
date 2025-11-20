@@ -118,7 +118,11 @@
 % CONTEXT_BEFORE: \(，且\)x_{0} + y_{0} = \frac{9}{5}\(，则\)a =\(( )
 % CONTEXT_AFTER: 
 \begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
-  % TODO: AI_AGENT_REPLACE_ME (id=nanjing_2026_sep-Q8-img1)
+  \draw[->] (-1.3,0) -- (1.3,0) node[right] {$x$};
+  \draw[->] (0,-1.3) -- (0,1.3) node[above] {$y$};
+  \draw[thick,domain=0:360,samples=100,smooth] plot ({cos(\x)^3},{sin(\x)^3});
+  \node at (0,0) [circle,fill,inner sep=1pt] {};
+  \node at (0,0) [below right=1pt] {$O$};
 \end{tikzpicture}
 % IMAGE_TODO_END id=nanjing_2026_sep-Q8-img1
 
@@ -266,23 +270,16 @@ b^{2} = m - 1 \\
 \topics{由导数求函数的最值(不含参)；面积；体积最大问题}
 \difficulty{0.4}
 \answer{\(\frac{3}{2}\)}
-\explain{取\(PQ\)中点\(M\)，因为\(O_{1}P = O_{1}Q\)，则\(Q_{1}M\bot PQ\)，同理可得\(OM\bot PQ\)，
-因为\(Q_{1}M \subset\)平面\(PQO_{1}\)，\(OM \subset\)平面\(PQO\)，且平面\(PQO_{1} \cap\)平面\(PQO = PQ\)，
-则平面\(PQO_{1}\)与平面\(PQO\)夹角为\(\angle OMO_{1} = 60^{{^\circ}}\)，
-令\(O_{1}M = t\)，因为\(OO_{1}\bot\)圆面\(O_{1}\)，而\(O_{1}M \subset\)圆面\(O_{1}\)，所以\(OO_{1}\bot O_{1}M\)，
-则\(OO_{1} = \sqrt{3}t,OM = 2t,PQ = 2\sqrt{9 - 4t^{2}}\)，则\(9 - 4t^{2} > 0\)，且\(t > 0\)，故\(0 < t < \frac{3}{2}\)，
-\(S_{\bigtriangleup O_{1}PQ} = \frac{1}{2} \cdot t \cdot 2\sqrt{9 - 4t^{2}} = t\sqrt{9 - 4t^{2}}\)，
-\(V = \frac{1}{3} \cdot \sqrt{3}t \cdot t\sqrt{9 - 4t^{2}} = \frac{\sqrt{3}}{3}\sqrt{9t^{4} - 4t^{6}}\)，
-令\(f(x) = 9x^{4} - 4x^{6}\)，\(0 < x < \frac{3}{2}\)，\(f'(x) = 36x^{3} - 24x^{5} = 12x^{3}\left( 3 - 2x^{2} \right) = 0\)，
-令\(f'(x) = 0\)，解得\(x = 0\)(舍)或\(x = - \frac{\sqrt{6}}{2}\)(舍)或\(x = \frac{\sqrt{6}}{2}\)，
-当\(x \in \left( 0,\frac{\sqrt{6}}{2} \right)\)时，\(f'(x) > 0\)，当\(x \in \left( \frac{\sqrt{6}}{2},\frac{3}{2} \right)\)时，\(f'(x) < 0\)，
-所以\(f(x)\)在\(\left( 0,\frac{\sqrt{6}}{2} \right)\)单调递增，\(\left( \frac{\sqrt{6}}{2},\frac{3}{2} \right)\)单调递减，所以\(f(x)_{\max} = f\left( \frac{\sqrt{6}}{2} \right) = \frac{27}{4}\)，
-则\(V_{\max} = \frac{\sqrt{3}}{3} \times \frac{3\sqrt{3}}{2} = \frac{3}{2}\).
+\explain{取\(PQ\)中点\(M\)，因为\(O_{1}P = O_{1}Q\)，则\(Q_{1}M\bot PQ\)，同理可得\(OM\bot PQ\)，因为\(Q_{1}M \subset\)平面\(PQO_{1}\)，\(OM \subset\)平面\(PQO\)，且平面\(PQO_{1} \cap\)平面\(PQO = PQ\)，则平面\(PQO_{1}\)与平面\(PQO\)夹角为\(\angle OMO_{1} = 60^{{^\circ}}\)，令\(O_{1}M = t\)，因为\(OO_{1}\bot\)圆面\(O_{1}\)，而\(O_{1}M \subset\)圆面\(O_{1}\)，所以\(OO_{1}\bot O_{1}M\)，则\(OO_{1} = \sqrt{3}t,OM = 2t,PQ = 2\sqrt{9 - 4t^{2}}\)，则\(9 - 4t^{2} > 0\)，且\(t > 0\)，故\(0 < t < \frac{3}{2}\)，\(S_{\bigtriangleup O_{1}PQ} = \frac{1}{2} \cdot t \cdot 2\sqrt{9 - 4t^{2}} = t\sqrt{9 - 4t^{2}}\)，\(V = \frac{1}{3} \cdot \sqrt{3}t \cdot t\sqrt{9 - 4t^{2}} = \frac{\sqrt{3}}{3}\sqrt{9t^{4} - 4t^{6}}\)，令\(f(x) = 9x^{4} - 4x^{6}\)，\(0 < x < \frac{3}{2}\)，\(f'(x) = 36x^{3} - 24x^{5} = 12x^{3}\left( 3 - 2x^{2} \right) = 0\)，令\(f'(x) = 0\)，解得\(x = 0\)(舍)或\(x = - \frac{\sqrt{6}}{2}\)(舍)或\(x = \frac{\sqrt{6}}{2}\)，当\(x \in \left( 0,\frac{\sqrt{6}}{2} \right)\)时，\(f'(x) > 0\)，当\(x \in \left( \frac{\sqrt{6}}{2},\frac{3}{2} \right)\)时，\(f'(x) < 0\)，所以\(f(x)\)在\(\left( 0,\frac{\sqrt{6}}{2} \right)\)单调递增，\(\left( \frac{\sqrt{6}}{2},\frac{3}{2} \right)\)单调递减，所以\(f(x)_{\max} = f\left( \frac{\sqrt{6}}{2} \right) = \frac{27}{4}\)，则\(V_{\max} = \frac{\sqrt{3}}{3} \times \frac{3\sqrt{3}}{2} = \frac{3}{2}\).
 % IMAGE_TODO_START id=nanjing_2026_sep-Q14-img1 path=/Users/muryor/code/mynote/word\_to\_tex/output/figures/raw/media/image3.png width=60% inline=true question_index=14 sub_index=1
 % CONTEXT_BEFORE: }{3} \times \frac{3\sqrt{3}}{2} = \frac{3}{2}\).
 % CONTEXT_AFTER: {width="1.7916666666666667in" height="1.8020833333
-\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
-  % TODO: AI_AGENT_REPLACE_ME (id=nanjing_2026_sep-Q14-img1)
+\begin{tikzpicture}[scale=0.8,baseline=-0.5ex] % Draw sphere outline
+\draw[thick] (0,0) circle (2cm); \draw[dashed] (0,0) ellipse (2cm and 0.6cm); % Points
+\coordinate (O) at (0,0); \coordinate (O1) at (0,-1); \coordinate (P) at (-1.2,0.3); \coordinate (Q) at (1.2,0.3); \coordinate (M) at (0,0.3); % Draw tetrahedron
+\draw[thick] (P) -- (Q) -- (O) -- cycle; \draw[thick] (P) -- (O1) -- (Q); \draw[thick] (O) -- (O1); \draw[dashed] (O1) -- (M); \draw[dashed] (O) -- (M); % Draw small circle O1
+\draw (O1) circle (0.15cm); % Labels
+\fill (O) circle (1.5pt) node[below right] {$O$}; \fill (O1) circle (1.5pt) node[below] {$O_1$}; \fill (P) circle (1.5pt) node[left] {$P$}; \fill (Q) circle (1.5pt) node[right] {$Q$}; \fill (M) circle (1pt) node[above] {$M$};
 \end{tikzpicture}
 % IMAGE_TODO_END id=nanjing_2026_sep-Q14-img1
 }
@@ -340,155 +337,98 @@ b^{2} = m - 1 \\
 \end{question}
 
 \begin{question}
+% IMAGE_TODO_START id=nanjing_2026_sep-Q17-img2 path=/Users/muryor/code/mynote/word_to_tex/output/figures/raw/media/image4.png width=60% inline=false question_index=17 sub_index=1
+% CONTEXT_BEFORE: 
+% CONTEXT_AFTER: 如图，在直三棱柱\(ABC - A_{1}B_{1}C_{1}\)中，\(M,N\)分别为\(AB,B_{1}C_{1}\)的中点．
+\begin{tikzpicture}[scale=1.0]
+  \draw (0,0)--(3,0)--(1.2,2.2)--cycle;
+\end{tikzpicture}
+% IMAGE_TODO_END id=nanjing_2026_sep-Q17-img2
+
+如图，在直三棱柱\(ABC - A_{1}B_{1}C_{1}\)中，\(M,N\)分别为\(AB,B_{1}C_{1}\)的中点．
+
+\begin{enumerate}
 \item 证明：\(MN\text{//}\)平面\(ACC_{1}A_{1}\)；
 \item 若\(AC = 2\sqrt{2},AB = 2\sqrt{3},\angle ACB = 90{^\circ},MN\bot A_{1}C\)，求\(A_{1}C\)与平面\(CMN\)所成角的正弦值．
+\end{enumerate}
 \topics{证明线面平行；线面角的向量求法}
 \difficulty{0.65}
 \answer{(1)证明见解析
 (2)\(\frac{\sqrt{21}}{7}\)}
-\explain{(1)取\(A_{1}C_{1}\)的中点为\(S\)，连接\(SN,AS\)，
-因为\(A_{1}S = SC_{1}\)，\(B_{1}N = NC_{1}\)，故\(SN//A_{1}B_{1},SN = \frac{1}{2}A_{1}B_{1}\)，
-由直三棱柱的性质可得\(AM//A_{1}B_{1},AM = \frac{1}{2}A_{1}B_{1}\)，故\(SN//AM,SN = AM\)，
-故四边形\(SNMA\)为平行四边形，故\(AS//NM\)，
-而\(AS \subset\)平面\(A_{1}C_{1}CA\)，\(NM ⊄\)平面\(A_{1}C_{1}CA\)，故\(NM//\)平面\(A_{1}C_{1}CA\).
-% IMAGE_TODO_START id=nanjing_2026_sep-Q17-img2 path=/Users/muryor/code/mynote/word\_to\_tex/output/figures/raw/media/image5.png width=60% inline=true question_index=17 sub_index=1
-% CONTEXT_BEFORE: $平面\(A_{1}C_{1}CA\)，故\(NM//\)平面\(A_{1}C_{1}CA\).
-% CONTEXT_AFTER: 
-\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
-  % TODO: AI_AGENT_REPLACE_ME (id=nanjing_2026_sep-Q17-img2)
-\end{tikzpicture}
-% IMAGE_TODO_END id=nanjing_2026_sep-Q17-img2
-
-(2)因为\(\angle ACB = 90{^\circ}\)，故\(AC\bot CB\)，故\(BC = \sqrt{12 - 8} = 2\)，设\(AA_{1} = a\).
-由直三棱柱可得\(CC_{1}\bot\)平面\(ABC\)，故可建立如图所示的空间直角坐标系，
-则\(C(0,0,0),A\left( 2\sqrt{2},0,0 \right),B(0,2,0),A_{1}\left( 2\sqrt{2},0,a \right),B_{1}(0,2,a),C_{1}(0,0,a)\),
-故\(M\left( \sqrt{2},1,0 \right),N(0,1,a)\)，且\(\overrightarrow{CA_{1}} = \left( 2\sqrt{2},0,a \right),\overrightarrow{MN} = \left( - \sqrt{2},0,a \right)\).
-因为\(MN\bot A_{1}C\)，故\(\overrightarrow{CA_{1}} \cdot \overrightarrow{MN} = 0\)即\(- 4 + a^{2} = 0\)，故\(a = 2\)(\(a = - 2\)舍去)，
-故\(\overrightarrow{CA_{1}} = \left( 2\sqrt{2},0,2 \right)\)，\(\overrightarrow{MN} = \left( - \sqrt{2},0,2 \right)\)，又\(\overrightarrow{CM} = \left( \sqrt{2},1,0 \right)\).
-设平面\(CMN\)的法向量为\(\overrightarrow{n} = (x,y,z)\)，则\(\left\{ \begin{array}{r}
-\overrightarrow{n}\bot\overrightarrow{MN} \\
-\overrightarrow{n}\bot\overrightarrow{CM}
-\end{array} \right.\),
-所以\(\left\{ \begin{array}{r}
- - \sqrt{2}x + 2z = 0 \\
-\sqrt{2}x + y = 0
-\end{array} \right.\)，取\(\overrightarrow{n} = \left( \sqrt{2}, - 2,1 \right)\)，
-故\(A_{1}C\)与平面\(CMN\)所成角的正弦值为\(\left| \frac{\overrightarrow{n} \cdot \overrightarrow{CA_{1}}}{\left| \overrightarrow{n} \right| \cdot \left| \overrightarrow{CA_{1}} \right|} \right| = \frac{6}{\sqrt{7} \times 2\sqrt{3}} = \frac{\sqrt{21}}{7}\).
-% IMAGE_TODO_START id=nanjing_2026_sep-Q17-img3 path=/Users/muryor/code/mynote/word\_to\_tex/output/figures/raw/media/image6.png width=60% inline=true question_index=17 sub_index=1
-% CONTEXT_BEFORE: rt{7} \times 2\sqrt{3}} = \frac{\sqrt{21}}{7}\(.
-% CONTEXT_AFTER: 
-\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
-  % TODO: AI_AGENT_REPLACE_ME (id=nanjing_2026_sep-Q17-img3)
-\end{tikzpicture}
+\explain{(1)取\(A_{1}C_{1}\)的中点为\(S\)，连接\(SN,AS\)，因为\(A_{1}S = SC_{1}\)，\(B_{1}N = NC_{1}\)，故\(SN//A_{1}B_{1},SN = \frac{1}{2}A_{1}B_{1}\)，由直三棱柱的性质可得\(AM//A_{1}B_{1},AM = \frac{1}{2}A_{1}B_{1}\)，故\(SN//AM,SN = AM\)，故四边形\(SNMA\)为平行四边形，故\(AS//NM\)，而\(AS \subset\)平面\(A_{1}C_{1}CA\)，\(NM ⊄\)平面\(A_{1}C_{1}CA\)，故\(NM//\)平面\(A_{1}C_{1}CA\). (2)因为\(\angle ACB = 90{^\circ}\)，故\(AC\bot CB\)，故\(BC = \sqrt{12 - 8} = 2\)，设\(AA_{1} = a\)。由直三棱柱可得\(CC_{1}\bot\)平面\(ABC\)，故可建立
+% IMAGE_TODO_START id=nanjing_2026_sep-Q17-img3 path=/Users/muryor/code/mynote/word_to_tex/output/figures/raw/media/image5.png width=60% inline=true question_index=17 sub_index=2
+% CONTEXT_BEFORE: 由直三棱柱可得\(CC_{1}\bot\)平面\(ABC\)，故可建立
+% CONTEXT_AFTER: 如图所示的空间直角坐标系
+\begin{tikzpicture}[scale=1.0,baseline=-0.5ex] \draw (-2,0)--(2,0); \draw (0,-2)--(0,2); \end{tikzpicture}
 % IMAGE_TODO_END id=nanjing_2026_sep-Q17-img3
-
+如图所示的空间直角坐标系，则\(C(0,0,0),A\left( 2\sqrt{2},0,0 \right),B(0,2,0),A_{1}\left( 2\sqrt{2},0,a \right),B_{1}(0,2,a),C_{1}(0,0,a)\)，故\(M\left( \sqrt{2},1,0 \right),N(0,1,a)\)，且\(\overrightarrow{CA_{1}} = \left( 2\sqrt{2},0,a \right),\overrightarrow{MN} = \left( - \sqrt{2},0,a \right)\)。因为\(MN\bot A_{1}C\)，故\(\overrightarrow{CA_{1}} \cdot \overrightarrow{MN} = 0\)即\(- 4 + a^{2} = 0\)，故\(a = 2\)(\(a = - 2\)舍去)，故\(\overrightarrow{CA_{1}} = \left( 2\sqrt{2},0,2 \right)\)，\(\overrightarrow{MN} = \left( - \sqrt{2},0,2 \right)\)，又\(\overrightarrow{CM} = \left( \sqrt{2},1,0 \right)\)。设平面\(CMN\)的法向量为\(\overrightarrow{n} = (x,y,z)\)，则\(\left\{ \begin{array}{r}
+\overrightarrow{n}\bot\overrightarrow{MN} \\\\
+\overrightarrow{n}\bot\overrightarrow{CM}
+\end{array} \right.\)，所以\(\left\{ \begin{array}{r}
+ - \sqrt{2}x + 2z = 0 \\\\
+\sqrt{2}x + y = 0
+\end{array} \right.\)，取\(\overrightarrow{n} = \left( \sqrt{2}, - 2,1 \right)\)，故\(A_{1}C\)与平面\(CMN\)所成角的正弦值为\(\left| \frac{\overrightarrow{n} \cdot \overrightarrow{CA_{1}}}{\left| \overrightarrow{n} \right| \cdot \left| \overrightarrow{CA_{1}} \right|} \right| = \frac{6}{\sqrt{7} \times 2\sqrt{3}} = \frac{\sqrt{21}}{7}\).}
 \end{question}
 
 \begin{question}
+% IMAGE_TODO_START id=nanjing_2026_sep-Q18-img1 path=/Users/muryor/code/mynote/word_to_tex/output/figures/raw/media/image6.png width=60% inline=false question_index=18 sub_index=1
+% CONTEXT_BEFORE: 
+% CONTEXT_AFTER: 已知双曲线\(C:\frac{x^{2}}{a^{2}} - \frac{y^{2}}{b^{2}} = 1(a > 0,b > 0)\)
+\begin{tikzpicture}[scale=1.0] \draw (0,0) ellipse (2 and 1); \end{tikzpicture}
+% IMAGE_TODO_END id=nanjing_2026_sep-Q18-img1
+
+已知双曲线\(C:\frac{x^{2}}{a^{2}} - \frac{y^{2}}{b^{2}} = 1(a > 0,b > 0)\)满足\(c^{2} = 2a^{2}\)，其左、右焦点分别为\(F_{1}( - 2,0),F_{2}(2,0)\)，过点\(F_{2}\)的直线\(l\)与\(C\)交于\(A,B\)两点．
+
+\begin{enumerate}
 \item 求\(C\)的方程；
 \item 若\(A,B\)均在\(C\)的右支上，且\(\bigtriangleup ABF_{1}\)的周长为\(16\sqrt{2}\)，求\(l\)的方程；
 \item 是否存在\(x\)轴上的定点\(M\)，使得\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)为定值？若存在，求出点\(M\)的坐标；若不存在，请说明理由．
+\end{enumerate}
 \topics{根据a；b；c求双曲线的标准方程；求双曲线中的弦长；双曲线中存在定点满足某条件问题}
 \difficulty{0.65}
 \answer{(1)\(x^{2} - y^{2} = 2\)
 (2)\(\sqrt{2}x \pm y - 2\sqrt{2} = 0\)
 (3)存在点\(M(1,0)\)，使得\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)为定值.}
-\explain{(1)因为\(\left| F_{1}F_{2} \right| = 4\) \(\Rightarrow\)
-\(2c = 4\)，所以\(c = 2\)，
-又\(c^{2} = 2a^{2}\)，所以\(a^{2} = 2\).
-所以双曲线\(C\)的方程为：\(x^{2} - y^{2} = 2\).
-(2)因为\(A,B\)均在\(C\)的右支上，且\(\bigtriangleup ABF_{1}\)的周长为\(16\sqrt{2}\)，
-所以\(|AB| + \left| AF_{1} \right| + \left| BF_{1} \right| = 16\sqrt{2}\)
-\(\Rightarrow\)
-\(|AB| + \left| AF_{2} \right| + 2\sqrt{2} + \left| BF_{2} \right| + 2\sqrt{2} = 16\sqrt{2}\)
-\(\Rightarrow\) \(|AB| = 6\sqrt{2}\).
-如图：
-% IMAGE_TODO_START id=nanjing_2026_sep-Q18-img1 path=/Users/muryor/code/mynote/word\_to\_tex/output/figures/raw/media/image7.png width=60% inline=true question_index=18 sub_index=1
-% CONTEXT_BEFORE: {2}\) \(\Rightarrow\) \(|AB| = 6\sqrt{2}\). 如图：
-% CONTEXT_AFTER:  因为F_{2}(
-\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
-  % TODO: AI_AGENT_REPLACE_ME (id=nanjing_2026_sep-Q18-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=nanjing_2026_sep-Q18-img1
-
-因为\(F_{2}(2,0)\)，设直线\(l\)：\(x = ty + 2\)，代入\(x^{2} - y^{2} = 2\)得：
-\((ty + 2)^{2} - y^{2} = 2\)，
-整理得：\(\left( t^{2} - 1 \right)y^{2} + 4ty + 2 = 0\).
-设\(A\left( x_{1},y_{1} \right)\)，\(B\left( x_{2},y_{2} \right)\)，
-因为\(A,B\)均在\(C\)的右支上，所以\(t^{2} - 1 \neq 0\)，且\(y_{1}y_{2} = \frac{2}{t^{2} - 1} < 0\)，所以\(t^{2} < 1\)，
-\(y_{1} + y_{2} = - \frac{4t}{t^{2} - 1}\).
-所以\(\left( y_{1} - y_{2} \right)^{2} = \left( y_{1} + y_{2} \right)^{2} - 4y_{1}y_{2}\)
-\(= \frac{16t^{2}}{\left( t^{2} - 1 \right)^{2}} - \frac{4 \times 2}{t^{2} - 1}\)
-\(= \frac{16t^{2} - 8\left( t^{2} - 1 \right)}{\left( t^{2} - 1 \right)^{2}}\)
-\(= \frac{8\left( t^{2} + 1 \right)}{\left( t^{2} - 1 \right)^{2}}\).
-所以\(|AB| = \sqrt{1 + t^{2}} \cdot \left| y_{1} - y_{2} \right|\)
-\(= \frac{2\sqrt{2}\left( t^{2} + 1 \right)}{1 - t^{2}}\)
-\(= 6\sqrt{2}\) \(\Rightarrow\) \(t^{2} = \frac{1}{2}\).
-所以\(t = \pm \frac{\sqrt{2}}{2}\).
-所以直线\(l\)的方程为：\(x = \pm \frac{\sqrt{2}}{2}y + 2\)，即\(\sqrt{2}x \pm y - 2\sqrt{2} = 0\).
-(3)假设存在\(x\)轴上的定点\(M\)
-\((m,0)\)，使得\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)为定值.
-因为\(\overrightarrow{MA} = \left( x_{1} - m,y_{1} \right)\)，\(\overrightarrow{MB} = \left( x_{2} - m,y_{2} \right)\)，
-所以\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)
-\(= \left( x_{1} - m,y_{1} \right) \cdot \left( x_{2} - m,y_{2} \right)\)
-\(= \left( x_{1} - m \right) \cdot \left( x_{2} - m \right) + y_{1}y_{2}\)
-\(= \left( ty_{1} + 2 - m \right) \cdot \left( ty_{2} + 2 - m \right) + y_{1}y_{2}\)
-\(= \left( t^{2} + 1 \right)y_{1}y_{2} + (2 - m)t\left( y_{1} + y_{2} \right) + (2 - m)^{2}\)
-\(= \frac{2\left( t^{2} + 1 \right)}{t^{2} - 1} - \frac{4t^{2}(2 - m)}{t^{2} - 1} + (2 - m)^{2}\)
-\(= \frac{(4m - 6)t^{2} + 2}{t^{2} - 1} + (2 - m)^{2}\).
-因为\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)为常数，所以\((4m - 6) + 2 = 0\)
-\(\Rightarrow\) \(m = 1\).
-此时\(\overrightarrow{MA} \cdot \overrightarrow{MB} = - 2 + 1 = - 1\).
-所以存在点\(M(1,0)\)，使得\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)为定值.}
+\explain{(1)因为\(\left| F_{1}F_{2} \right| = 4\)，所以\(2c = 4\)，即\(c = 2\)。又\(c^{2} = 2a^{2}\)，所以\(a^{2} = 2\)，\(b^{2} = c^{2} - a^{2} = 2\)。故双曲线方程为\(x^{2} - y^{2} = 2\)。
+(2)因为\(A,B\)均在右支上，且\(\bigtriangleup ABF_{1}\)的周长为\(16\sqrt{2}\)，所以\(|AB| + |AF_{1}| + |BF_{1}| = 16\sqrt{2}\)。由双曲线定义，\(|AF_{1}| - |AF_{2}| = 2a = 2\sqrt{2}\)，\(|BF_{1}| - |BF_{2}| = 2\sqrt{2}\)，所以\(|AB| + |AF_{2}| + |BF_{2}| + 4\sqrt{2} = 16\sqrt{2}\)，即\(|AB| = 6\sqrt{2}\)。
+设直线\(l\)：\(x = ty + 2\)，代入双曲线方程得\((ty + 2)^{2} - y^{2} = 2\)，整理得\((t^{2} - 1)y^{2} + 4ty + 2 = 0\)。设\(A(x_{1},y_{1})\)，\(B(x_{2},y_{2})\)，因为\(A,B\)在右支上，所以\(y_{1}y_{2} = \frac{2}{t^{2} - 1} < 0\)，即\(t^{2} < 1\)；\(y_{1} + y_{2} = -\frac{4t}{t^{2} - 1}\)。
+弦长\(|AB| = \sqrt{1 + t^{2}} \cdot |y_{1} - y_{2}| = \sqrt{1 + t^{2}} \cdot \sqrt{(y_{1} + y_{2})^{2} - 4y_{1}y_{2}} = \sqrt{1 + t^{2}} \cdot \sqrt{\frac{16t^{2}}{(t^{2} - 1)^{2}} - \frac{8}{t^{2} - 1}} = \frac{2\sqrt{2}(t^{2} + 1)}{1 - t^{2}} = 6\sqrt{2}\)，解得\(t^{2} = \frac{1}{2}\)，所以\(t = \pm\frac{\sqrt{2}}{2}\)。直线方程为\(\sqrt{2}x \pm y - 2\sqrt{2} = 0\)。
+(3)假设存在\(x\)轴上定点\(M(m,0)\)使得\(\overrightarrow{MA} \cdot \overrightarrow{MB}\)为定值。\(\overrightarrow{MA} \cdot \overrightarrow{MB} = (x_{1} - m)(x_{2} - m) + y_{1}y_{2} = (ty_{1} + 2 - m)(ty_{2} + 2 - m) + y_{1}y_{2} = (t^{2} + 1)y_{1}y_{2} + (2 - m)t(y_{1} + y_{2}) + (2 - m)^{2} = \frac{2(t^{2} + 1)}{t^{2} - 1} - \frac{4t^{2}(2 - m)}{t^{2} - 1} + (2 - m)^{2} = \frac{(4m - 6)t^{2} + 2}{t^{2} - 1} + (2 - m)^{2}\)。
+要使其为常数，需\((4m - 6) + 2 = 0\)，解得\(m = 1\)。此时\(\overrightarrow{MA} \cdot \overrightarrow{MB} = -1\)。故存在点\(M(1,0)\)使得数量积为定值。}
 \end{question}
 
 \begin{question}
+已知函数\(f(x) = \ln(ax) + \frac{1}{x} + a(x - 1)(a \neq 0)\)．
+
+\begin{enumerate}
 \item 当\(a = 1\)时，若直线\(y = - x + b\)是曲线\(y = f(x)\)的一条切线，求\(b\)的值；
 \item 讨论\(f(x)\)的单调性；
 \item 若集合\(\{ x \mid f(x) < 1,x \in \text{Z}\}\)中有且仅有一个元素，求\(a\)的取值范围．
+\end{enumerate}
 \topics{已知切线(斜率)求参数；函数单调性；极值与最值的综合应用；利用导数求函数(含参)的单调区间}
 \difficulty{0.4}
 \answer{(1)\(b = 2 - \ln 2\)
 (2)当\(a > 0\)时，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；当\(a < 0\)时，\(f(x)\)在\(( - \infty,0)\)上单调递减
 (3)\(\left( - 1, - \frac{1}{2} \right\rbrack \cup \left\lbrack \frac{1}{2},1 \right)\)}
-\explain{(1)当\(a = 1\)时，\(f(x) = \ln x + \frac{1}{x} + x - 1(x > 0)\)，则\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + 1\)，
-当\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + 1 = - 1\)时，解得\(x = \frac{1}{2}\)或\(x = - 1\)(舍)，
-则\(f\left( \frac{1}{2} \right) = \ln\frac{1}{2} + 2 + \frac{1}{2} - 1 = \frac{3}{2} - \ln 2\)，可得切点\(\left( \frac{1}{2},\frac{3}{2} - \ln 2 \right)\)，
-代入切线方程得\(\frac{3}{2} - \ln 2 = - \frac{1}{2} + b\)，解得\(b = 2 - \ln 2\).
-(2)已知\(f(x) = \text{ln}(ax) + \frac{1}{x} + a(x - 1)\)，得\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + a = \frac{ax^{2} + x - 1}{x^{2}}\)；
-当\(a > 0\)时，定义域为\((0, + \infty)\)，
-\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + a = \frac{ax^{2} + x - 1}{x^{2}}\)，二次函数\(y = ax^{2} + x - 1\)图象开口向上，且\(\Delta = 1 + 4a > 0\)，
-令\(g(x) = ax^{2} + x - 1 = 0\)，在\((0, + \infty)\)必有解\(x = \frac{- 1 + \sqrt{1 + 4a}}{2a}\)，
-当\(0 < x < \frac{- 1 + \sqrt{1 + 4a}}{2a}\)时，\(g(x) < 0\)，\(f'(x) < 0\)，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，
-当\(x > \frac{- 1 + \sqrt{1 + 4a}}{2a}\)时，\(g(x) > 0\)，\(f'(x) > 0\)，\(f(x)\)在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；
-当\(a < 0\)时，定义域为\(( - \infty,0)\)，则\(f'(x) = \frac{ax^{2} + x - 1}{x^{2}} < 0\)恒成立，\(f(x)\)在\(( - \infty,0)\)上单调递减，
-综上所述：
-当\(a > 0\)时，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；
-当\(a < 0\)时，\(f(x)\)在\(( - \infty,0)\)上单调递减.
-(3)由\(f(x) = \text{ln}(ax) + \frac{1}{x} + a(x - 1)\)可知，\(f\left( \frac{1}{a} \right) = \text{ln}1 + a + a\left( \frac{1}{a} - 1 \right) = 1\)，
-当\(a < 0\)时，\(f(x)\)在\(( - \infty,0)\)上单调递减，若集合\(\{ x \mid f(x) < 1,x \in \text{Z}\}\)中有且仅有一个元素，
-则\(\left\{ \begin{array}{r}
-f( - 1) < 1 \\
+\explain{(1)当\(a = 1\)时，\(f(x) = \ln x + \frac{1}{x} + x - 1(x > 0)\)，则\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + 1\)，当\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + 1 = - 1\)时，解得\(x = \frac{1}{2}\)或\(x = - 1\)(舍)，则\(f\left( \frac{1}{2} \right) = \ln\frac{1}{2} + 2 + \frac{1}{2} - 1 = \frac{3}{2} - \ln 2\)，可得切点\(\left( \frac{1}{2},\frac{3}{2} - \ln 2 \right)\)，代入切线方程得\(\frac{3}{2} - \ln 2 = - \frac{1}{2} + b\)，解得\(b = 2 - \ln 2\).
+(2)已知\(f(x) = \text{ln}(ax) + \frac{1}{x} + a(x - 1)\)，得\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + a = \frac{ax^{2} + x - 1}{x^{2}}\)；当\(a > 0\)时，定义域为\((0, + \infty)\)，\(f'(x) = \frac{1}{x} - \frac{1}{x^{2}} + a = \frac{ax^{2} + x - 1}{x^{2}}\)，二次函数\(y = ax^{2} + x - 1\)图象开口向上，且\(\Delta = 1 + 4a > 0\)，令\(g(x) = ax^{2} + x - 1 = 0\)，在\((0, + \infty)\)必有解\(x = \frac{- 1 + \sqrt{1 + 4a}}{2a}\)，当\(0 < x < \frac{- 1 + \sqrt{1 + 4a}}{2a}\)时，\(g(x) < 0\)，\(f'(x) < 0\)，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，当\(x > \frac{- 1 + \sqrt{1 + 4a}}{2a}\)时，\(g(x) > 0\)，\(f'(x) > 0\)，\(f(x)\)在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；当\(a < 0\)时，定义域为\(( - \infty,0)\)，则\(f'(x) = \frac{ax^{2} + x - 1}{x^{2}} < 0\)恒成立，\(f(x)\)在\(( - \infty,0)\)上单调递减，综上所述：当\(a > 0\)时，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；当\(a < 0\)时，\(f(x)\)在\(( - \infty,0)\)上单调递减.
+(3)由\(f(x) = \text{ln}(ax) + \frac{1}{x} + a(x - 1)\)可知，\(f\left( \frac{1}{a} \right) = \text{ln}1 + a + a\left( \frac{1}{a} - 1 \right) = 1\)，当\(a < 0\)时，\(f(x)\)在\(( - \infty,0)\)上单调递减，若集合\(\{ x \mid f(x) < 1,x \in \text{Z}\}\)中有且仅有一个元素，则\(\left\{ \begin{array}{r}
+f( - 1) < 1 \\\\
 f( - 2) \geq 1
 \end{array} \right.\)，即\(\left\{ \begin{array}{r}
-f( - 1) < f\left( \frac{1}{a} \right) \\
+f( - 1) < f\left( \frac{1}{a} \right) \\\\
 f( - 2) \geq f\left( \frac{1}{a} \right)
 \end{array} \right.\)，即\(\left\{ \begin{array}{r}
- - 1 > \frac{1}{a} \\
+ - 1 > \frac{1}{a} \\\\
  - 2 \leq \frac{1}{a}
-\end{array} \right.\)，
-解得\(- 1 < a \leq - \frac{1}{2}\)；
-当\(a > 0\)时，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；
-可知\(0 < \frac{- 1 + \sqrt{1 + 4a}}{2a} < 1\)，所以集合\(\{ x \mid f(x) < 1,x \in \text{Z}\}\)中有且仅有一个元素，
-则\(\left\{ \begin{array}{r}
-f(1) < 1 \\
+\end{array} \right.\)，解得\(- 1 < a \leq - \frac{1}{2}\)；当\(a > 0\)时，\(f(x)\)在\((0,\frac{- 1 + \sqrt{1 + 4a}}{2a})\)上单调递减，在\((\frac{- 1 + \sqrt{1 + 4a}}{2a}, + \infty)\)上单调递增；可知\(0 < \frac{- 1 + \sqrt{1 + 4a}}{2a} < 1\)，所以集合\(\{ x \mid f(x) < 1,x \in \text{Z}\}\)中有且仅有一个元素，则\(\left\{ \begin{array}{r}
+f(1) < 1 \\\\
 f(2) \geq 1
 \end{array} \right.\)，即\(\left\{ \begin{array}{r}
-f(1) < f\left( \frac{1}{a} \right) \\
+f(1) < f\left( \frac{1}{a} \right) \\\\
 f(2) \geq f\left( \frac{1}{a} \right)
 \end{array} \right.\)，即\(\left\{ \begin{array}{r}
-1 < \frac{1}{a} \\
+1 < \frac{1}{a} \\\\
 2 \geq \frac{1}{a}
-\end{array} \right.\)，解得\(\frac{1}{2} \leq a < 1\)；
-综上所述，\(a\)的取值范围为\(\left( - 1, - \frac{1}{2} \right\rbrack \cup \left\lbrack \frac{1}{2},1 \right)\).}
+\end{array} \right.\)，解得\(\frac{1}{2} \leq a < 1\)；综上所述，\(a\)的取值范围为\(\left( - 1, - \frac{1}{2} \right\rbrack \cup \left\lbrack \frac{1}{2},1 \right)\).}
 \end{question}

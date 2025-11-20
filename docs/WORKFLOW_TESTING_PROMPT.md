@@ -635,17 +635,26 @@ TikZ 回填（新）：tools/images/apply_tikz_snippets.py
     │
     ▼
 image_jobs.jsonl  +  media/*.png
+  （包含 exam_prefix, exam_dir, tikz_snippets_dir 等字段，详见 IMAGE_JOBS_FORMAT.md）
     │
     ▼
 [AI Agent]
 (读取 image_jobs + 图片)
-(生成 TikZ 环境)
+(生成 TikZ 环境，输出 id + tikz_code)
     │
     ▼
-tikz_snippets/{id}.tex
+generated_tikz.jsonl
+    │
+    ▼
+[write_snippets_from_jsonl.py / utils.write_tikz_snippet]
+    │
+    ▼
+content/exams/auto/<exam_prefix>/tikz_snippets/{id}.tex
+  （由 utils.get_tikz_snippets_dir 统一推断，不允许硬编码目录）
     │
     ▼
 [apply_tikz_snippets.py]
+  （默认使用 tex_file 所在目录的 tikz_snippets）
     │
     ▼
 converted_exam_tikz.tex
@@ -702,13 +711,18 @@ converted_exam_tikz.tex
 
 #### JSONL 单行示例
 
-每一行是一个 JSON 对象，代表一个图片任务（image_job）：
+> **完整字段说明与推断规则详见：[IMAGE_JOBS_FORMAT.md](./IMAGE_JOBS_FORMAT.md)**
+
+每一行是一个 JSON 对象，代表一个图片任务（image_job）。以下为简化示例（实际导出包含更多字段）：
 
 ```json
 {
-  "id": "nanjing2026-Q3-img1",
-  "exam_slug": "nanjing2026",
-  "tex_file": "content/exams/auto/nanjing2026/converted_exam.tex",
+  "id": "nanjing_2026_sep-Q3-img1",
+  "exam_slug": "nanjing_2026_sep",
+  "exam_prefix": "nanjing_2026_sep",
+  "exam_dir": "content/exams/auto/nanjing_2026_sep",
+  "tikz_snippets_dir": "content/exams/auto/nanjing_2026_sep/tikz_snippets",
+  "tex_file": "content/exams/auto/nanjing_2026_sep/converted_exam.tex",
   "question_index": 3,
   "sub_index": 1,
   "path": "word_to_tex/output/figures/media/image1.png",
@@ -720,6 +734,10 @@ converted_exam_tikz.tex
   "todo_block_end_line": 250
 }
 ```
+
+**关键字段**：
+- `exam_prefix` / `exam_dir` / `tikz_snippets_dir`：由 `export_image_jobs.py` 自动推断并填充，确保下游 Agent 可直接使用。
+- 完整字段说明、目录推断逻辑（唯一真理）、使用示例请参阅 **[IMAGE_JOBS_FORMAT.md](./IMAGE_JOBS_FORMAT.md)**。
 
 #### 字段说明
 
@@ -865,18 +883,97 @@ converted_exam_tikz.tex
 
 #### 任务 C：新增 `apply_tikz_snippets.py` 回填 TikZ
 
-> 按照上文第 9.1 子流水线设计，在 `tools/images/apply_tikz_snippets.py` 中实现：
->
-> 1. 读取 `--tex-file` 指定的 TeX 文件
-> 2. 扫描 `--snippets-dir` 中所有 `{id}.tex`，建立 TikZ 片段映射
-> 3. 遍历 TeX 行：
->    - 遇到 `IMAGE_TODO_START id=...`：
->      - 若存在对应 `{id}.tex`：
->        - 保留 START/END 注释
->        - 用 snippet 内容替换原来的 `tikzpicture` 占位环境
->      - 若不存在 snippet：
->        - 保留整个占位块，并在控制台打印告警
-> 4. 支持 `--output` 参数决定是否覆盖原文件
+> 该脚本已完成实现，功能说明如下：
+
+**输入**：
+- `--tex-file`：待回填的 TeX 文件（例如 `converted_exam.tex`）
+- `--snippets-dir`（可选）：TikZ 片段目录；若未提供，默认使用 `tex_file` 所在目录的 `tikz_snippets` 子目录。
+- `--output`（可选）：输出文件路径；若未提供，覆盖原文件（会自动备份为 `.tex.bak`）。
+
+**使用示例**：
+
+```bash
+# 默认用 tex 所在目录的 tikz_snippets
+python tools/images/apply_tikz_snippets.py \
+    --tex-file content/exams/auto/nanjing_2026_sep/converted_exam.tex
+
+# 也可以显式指定 snippets 目录（覆盖默认值）
+python tools/images/apply_tikz_snippets.py \
+    --tex-file content/exams/auto/nanjing_2026_sep/converted_exam.tex \
+    --snippets-dir content/exams/auto/nanjing_2026_sep/tikz_snippets \
+    --output content/exams/auto/nanjing_2026_sep/converted_exam_tikz.tex
+```
+
+**运行时输出**：
+- 打印实际使用的 snippets 目录（绝对路径）：
+  ```
+  Snippets 目录: /full/path/to/content/exams/auto/nanjing_2026_sep/tikz_snippets
+  ```
+- 列出缺少 snippet 的图片 id（若存在）。
+- 统计信息：总 TODO 数量、成功替换、跳过（缺失 snippet）。
+
+#### 任务 D（新增）：使用 `write_snippets_from_jsonl.py` 落地 TikZ
+
+> **作用**：读取 AI 生成的 `tikz_code` 并统一写入规范目录。
+
+该脚本已实现，负责衔接 AI 生成的 TikZ 与文件系统写入。
+
+**输入**：
+- `--jobs-file`：`export_image_jobs.py` 生成的 `image_jobs.jsonl`（包含目录推断所需字段）
+- `--tikz-file`：AI 输出的 `generated_tikz.jsonl`（每行包含 `{"id": "...", "tikz_code": "..."}`）
+- `--dry-run`（可选）：仅预览写入计划，不实际创建文件
+- `--snippets-dir`（可选）：强制所有 snippet 写入该目录（调试用，正常情况下不要提供）
+
+**使用示例**：
+
+```bash
+# 实际写入（推荐）
+python3 tools/images/write_snippets_from_jsonl.py \
+  --jobs-file content/exams/auto/nanjing_2026_sep/image_jobs.jsonl \
+  --tikz-file generated_tikz.jsonl
+
+# 预览模式（dry-run）
+python3 tools/images/write_snippets_from_jsonl.py \
+  --jobs-file content/exams/auto/nanjing_2026_sep/image_jobs.jsonl \
+  --tikz-file generated_tikz.jsonl \
+  --dry-run
+```
+
+**日志格式示例**：
+
+```text
+[TikZ] write snippet: id=nanjing_2026_sep-Q8-img1  ->  content/exams/auto/nanjing_2026_sep/tikz_snippets/nanjing_2026_sep-Q8-img1.tex
+[TikZ] write snippet: id=nanjing_2026_sep-Q14-img1  ->  content/exams/auto/nanjing_2026_sep/tikz_snippets/nanjing_2026_sep-Q14-img1.tex
+...
+
+结果：
+  ✓ 成功写入: 5
+  ✗ 写入错误: 0
+  ☐ 缺少 tikz_code: 0
+```
+
+**设计要点**：
+- 每条 job 的目标目录由 `utils.get_tikz_snippets_dir(job)` 推断（唯一真理）。
+- 对缺失 `tikz_code` 的 id 不会写入，仅统计与警告。
+- 支持 `--dry-run` 方便预检查路径。
+
+**AI Agent 使用场景**：
+
+如果 Agent 可以直接 import 仓库代码，建议调用：
+
+```python
+from pathlib import Path
+import json
+from tools.images.utils import get_tikz_snippets_dir, write_tikz_snippet_to_dir
+
+jobs = [json.loads(line) for line in Path("image_jobs.jsonl").read_text().splitlines() if line.strip()]
+for job in jobs:
+    tikz_dir = get_tikz_snippets_dir(job)
+    tikz_code = generate_tikz_for_image(job)  # AI 生成逻辑
+    write_tikz_snippet_to_dir(job['id'], tikz_code, tikz_dir)
+```
+
+如果 Agent 无法 import，可输出 `generated_tikz.jsonl`，然后使用本脚本。
 
 ---
 

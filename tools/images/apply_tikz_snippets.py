@@ -236,8 +236,9 @@ TikZ 片段格式：
     parser.add_argument(
         '--snippets-dir',
         type=Path,
-        required=True,
-        help='TikZ 片段目录（包含 {id}.tex 文件）'
+        required=False,
+        default=None,
+        help='TikZ 片段目录（包含 {id}.tex 文件）。若未提供，默认使用 TeX 文件所在目录的 tikz_snippets 子目录'
     )
 
     parser.add_argument(
@@ -253,7 +254,11 @@ TikZ 片段格式：
     print("🎨 TikZ 代码回填工具")
     print("━" * 60)
     print(f"输入文件: {args.tex_file}")
-    print(f"Snippets 目录: {args.snippets_dir}")
+    # 推断 snippets 目录：优先使用显式参数，否则使用 tex 文件所在目录的 tikz_snippets
+    if args.snippets_dir is None:
+        inferred = args.tex_file.parent / 'tikz_snippets'
+        args.snippets_dir = inferred
+    print(f"Snippets 目录: {args.snippets_dir.resolve()}")
     if args.output:
         print(f"输出文件: {args.output}")
     else:

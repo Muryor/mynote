@@ -170,6 +170,7 @@ def parse_image_todos(tex_file: Path) -> List[Dict]:
             job = {
                 'id': kv_dict.get('id', 'unknown'),
                 'exam_slug': extract_slug_from_id(kv_dict.get('id', '')),
+                'exam_prefix': None,
                 'tex_file': str(tex_file),
                 'question_index': int(kv_dict.get('question_index', 0)),
                 'sub_index': int(kv_dict.get('sub_index', 1)),
@@ -185,6 +186,14 @@ def parse_image_todos(tex_file: Path) -> List[Dict]:
             # 如果从 ID 无法提取 slug，尝试从路径提取
             if job['exam_slug'] == 'unknown':
                 job['exam_slug'] = extract_slug_from_path(tex_file)
+
+            # 兼容字段：exam_prefix 和 exam_dir
+            # exam_prefix 优先使用从 id 提取的 slug
+            job['exam_prefix'] = job.get('exam_slug') or extract_slug_from_path(tex_file)
+            # exam_dir 使用 tex_file 的父目录（通常为 content/exams/auto/<prefix>）
+            job['exam_dir'] = str(tex_file.parent)
+            # 建议的 tikz_snippets 目录（agent 可使用该字段或自行推断）
+            job['tikz_snippets_dir'] = str(Path(job['exam_dir']) / 'tikz_snippets')
 
             # 继续读取后续行，查找 CONTEXT 和 IMAGE_TODO_END
             i += 1

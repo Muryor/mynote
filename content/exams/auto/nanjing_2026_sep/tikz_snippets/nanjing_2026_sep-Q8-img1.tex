@@ -1,17 +1,7 @@
-% TikZ 代码: 星形线 (astroid) - 参数方程 x=a*cos³θ, y=a*sin³θ
-% 这是一个手动编写的测试样例
-\begin{tikzpicture}[scale=0.6,baseline=-0.5ex]
-  % 坐标轴
-  \draw[->] (-1.5,0) -- (1.5,0) node[right] {\scriptsize $x$};
-  \draw[->] (0,-1.5) -- (0,1.5) node[above] {\scriptsize $y$};
-  
-  % 星形线 (astroid): x = cos³θ, y = sin³θ (a=1 for simplicity)
-  \draw[thick,smooth,samples=100,domain=0:360,variable=\t] 
-    plot ({cos(\t)^3},{sin(\t)^3});
-  
-  % 标记点 P(x₀, y₀)
-  \fill[red] (0.512,0.512) circle (1.5pt) node[above right] {\scriptsize $P$};
-  
-  % 原点
-  \node[below left] at (0,0) {\scriptsize $O$};
+\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
+  \draw[->] (-1.3,0) -- (1.3,0) node[right] {$x$};
+  \draw[->] (0,-1.3) -- (0,1.3) node[above] {$y$};
+  \draw[thick,domain=0:360,samples=100,smooth] plot ({cos(\x)^3},{sin(\x)^3});
+  \node at (0,0) [circle,fill,inner sep=1pt] {};
+  \node at (0,0) [below right=1pt] {$O$};
 \end{tikzpicture}
