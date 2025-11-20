@@ -195,7 +195,65 @@ $k$ & 3.841 & 6.635 & 10.828 \\
 
 ---
 
-## 6) Build matrix
+## 6) Explanation Formatting (v3.2)
+
+### 段落分隔支持
+
+`\explain` 宏支持使用**空行**分段，改善长解析的可读性：
+
+```tex
+\explain{
+由题意可知双曲线满足 $c^2 = 2a^2$。
+
+因为焦点为 $(\pm 2, 0)$，所以 $c = 2$，进而 $a^2 = 2$。
+
+双曲线方程为 $\frac{x^2}{2} - \frac{y^2}{2} = 1$。
+}
+```
+
+**格式参数**：
+- 段间距：`\parskip=0.4\baselineskip`
+- 首行缩进：`\parindent=2em`
+
+### 步骤标记命令 `\exstep`
+
+用于标记解析中的主要步骤：
+
+**自动编号模式**：
+```tex
+\explain{
+由题意可知...
+\exstep 因为焦点为 $(\pm 2, 0)$...
+\exstep 双曲线方程为...
+}
+```
+生成：(1), (2), (3), ...
+
+**自定义标签模式**：
+```tex
+\explain{
+\exstep[法一：导数法]
+对 $f(x)$ 求导...
+
+\exstep[法二：五倍角公式]
+利用三角恒等变换...
+
+\exstep[小结]
+两种方法验证答案正确性。
+}
+```
+
+**使用建议**：
+- 短解析（1-3 行）：保持原样
+- 中等解析（3-5 行）：使用空行分段
+- 长解析（5-10 行）：使用 `\exstep` 自动编号
+- 超长解析（>10 行）或多解法：使用 `\exstep[标签]`
+
+详见 [`docs/EXPLAIN_FORMATTING_GUIDE.md`](./docs/EXPLAIN_FORMATTING_GUIDE.md) 和 [`docs/EXPLAIN_QUICK_REF.md`](./docs/EXPLAIN_QUICK_REF.md)。
+
+---
+
+## 7) Build matrix
 
 ```bash
 ./build.sh exam teacher|student|both

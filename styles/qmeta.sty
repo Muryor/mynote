@@ -25,6 +25,7 @@
 \tl_new:N   \l__qmeta_source_tl
 \fp_new:N   \l__qmeta_diff_fp
 \bool_new:N \l__qmeta_headrow_bool
+\int_new:N  \l__qmeta_step_int   % 步骤计数器
 
 %% ============================================================
 %% Options
@@ -59,11 +60,31 @@
 \NewDocumentCommand \difficulty { m }
   { \fp_gset:Nn \l__qmeta_diff_fp {#1} }
 
-\NewDocumentCommand \explain { m }
+\NewDocumentCommand \explain { +m }
   { \tl_gset:Nn \l__qmeta_explain_tl {#1} }
 
 \NewDocumentCommand \source { m }
   { \tl_gset:Nn \l__qmeta_source_tl {#1} }
+
+%% Step marker command for long explanations
+%% Usage:
+%%   \exstep       -> Auto-numbered: (1), (2), (3), ...
+%%   \exstep[小结] -> Custom label: 小结
+\NewDocumentCommand \exstep { o }
+  {
+    \par
+    \vspace{0.25\baselineskip}
+    \IfValueTF {#1}
+      {
+        % Custom label provided
+        \noindent\textbf{#1}~
+      }
+      {
+        % Auto-numbering
+        \int_incr:N \l__qmeta_step_int
+        \noindent\textbf{(\int_use:N \l__qmeta_step_int)}~
+      }
+  }
 
 %% ============================================================
 %% Internal Functions
@@ -77,6 +98,7 @@
     \tl_gclear:N \l__qmeta_explain_tl
     \tl_gclear:N \l__qmeta_source_tl
     \fp_gzero:N  \l__qmeta_diff_fp
+    \int_gzero:N \l__qmeta_step_int  % 重置步骤计数器
   }
 
 %% Format difficulty based on format option
@@ -157,7 +179,17 @@
                 { \textbf{【知识点】}~\l__qmeta_topics_tl \par }
 
               \tl_if_empty:NF \l__qmeta_explain_tl
-                { \textbf{【详解】}~\l__qmeta_explain_tl \par }
+                {
+                  % Reset step counter at the start of each explanation
+                  \int_gzero:N \l__qmeta_step_int
+                  \group_begin:
+                  % Allow paragraph breaks and set formatting
+                  \parskip=0.4\baselineskip
+                  \parindent=2em
+                  \textbf{【详解】}~\l__qmeta_explain_tl
+                  \group_end:
+                  \par
+                }
 
               \bool_if:NT \l__qmeta_show_source_bool
                 {

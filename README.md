@@ -19,8 +19,12 @@
 - **统一表格环境**：
   - `examtableboxed`（试卷）：带竖线的框线表格，符合试卷传统格式
   - `examtable`（讲义）：booktabs 专业三线表，现代化排版
+- **详解格式化增强（v3.2）**：
+  - 支持段落分隔：用空行分段，自动首行缩进
+  - `\exstep` 步骤标记：自动编号 `(1), (2), ...` 或自定义标签
+  - 改善长解析可读性，支持多解法标注
 
-详见 [`features.md`](./features.md)。
+详见 [`features.md`](./features.md) 和 [`docs/EXPLAIN_QUICK_REF.md`](./docs/EXPLAIN_QUICK_REF.md)。
 
 ---
 
