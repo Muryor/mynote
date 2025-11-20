@@ -152,6 +152,13 @@
 }
 
 % =========================
+% 表格美化支持
+% =========================
+\RequirePackage{booktabs}     % 专业表格线条
+% 注：siunitx 与当前 TeX Live 2025 版本存在兼容性问题，暂时不加载
+% 需要时可直接在表格中使用文本单位，如 "m/s" 而非 \si{m/s}
+
+% =========================
 % TikZ 绘图支持
 % =========================
 \RequirePackage{xcolor}       % 颜色支持 (TikZ 需要)
@@ -171,6 +178,31 @@
 
 % 加载统一样式
 \input{settings/tikz_exam_style.tex}
+
+% =========================
+% 统一表格环境
+% =========================
+% examtable：无竖线的 booktabs 风格（用于讲义）
+\newenvironment{examtable}[1]
+  {\begin{center}\small
+   \setlength{\tabcolsep}{6pt}
+   \renewcommand{\arraystretch}{1.2}
+   \begin{tabular}{#1}
+   \toprule}
+  {\bottomrule
+   \end{tabular}
+   \end{center}}
+
+% examtableboxed：带竖线的框线表格（用于试卷）
+\newenvironment{examtableboxed}[1]
+  {\begin{center}\small
+   \setlength{\tabcolsep}{6pt}% 列间距
+   \renewcommand{\arraystretch}{1.2}% 行距
+   \begin{tabular}{|#1|}
+   \hline}
+  {\hline
+   \end{tabular}
+   \end{center}}
 
 % =========================
 % MCQ safety net (global)

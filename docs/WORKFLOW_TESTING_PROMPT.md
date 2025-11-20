@@ -1,7 +1,11 @@
-# LaTeX 试卷流水线测试与开发指南 (v3.0)
+# LaTeX 试卷流水线测试与开发指南 (v3.2)
 
-> **文档版本**：v3.0（2025-11-20）  
-> **更新内容**：集成 meta 自检、预编译验证、智能错误分析、回归测试
+> **文档版本**：v3.2（2025-11-20）
+> **更新内容**：
+> - v3.2: 新增统一表格美化环境 examtableboxed（试卷带竖线）和 examtable（讲义 booktabs 风格）
+> - v3.1: 升级 ocr_to_examx.py 到 v1.7，增强题干检测、图片属性清理、空行处理
+> - v3.1: 改进 validate_tex.py，优化花括号检查、添加题干缺失检测
+> - v3.0: 集成 meta 自检、预编译验证、智能错误分析、回归测试
 
 ## 角色定位
 你是一名**本地 LaTeX 试卷流水线工程师**，负责执行和验证整个考试流水线，并能根据需要自动调用脚本、定位错误、修复格式，并产出稳定的 examx 结构化 TeX + PDF。
@@ -28,17 +32,21 @@
 
 ```text
 Word → Pandoc → Markdown
-     → ocr_to_examx.py (v1.6.4 含 meta 自检)
+     → ocr_to_examx.py (v1.7 🆕 增强版)
          ├─ 元信息一致性验证
          ├─ 【分析】过滤检查
+         ├─ 🆕 题干缺失检测
+         ├─ 🆕 图片属性残留清理
+         ├─ 🆕 \explain 空行自动处理
          └─ 问题日志生成 (debug/<slug>_issues.log)
      → examx TeX（含 IMAGE_TODO 占位）
-     
+
      ┌─────── 编译路径 ─────────┐
      │                          │
-     │ validate_tex.py          │  ← 预编译检查（可选）
+     │ validate_tex.py (🆕 改进) │  ← 预编译检查（可选）
      │   ├─ explain 空行检测    │
-     │   ├─ 括号平衡检查        │
+     │   ├─ 🆕 智能括号平衡检查  │
+     │   ├─ 🆕 题干缺失检测      │
      │   └─ 环境匹配验证        │
      │                          │
      → build.sh (v2.1)          │
@@ -180,15 +188,20 @@ python tools/images/process_images_to_tikz.py --mode convert --files <tex文件>
 - 如果没有 `--files`，默认处理 `content/exams/auto/*/converted_exam.tex`
 - **此工具将逐步被 export_image_jobs.py + apply_tikz_snippets.py 替代**
 
-#### `validate_tex.py`（新增 v3.0）
+#### `validate_tex.py`（v3.1 改进）
 
 **预编译语法检查工具**，在 LaTeX 编译前检测常见错误
 
+**🆕 v3.1 改进（2025-11-20）**：
+- ✅ **智能花括号检查**：移除数学定界符（`\left\{`、`\right\}` 等）后再检查，避免误报
+- ✅ **题干缺失检测**：检测 `\begin{question}` 后直接跟 `\item` 的情况
+
 **检查项目**：
 - ✅ `\explain` 宏中的段落分隔（双换行）- Runaway argument 根因
-- ✅ 花括号 `{}` 配对平衡
+- ✅ 🆕 智能花括号 `{}` 配对平衡（忽略数学定界符）
 - ✅ 数学定界符 `\(\)` 和 `\[\]` 配对
 - ✅ 环境 `\begin{}` / `\end{}` 平衡
+- ✅ 🆕 题目缺少题干检测
 
 **使用**：
 
@@ -204,9 +217,10 @@ VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
 
 ```text
 🔍 Validating /path/to/converted_exam.tex ...
-❌ Found 2 error(s):
+❌ Found 3 error(s):
   • Line 47: \explain macro contains paragraph breaks
   • Line 58: Unmatched closing brace '}'
+  • Line 123: Question starts with \item (missing stem) - 题目缺少题干，直接从小问开始
 ```
 
 **退出码**：
@@ -345,9 +359,16 @@ word_to_tex/scripts/preprocess_docx.sh \
 - `content/exams/auto/<前缀>/converted_exam.tex` - 精炼后的最终版本（含 IMAGE_TODO 占位）
 - `word_to_tex/output/figures/` - 提取的图片（如果有）
 
-### 1.3 `ocr_to_examx.py` v1.6.4 增强功能
+### 1.3 `ocr_to_examx.py` v1.7 增强功能
 
-**新增 meta 自检系统**：
+**🆕 v1.7 新增功能（2025-11-20）**：
+- ✅ **题干缺失检测**：自动检测题目是否缺少题干（直接从 `\item` 开始）
+- ✅ **图片属性残留清理**：自动删除 `height="..."` 和 `width="..."` 等 Markdown 残留
+- ✅ **小问编号格式统一**：不自动添加 `\mathrm`，使用普通文本 `(i)`、`(ii)` 等
+- ✅ **IMAGE_TODO 块优化**：生成后不添加额外空行，避免 `\explain` 参数提前结束
+- ✅ **\explain 空行自动处理**：将空行替换为 `\par`，避免 Runaway argument 错误
+
+**v1.6 meta 自检系统**：
 - ✅ 题目级 meta 一致性验证
 - ✅ 检测非法 `【分析】` 混入
 - ✅ Section 与题型要求验证（如单选题必须有答案）

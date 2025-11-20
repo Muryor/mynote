@@ -145,7 +145,57 @@
 
 ---
 
-## 5) Build matrix
+## 5) Unified Table Environments
+
+项目提供两套表格环境，分别用于试卷和讲义：
+
+### examtableboxed（试卷专用）
+
+带竖线的框线表格，符合试卷传统格式要求：
+
+```tex
+\begin{examtableboxed}{c|c|c|c}
+级数 & 名称 & 风速大小（单位：m/s）\\
+\hline
+2 & 轻风 & 1.6--3.3 \\
+\hline
+3 & 微风 & 3.4--5.4 \\
+\hline
+4 & 和风 & 5.5--7.9 \\
+\end{examtableboxed}
+```
+
+**特点**：
+- 外框和列间都有竖线（`|c|c|c|`）
+- 使用 `\hline` 作为水平线
+- 自动居中、小字体、统一列间距和行高
+- 适合数据表、统计表、对照表等
+
+### examtable（讲义专用）
+
+无竖线的 booktabs 专业三线表：
+
+```tex
+\begin{examtable}{cccc}
+$P(\chi^{2} \ge k)$ & 0.050 & 0.010 & 0.001 \\
+\midrule
+$k$ & 3.841 & 6.635 & 10.828 \\
+\end{examtable}
+```
+
+**特点**：
+- 无竖线，使用 `\toprule`/`\midrule`/`\bottomrule`
+- 现代化专业排版风格
+- 适合讲义、论文等正式文档
+
+**使用建议**：
+- 试卷（exam-zh 文档类）统一使用 `examtableboxed`
+- 讲义（article/ElegantBook 文档类）统一使用 `examtable`
+- 两种环境参数相同，切换时只需修改环境名称和线条命令
+
+---
+
+## 6) Build matrix
 
 ```bash
 ./build.sh exam teacher|student|both

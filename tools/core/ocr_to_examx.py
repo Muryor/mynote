@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-ocr_to_examx_v1.6.py - v1.6 P0 修复版
+ocr_to_examx_v1.7.py - v1.7 改进版
 
-🆕 v1.6 P0 修复（2025-11-19）：
+🆕 v1.7 改进（2025-11-20）：
+1. ✅ 题干检测与警告：检测缺少题干的题目（直接从 \item 开始）
+2. ✅ 清理 Markdown 图片属性残留：删除 height="..." 和 width="..." 残留
+3. ✅ 小问编号格式统一：不自动添加 \mathrm，使用普通文本
+4. ✅ IMAGE_TODO 块后不添加空行：优化格式
+5. ✅ \explain 中的空行自动处理：空行替换为 \par
+
+v1.6 P0 修复（2025-11-19）：
 1. ✅ 修复数组环境闭合错误（\right.\\) → \right.\)）
 2. ✅ 清理图片属性残留（{width="..." height="..."}）
 
@@ -28,9 +35,9 @@ v1.3 改进回顾：
 - 统一中英文标点
 - 添加自动验证功能
 
-版本：v1.6
+版本：v1.7
 作者：Claude
-日期：2025-11-19
+日期：2025-11-20
 """
 
 import re
@@ -41,7 +48,7 @@ from typing import List, Dict, Tuple, Optional
 
 # ==================== 配置 ====================
 
-VERSION = "v1.6"
+VERSION = "v1.7"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -297,20 +304,25 @@ def fix_array_boundaries(text: str) -> str:
 
 def clean_residual_image_attrs(text: str) -> str:
     r"""清理残留的图片属性块
-    
+
+    🆕 v1.7 增强：清理更多 Markdown 图片属性残留
     🆕 v1.6 P0 修复：清理 Pandoc 生成的图片属性
     """
     # 清理单独成行的属性块开始
     text = re.sub(r'^\s*\{width="[^"]*"\s*$', '', text, flags=re.MULTILINE)
     # 清理单独成行的属性块结束
     text = re.sub(r'^\s*height="[^"]*"\}\s*$', '', text, flags=re.MULTILINE)
-    
+
     # 清理跨行的属性块
     text = re.sub(r'\{width="[^"]*"\s*\n\s*height="[^"]*"\}', '', text, flags=re.MULTILINE)
-    
+
     # 清理单行完整属性块
     text = re.sub(r'\{width="[^"]*"\s+height="[^"]*"\}', '', text)
-    
+
+    # 🆕 v1.7：清理残留的 height="..." 和 width="..." （带可能的尾随 }）
+    text = re.sub(r'height="[^"]*"[}]*', '', text)
+    text = re.sub(r'width="[^"]*"[}]*', '', text)
+
     return text
 
 
@@ -551,10 +563,12 @@ def split_long_lines_in_explain(text: str, max_length: int = 800) -> str:
 def remove_par_breaks_in_explain(text: str) -> str:
     r"""移除 \explain{...} 中的空段落（严格基于大括号计数）
     解决 TeX 中段落断开导致的 "Paragraph ended before \explain code was complete"。
+
+    🆕 v1.7：将空行替换为 \par 而不是删除
     """
     # 规范化换行符
     text = text.replace("\r\n", "\n").replace("\r", "\n")
-    
+
     out = []
     i = 0
     n = len(text)
@@ -572,15 +586,15 @@ def remove_par_breaks_in_explain(text: str) -> str:
                     buf.append(text[i:i+2])
                     i += 2
                     continue
-                # 处理换行：若遇到空段落（\n\s*\n），压缩为单换行
+                # 🆕 v1.7：处理换行：若遇到空段落（\n\s*\n），替换为 \par
                 if ch == '\n':
                     # 查看是否为空段落
                     j = i + 1
                     while j < n and text[j] in ' \t':
                         j += 1
                     if j < n and text[j] == '\n':
-                        # 跳过第二个换行前的空白，只保留一个换行
-                        buf.append('\n')
+                        # 将空段落替换为 \par
+                        buf.append('\n\\par\n')
                         i = j + 1
                         continue
                 if ch == '{':
@@ -1424,19 +1438,24 @@ def convert_choices(content: str) -> Tuple[str, List[str], str]:
 
 
 def handle_subquestions(content: str) -> str:
-    """处理解答题的小题编号"""
+    r"""处理解答题的小题编号
+
+    🆕 v1.7：统一小问编号格式，不添加 \mathrm
+    """
     if not re.search(r'\(\d+\)', content):
         return content
-    
+
     subquestions = re.findall(r'\((\d+)\)(.*?)(?=\(\d+\)|$)', content, re.DOTALL)
-    
+
     if len(subquestions) < 2:
         return content
-    
+
     result_lines = []
     for num, content_text in subquestions:
+        # 🆕 v1.7：使用普通文本格式，不添加 \mathrm
+        # 格式：(1) 或 (i) 等，保持原样
         result_lines.append(f"\\item {content_text.strip()}")
-    
+
     return '\n'.join(result_lines)
 
 
@@ -1541,6 +1560,8 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
 def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = False) -> str:
     """生成新格式的 IMAGE_TODO 占位块
 
+    🆕 v1.7：IMAGE_TODO 块后不添加额外空行
+
     Args:
         img: 图片信息字典，包含 id, path, width, inline, question_index, sub_index
         stem_text: 题干文本，用于提取上下文
@@ -1557,10 +1578,42 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
     sub_idx = img.get('sub_index', 1)
 
     # 提取上下文（简化版：取图片前后各50个字符）
-    context_before = img.get('context_before', '').strip()
-    context_after = img.get('context_after', '').strip()
+    # 清理 context 内容：去除 LaTeX 命令，限制长度，检查括号平衡
+    def clean_context(text: str, max_len: int = 50) -> str:
+        r"""清理 CONTEXT 注释内容
 
-    # 构建占位块
+        - 去除 LaTeX 命令（\xxx{...}）
+        - 去除数学定界符 \(...\) 和 \[...\]
+        - 截断到最多 max_len 字符
+        - 检查括号平衡，如果不平衡则返回空字符串
+        """
+        if not text:
+            return ""
+
+        # 去除 LaTeX 命令（\xxx{...}）
+        text = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', '', text)
+        # 去除数学定界符
+        text = re.sub(r'\\\(|\\\)|\\\[|\\\]', '', text)
+        # 去除多余的空格
+        text = re.sub(r'\s+', ' ', text).strip()
+
+        # 截断到最多 max_len 字符
+        if len(text) > max_len:
+            text = text[:max_len] + '...'
+
+        # 检查括号平衡
+        open_count = text.count('{')
+        close_count = text.count('}')
+        if open_count != close_count:
+            # 括号不平衡，返回空字符串避免编译错误
+            return ""
+
+        return text
+
+    context_before = clean_context(img.get('context_before', '').strip())
+    context_after = clean_context(img.get('context_after', '').strip())
+
+    # 🆕 v1.7：构建占位块，IMAGE_TODO_END 后不添加额外的 \n
     if is_inline:
         # 内联图片：不使用 center 环境
         block = (
@@ -1575,7 +1628,7 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
             "\\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]\n"
             f"  % TODO: AI_AGENT_REPLACE_ME (id={img_id})\n"
             "\\end{tikzpicture}\n"
-            f"% IMAGE_TODO_END id={img_id}\n"
+            f"% IMAGE_TODO_END id={img_id}"  # 🆕 v1.7：不添加尾随 \n
         )
     else:
         # 独立图片：使用 center 环境
@@ -1593,7 +1646,7 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
             f"  % TODO: AI_AGENT_REPLACE_ME (id={img_id})\n"
             "\\end{tikzpicture}\n"
             f"% IMAGE_TODO_END id={img_id}\n"
-            "\\end{center}"
+            "\\end{center}"  # 🆕 v1.7：不添加尾随 \n
         )
 
     return block
@@ -1784,7 +1837,8 @@ def detect_question_issues(
     meta: Optional[Dict[str, str]] = None,
     section_label: Optional[str] = None,
 ) -> List[str]:
-    """🆕 v1.6.4：检测题目中的可疑模式（增强版）
+    """🆕 v1.7：检测题目中的可疑模式（增强版）
+    🆕 v1.6.4：检测题目中的可疑模式（增强版）
 
     Args:
         slug: 试卷 slug（如 "nanjing_2026_sep"）
@@ -1798,6 +1852,22 @@ def detect_question_issues(
         问题列表
     """
     issues: List[str] = []
+
+    # ---------- 🆕 v1.7：检测缺少题干的题目 ----------
+    # 检查题目是否直接从 \item 开始（缺少题干）
+    # 在 \begin{question} 后，如果第一个非空行是 \item 或 \begin{choices}，则缺少题干
+    question_content = tex_block
+    if r'\begin{question}' in question_content:
+        # 提取 \begin{question} 和 \begin{choices} 之间的内容
+        match = re.search(r'\\begin\{question\}(.*?)(?:\\begin\{choices\}|\\end\{question\})',
+                         question_content, re.DOTALL)
+        if match:
+            content_between = match.group(1).strip()
+            # 如果内容为空或只有注释，则缺少题干
+            # 移除注释行
+            content_no_comments = re.sub(r'^\s*%.*$', '', content_between, flags=re.MULTILINE).strip()
+            if not content_no_comments or content_no_comments.startswith(r'\item'):
+                issues.append("⚠️ CRITICAL: 题目缺少题干，直接从 \\item 开始 - 请在 Markdown 中补充题干内容")
 
     # ---------- 1) 原有检查逻辑（保留 & 复刻） ----------
 
@@ -1878,6 +1948,14 @@ def detect_question_issues(
         # 这里只做简单文本级检测：如果 raw_block 里有"【分析】"且 meta.explain 为空，则额外提示
         if "【分析】" in raw_block and not explain:
             issues.append("Raw block contains 【分析】 but meta.explain is empty – this question is treated as 'no explain'")
+
+        # 2.5 检测超长 explain 内容（>500行）
+        if explain:
+            explain_lines = explain.count('\n') + 1
+            if explain_lines > 500:
+                issues.append(f"⚠️  LONG_EXPLAIN: {explain_lines} lines (>500) – may cause conversion issues")
+            elif explain_lines > 200:
+                issues.append(f"Long explain: {explain_lines} lines (>200) – consider simplification")
 
     return issues
 

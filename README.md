@@ -16,6 +16,9 @@
 - **行内数学统一使用 `\(...\)`**：避免与 TikZ 坐标计算冲突
 - **字体回退链**：Inter → TeX Gyre Heros → Helvetica → Arial → Latin Modern Sans
 - **TikZ 图形支持**：使用 `\path coordinate[pos=t]` 语法计算中点，避免 `$(...)$` 冲突
+- **统一表格环境**：
+  - `examtableboxed`（试卷）：带竖线的框线表格，符合试卷传统格式
+  - `examtable`（讲义）：booktabs 专业三线表，现代化排版
 
 详见 [`features.md`](./features.md)。
 

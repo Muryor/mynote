@@ -72,9 +72,9 @@
 %% ============================================================
 \definecolor{HMain}{RGB}{40,140,90}   % main green
 \definecolor{HBack}{RGB}{245,251,247} % light background
-\definecolor{LegendGreen}{HTML}{2A776A}
-\definecolor{LegendGreenLight}{HTML}{E7F4F1}
-\definecolor{LegendMint}{HTML}{3BA58B}
+\definecolor{LegendGreen}{HTML}{FF8C42}         % 暖橙色（边框和标题条）
+\definecolor{LegendGreenLight}{HTML}{FFF5EE}   % 极淡橙色（背景）
+\definecolor{LegendMint}{HTML}{FF8C42}         % 暖橙色（标题背景）
 \definecolor{LegendOrange}{HTML}{F5B06A}
 
 %% ============================================================
@@ -82,7 +82,7 @@
 %% ============================================================
 \bool_if:NTF \l__handoutx_mint_bool
   {
-    % Mint theme: title bar with mint background
+    % Mint theme: title bar with warm orange background
     \tcbset{
       mygreen/.style={
         enhanced,
@@ -93,7 +93,7 @@
         fonttitle=\bfseries,
         attach~ boxed~ title~ to~ top~ left={xshift=2mm,yshift*=-2mm},
         boxed~ title~ style={frame~ code={},boxrule=0pt,sharp~ corners,colback=LegendMint},
-        boxrule=0.8pt,
+        boxrule=1.2pt,           % 边框加粗
         arc=2mm,
         left=3mm,
         right=3mm,
@@ -108,16 +108,16 @@
       mygreen/.style={
         enhanced,
         breakable,
-        colback=green!4,
-        colframe=green!45!black,
+        colback=orange!5,        % 极淡的暖橙色背景
+        colframe=orange!50,      % 明亮的橙色边框
         coltitle=white,
         fonttitle=\bfseries,
         title~ filled,
-        boxrule=0.8pt,
-        arc=2.5mm,
-        left=2mm,
-        right=2mm,
-        top=1.5mm,
+        boxrule=1.2pt,           % 边框粗细与试卷一致
+        arc=2mm,                 % 圆角与试卷一致
+        left=3mm,
+        right=3mm,
+        top=2mm,
         bottom=1.5mm,
         drop~ shadow=black!20,
         borderline={0.4pt}{0pt}{green!35!black},

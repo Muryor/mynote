@@ -311,6 +311,11 @@ compile() {
   local pdf_name="wrap-${TYPE}-${role}.pdf"
   if [[ -f "${OUT}/.aux/${pdf_name}" ]]; then
     mv "${OUT}/.aux/${pdf_name}" "${OUT}/${pdf_name}"
+    # 同时移动 synctex.gz 文件（用于 IDE 反向搜索）
+    local synctex_name="wrap-${TYPE}-${role}.synctex.gz"
+    if [[ -f "${OUT}/.aux/${synctex_name}" ]]; then
+      mv "${OUT}/.aux/${synctex_name}" "${OUT}/${synctex_name}"
+    fi
     echo "✅ PDF 已生成: ${OUT}/${pdf_name}"
     # Optional: remove stale last_error.log on success
     [[ -f "${OUT}/last_error.log" ]] && rm -f "${OUT}/last_error.log"

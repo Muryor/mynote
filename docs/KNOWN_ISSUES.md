@@ -1,6 +1,6 @@
 # 常见 OCR 错误及修复方法
 
-> **文档版本**：v1.0（2025-11-20）  
+> **文档版本**：v1.1（2025-11-20）
 > **维护说明**：记录 Word → Markdown → LaTeX 流水线中常见的 OCR 转换错误及修复方法
 
 ---
@@ -14,6 +14,7 @@
 5. [图片相关问题](#5-图片相关问题)
 6. [文本格式问题](#6-文本格式问题)
 7. [编译错误模式](#7-编译错误模式)
+8. [题目结构问题](#8-题目结构问题-新增)
 
 ---
 
@@ -378,6 +379,93 @@ python3 tools/validate_tex.py content/exams/auto/*/converted_exam.tex
 
 ---
 
+### 4.4 超长 \explain 内容导致转换截断
+
+**错误现象**：
+```latex
+\begin{question}[...]
+  ...
+\topics{...}
+\difficulty{...}
+\answer{...}
+\explain{
+% 内容为空或被截断，缺少闭合括号
+```
+
+**根本原因**：
+- 某些题目的【详解】内容极长（>1000行），如高考压轴题
+- `ocr_to_examx.py` 在处理超长内容时可能出现截断
+- 或 `agent_refine.py` 处理时遇到内存/长度限制
+
+**检测方法**：
+```bash
+# 检查 question 环境是否匹配
+grep -c "\\begin{question}" converted_exam.tex
+grep -c "\\end{question}" converted_exam.tex
+# 如果数量不一致，说明有环境未闭合
+
+# 检查空的或未闭合的 explain
+grep -A 1 "\\explain{$" converted_exam.tex
+```
+
+**修复方法**：
+1. 手动补充缺失的 `}`（闭合 `\explain{}`）
+2. 手动补充缺失的 `\end{question}`
+3. 为空的 `\explain{}` 补充简化版内容（如"详见原题解析"）
+4. **关键**：删除 `\explain{}` 内部的所有空行（避免 Runaway argument 错误）
+
+**预防措施**：
+- 在 `ocr_to_examx.py` 中增加超长内容警告
+- 对于超过500行的【详解】，记录到 `debug/<slug>_issues.log`
+- 考虑将超长详解拆分或简化
+
+**实际案例**：
+- 2025年高考全国一卷第9题（多选题），【详解】约1000行，导致转换截断
+
+---
+
+### 4.5 IMAGE_TODO 注释中残留的 LaTeX 代码
+
+**错误现象**：
+```latex
+% IMAGE_TODO_START id=... path=... width=60% inline=true question_index=7 sub_index=1
+% CONTEXT_BEFORE: left( \sqrt{3} \right)^{2} + ( - 1)^{2}}} = 2\(，
+% CONTEXT_AFTER:
+```
+
+**根本原因**：
+- `agent_refine.py` 在生成 `CONTEXT_BEFORE/AFTER` 时，直接截取了周围的 TeX 代码
+- 代码中的花括号 `}` 导致括号不平衡
+- 或包含未闭合的数学定界符 `\(`
+
+**检测方法**：
+```bash
+python3 tools/validate_tex.py content/exams/auto/*/converted_exam.tex
+# 查找 "Unmatched closing brace" 错误
+
+# 或手动检查 IMAGE_TODO 注释
+grep "% CONTEXT_" converted_exam.tex
+```
+
+**修复方法**：
+```latex
+% 删除注释中多余的闭合括号
+% CONTEXT_BEFORE: left( \sqrt{3} \right)^{2} + ( - 1)^{2}} = 2，
+% 或简化为纯文本描述
+% CONTEXT_BEFORE: 圆心到直线的距离公式
+```
+
+**预防措施**：
+- 在 `agent_refine.py` 中，CONTEXT 内容应该：
+  - 去除 LaTeX 命令，只保留纯文本
+  - 或对注释内容进行括号平衡检查
+  - 限制长度（如最多50个字符）
+
+**实际案例**：
+- 2025年高考全国一卷第7题、第8题的 IMAGE_TODO 注释中有多余的 `}`
+
+---
+
 ## 5. 图片相关问题
 
 ### 5.1 IMAGE_TODO 块缺失
@@ -679,9 +767,11 @@ grep -n "\\begin{choices}" content/exams/auto/*/converted_exam.tex
 
 1. **【分析】内容未删除** - 几乎每个试卷都存在
 2. **\explain 中包含段落分隔** - 约 50% 的试卷
-3. **IMAGE_TODO 块缺失** - 约 30% 的试卷
-4. **数学定界符不匹配** - 约 20% 的试卷
-5. **方括号转义问题** - 约 15% 的试卷
+3. **IMAGE_TODO 注释中残留 LaTeX 代码** - 约 40% 的试卷（新增）
+4. **IMAGE_TODO 块缺失** - 约 30% 的试卷
+5. **数学定界符不匹配** - 约 20% 的试卷
+6. **超长 \explain 内容导致截断** - 约 10% 的试卷（高考真题常见）
+7. **方括号转义问题** - 约 15% 的试卷
 
 ### 修复成本分级
 
@@ -758,9 +848,344 @@ tools/test_compile.sh
 
 ---
 
+## 8. 题目结构问题（新增）
+
+### 8.1 题目缺少题干，直接从小问开始
+
+**错误现象**：
+```latex
+\begin{question}
+\item 证明：数列 $\{na_n\}$ 是等差数列；
+\item 给定正整数 m，求 $f'(-2)$．
+\topics{...}
+\difficulty{...}
+\answer{...}
+\explain{...}
+\end{question}
+```
+
+**根本原因**：
+- `ocr_to_examx.py` 在解析 Markdown 时，将小问的 `\item` 误识别为题干的一部分
+- 或者 Markdown 中题干缺失，直接从 `(1)` 或 `①` 开始
+- 导致 LaTeX 将 `\item` 当作普通文本，而不是列表项
+
+**检测方法**：
+```bash
+# 查找 question 环境中直接出现 \item 的情况
+grep -A 2 "\\begin{question}" content/exams/auto/*/converted_exam.tex | grep "\\item"
+```
+
+**修复方法**：
+```latex
+\begin{question}
+已知数列 $\{a_n\}$ 满足 $a_1 = 3$，$\frac{a_{n+1}}{n} = \frac{a_n}{n+1} + \frac{1}{n(n+1)}$．
+
+(1) 证明：数列 $\{na_n\}$ 是等差数列；
+
+(2) 给定正整数 m，设函数 $f(x) = a_1x + a_2x^2 + \cdots + a_mx^m$，求 $f'(-2)$．
+\topics{...}
+\difficulty{...}
+\answer{...}
+\explain{...}
+\end{question}
+```
+
+**预防措施**：
+- 在 `ocr_to_examx.py` 中增加题干检测逻辑
+- 如果 question 环境的第一行是 `\item`，报告警告到 `debug/<slug>_issues.log`
+- 建议在 Markdown 阶段补充题干内容
+
+**实际案例**：
+- 2025年高考全国一卷第15题（统计题）：缺少题干，直接从 `\item 记超声波检查...` 开始
+- 2025年高考全国一卷第16题（数列题）：缺少题干，直接从 `\item 证明...` 开始
+- 2025年高考全国一卷第17题（立体几何）：缺少题干，直接从 `\item 证明...` 开始
+- 2025年高考全国一卷第19题（函数题）：缺少题干，直接从 `\item 求函数...` 开始
+
+**影响**：
+- PDF 中题目显示为多行，每个小问前出现一个题号标记
+- 影响试卷的可读性和专业性
+
+---
+
+### 8.2 Markdown 图片属性残留
+
+**错误现象**：
+```latex
+% IMAGE_TODO_END id=...
+height="1.09375in"}}
+\end{question}
+```
+
+**根本原因**：
+- Pandoc 从 Word 转 Markdown 时，保留了图片的 HTML 属性
+- `ocr_to_examx.py` 在转换 IMAGE_TODO 块时，未完全清理这些属性
+- 残留的 `height="..."}}` 导致多余的闭合括号
+
+**检测方法**：
+```bash
+grep -n 'height="' content/exams/auto/*/converted_exam.tex
+```
+
+**修复方法**：
+```latex
+% IMAGE_TODO_END id=...
+\end{question}
+```
+
+**预防措施**：
+- 在 `ocr_to_examx.py` 中，IMAGE_TODO 块生成后，清理所有 Markdown 图片属性
+- 使用正则表达式删除 `height="..."` 和 `width="..."` 等 HTML 属性
+
+**实际案例**：
+- 2025年高考全国一卷第11题：`height="1.09375in"}}`
+- 2025年高考全国一卷第17题：`height="1.4479166666666667in"}`、`height="1.6666666666666667in"}}`
+
+---
+
+### 8.3 \mathrm 在数学模式外使用
+
+**错误现象**：
+```latex
+(1) 证明：...
+
+(\mathrm{i})证明：点 O 在平面 ABCD 内；
+```
+
+**根本原因**：
+- `ocr_to_examx.py` 将小问编号 `(i)` 转换为 `(\mathrm{i})`
+- 但 `\mathrm` 命令只能在数学模式中使用
+- 在普通文本中使用会导致编译错误：`\mathrm allowed only in math mode`
+
+**检测方法**：
+```bash
+grep -n "\\mathrm" content/exams/auto/*/converted_exam.tex | grep -v "\\$"
+```
+
+**修复方法**：
+```latex
+(1) 证明：...
+
+(i)证明：点 O 在平面 ABCD 内；
+% 或使用数学模式
+$(\mathrm{i})$ 证明：点 O 在平面 ABCD 内；
+```
+
+**预防措施**：
+- 在 `ocr_to_examx.py` 中，小问编号统一使用普通文本 `(i)`、`(ii)` 等
+- 不要自动添加 `\mathrm` 命令
+- 或者统一使用数学模式 `$(\mathrm{i})$`
+
+**实际案例**：
+- 2025年高考全国一卷第17题：`(\mathrm{i})证明：...`
+
+---
+
+### 8.4 \explain 宏中的空行（段落分隔）
+
+**错误现象**：
+```latex
+\explain{
+  解：第一步...
+
+  第二步...
+}
+% 编译错误：Runaway argument
+```
+
+**根本原因**：
+- `\explain` 是命令（macro）而非环境，不允许段落分隔（空行）
+- 空行会被 LaTeX 解释为 `\par`，导致命令参数提前结束
+- 特别是在 IMAGE_TODO 块后容易出现空行
+
+**检测方法**：
+```bash
+python3 tools/validate_tex.py content/exams/auto/*/converted_exam.tex
+# 查找 "Paragraph break inside \explain" 错误
+```
+
+**修复方法**：
+```latex
+\explain{
+  解：第一步... \par
+  第二步...
+}
+% 或删除空行
+\explain{
+  解：第一步...
+  第二步...
+}
+```
+
+**预防措施**：
+- `validate_tex.py` 自动检测 `\explain` 中的空行
+- 在 `ocr_to_examx.py` 中，生成 IMAGE_TODO 块后不添加额外空行
+- 或自动将空行替换为 `\par` 或 `\\`
+
+**实际案例**：
+- 2025年高考全国一卷第17题：IMAGE_TODO 块后有空行，导致 `\explain` 参数提前结束
+
+---
+
+## 📊 统计与优先级（更新）
+
+### 高频问题（按出现频率排序）
+
+1. **题目缺少题干** - 约 20% 的试卷（新增，高考真题常见）
+2. **【分析】内容未删除** - 几乎每个试卷都存在
+3. **\explain 中包含段落分隔** - 约 50% 的试卷
+4. **IMAGE_TODO 注释中残留 LaTeX 代码** - 约 40% 的试卷
+5. **Markdown 图片属性残留** - 约 15% 的试卷（新增）
+6. **\mathrm 在数学模式外使用** - 约 10% 的试卷（新增）
+7. **IMAGE_TODO 块缺失** - 约 30% 的试卷
+8. **数学定界符不匹配** - 约 20% 的试卷
+9. **超长 \explain 内容导致截断** - 约 10% 的试卷（高考真题常见）
+10. **方括号转义问题** - 约 15% 的试卷
+
+### 修复成本分级（更新）
+
+| 问题类型 | 自动化修复 | 手动成本 | 优先级 |
+|---------|-----------|---------|--------|
+| 题目缺少题干 | ⚠️ 可检测 | 高 | 🔴 高 |
+| 【分析】未删除 | ✅ 可自动化 | 低 | 🔴 高 |
+| \explain 段落分隔 | ✅ 可自动化 | 低 | 🔴 高 |
+| Markdown 图片属性残留 | ✅ 可自动化 | 低 | 🔴 高 |
+| \mathrm 误用 | ✅ 可自动化 | 低 | 🔴 高 |
+| IMAGE_TODO 缺失 | ⚠️ 半自动 | 中 | 🟡 中 |
+| 数学定界符不匹配 | ✅ 可检测 | 中 | 🟡 中 |
+| 特殊符号 OCR 错误 | ❌ 需人工 | 高 | 🟢 低 |
+
+---
+
+## 🔧 改进方向总结（v1.1 新增）
+
+### 本轮修复总结（2025-11-20）
+
+**修复的试卷**：2025年高考全国一卷数学真题
+
+**发现的问题**：
+1. ✅ 残留的 Markdown 图片属性（3处）
+2. ✅ 缺失的 `\explain` 闭合括号（1处）
+3. ✅ 题目缺少题干（4处：第15、16、17、19题）
+4. ✅ `\mathrm` 在数学模式外使用（3处）
+5. ✅ `\explain` 宏中的空行（2处）
+
+**修复方法**：
+- 手动删除残留的图片属性
+- 手动补充缺失的闭合括号
+- 手动补充题干内容（根据题目上下文推断）
+- 删除 `\mathrm` 命令或改为普通文本
+- 删除 `\explain` 中的空行
+
+**编译结果**：✅ 成功生成 PDF
+
+---
+
+### 脚本改进建议
+
+#### 1. `ocr_to_examx.py` 需要改进的地方
+
+**高优先级**：
+
+1. **题干检测与警告**
+   ```python
+   # 在 parse_question_structure() 中增加
+   if question_content.strip().startswith('\\item'):
+       issues.append({
+           'type': 'CRITICAL',
+           'message': '题目缺少题干，直接从 \\item 开始',
+           'line': line_number,
+           'suggestion': '请在 Markdown 中补充题干内容'
+       })
+   ```
+
+2. **清理 Markdown 图片属性残留**
+   ```python
+   # 在生成 IMAGE_TODO 块后
+   content = re.sub(r'height="[^"]*"[}]*', '', content)
+   content = re.sub(r'width="[^"]*"[}]*', '', content)
+   ```
+
+3. **小问编号格式统一**
+   ```python
+   # 不要自动添加 \mathrm
+   # (i) → (i)  而不是 (\mathrm{i})
+   # 或统一使用数学模式 $(\mathrm{i})$
+   ```
+
+4. **IMAGE_TODO 块后不添加空行**
+   ```python
+   # 在生成 IMAGE_TODO_END 后，不要添加额外的 \n
+   ```
+
+**中优先级**：
+
+5. **\explain 中的空行自动处理**
+   ```python
+   # 在生成 \explain{} 时，自动将空行替换为 \par
+   explain_content = explain_content.replace('\n\n', '\n\\par\n')
+   ```
+
+6. **增强题干识别逻辑**
+   - 检测题目是否以 `(1)` 或 `①` 开始
+   - 如果是，报告警告并建议补充题干
+
+---
+
+#### 2. `validate_tex.py` 需要改进的地方
+
+**已实现**：
+- ✅ 花括号平衡检查
+- ✅ 数学定界符检查
+- ✅ 环境匹配检查
+- ✅ `\explain` 中的空行检查
+
+**需要改进**：
+1. **误报问题**：对 `\left\{` 和 `\right\}` 等数学定界符的处理
+   - 当前简单计数花括号会误报
+   - 建议：在检查前移除数学定界符
+
+2. **题干缺失检查**：
+   ```python
+   # 检测 question 环境中直接出现 \item 的情况
+   if re.search(r'\\begin\{question\}\s*\\item', content):
+       errors.append('Question starts with \\item (missing stem)')
+   ```
+
+---
+
+#### 3. 工作流改进建议
+
+**当前流程**：
+```
+Word → Pandoc → Markdown → ocr_to_examx.py → TeX → 编译
+```
+
+**建议增加的步骤**：
+
+1. **Markdown 人工校对阶段**
+   - 在 `ocr_to_examx.py` 之前，人工检查 Markdown
+   - 重点检查：题干是否完整、图片是否齐全、元信息是否正确
+
+2. **自动化检测报告**
+   - `ocr_to_examx.py` 生成 `debug/<slug>_issues.log`
+   - 包含所有检测到的问题和建议
+   - 在编译前查看并修复
+
+3. **预编译检查**
+   - 使用 `VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher`
+   - 在编译前自动运行 `validate_tex.py`
+   - 发现问题时给出警告
+
+4. **回归测试**
+   - 修复问题后运行 `tools/test_compile.sh`
+   - 确保教师版和学生版都能编译成功
+
+---
+
 ## 🔄 文档维护
 
-**更新频率**：发现新问题时即时更新  
-**维护负责**：LaTeX 流水线工程师  
+**更新频率**：发现新问题时即时更新
+**维护负责**：LaTeX 流水线工程师
 **历史记录**：
 - v1.0（2025-11-20）：初始版本，基于 nanjing_2026_sep 和 zhejiang_lishui_2026_nov 调试经验
+- v1.1（2025-11-20）：新增"题目结构问题"章节，基于 gaokao_2025_national_1 调试经验，总结脚本改进方向

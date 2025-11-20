@@ -52,23 +52,35 @@ class TeXValidator:
                 )
 
     def check_brace_balance(self) -> None:
-        """检查全局花括号配对情况（只做粗略统计 + 简单定位）"""
+        """检查全局花括号配对情况（移除数学定界符后再检查，避免误报）"""
         content = self._read_content()
+
+        # 移除数学定界符，避免误报 \left\{ 和 \right\} 等
+        content_cleaned = content
+        content_cleaned = re.sub(r'\\left\\{', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\}', '', content_cleaned)
+        content_cleaned = re.sub(r'\\left\\[', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\]', '', content_cleaned)
+        content_cleaned = re.sub(r'\\left\\(', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\)', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\.', '', content_cleaned)
+        content_cleaned = re.sub(r'\\left\\.', '', content_cleaned)
+
         stack: List[int] = []
 
-        for i, ch in enumerate(content):
+        for i, ch in enumerate(content_cleaned):
             if ch == "{":
                 stack.append(i)
             elif ch == "}":
                 if not stack:
-                    line_no = content[:i].count("\n") + 1
+                    line_no = content_cleaned[:i].count("\n") + 1
                     self.errors.append(f"Line {line_no}: Unmatched closing brace '}}'")
                 else:
                     stack.pop()
 
         # 报告剩余未闭合的若干 '{'
         for pos in stack[-5:]:
-            line_no = content[:pos].count("\n") + 1
+            line_no = content_cleaned[:pos].count("\n") + 1
             self.errors.append(f"Line {line_no}: Unmatched opening brace '{{'")
 
     def check_math_delimiters(self) -> None:
@@ -111,6 +123,23 @@ class TeXValidator:
                     f"Environment '{env}' is unbalanced: {abs(count)} {kind}"
                 )
 
+    def check_question_missing_stem(self) -> None:
+        """检查题目是否缺少题干（直接从 \\item 开始）"""
+        content = self._read_content()
+
+        # 检测 \begin{question} 后直接跟 \item 的情况
+        pattern = re.compile(
+            r"\\begin\{question\}\s*\n\s*\\item",
+            re.MULTILINE
+        )
+
+        for match in pattern.finditer(content):
+            line_no = content[:match.start()].count("\n") + 1
+            self.errors.append(
+                f"Line {line_no}: Question starts with \\item (missing stem) - "
+                f"题目缺少题干，直接从小问开始"
+            )
+
     # ---------- 主入口 ----------
 
     def validate(self) -> bool:
@@ -124,6 +153,7 @@ class TeXValidator:
         self.check_brace_balance()
         self.check_math_delimiters()
         self.check_environment_balance()
+        self.check_question_missing_stem()
 
         if self.errors:
             print(f"\n❌ Found {len(self.errors)} error(s):")
