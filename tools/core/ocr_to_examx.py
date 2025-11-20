@@ -1720,10 +1720,25 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
             q_tex = build_question_tex(stem, options, meta, images, sec_label,
                                       question_index=q_index, slug=slug)
 
-            # 🆕 v1.6.3：检测问题并记录日志
+            # 🆕 v1.6.4：检测问题并记录日志（传入 meta & section_label）
             if enable_issue_detection and slug:
-                issues = detect_question_issues(slug, q_index, raw_block, q_tex)
-                append_issue_log(slug, q_index, raw_block, q_tex, issues)
+                issues = detect_question_issues(
+                    slug=slug,
+                    q_index=q_index,
+                    raw_block=raw_block,
+                    tex_block=q_tex,
+                    meta=meta,
+                    section_label=sec_label,
+                )
+                append_issue_log(
+                    slug=slug,
+                    q_index=q_index,
+                    raw_block=raw_block,
+                    tex_block=q_tex,
+                    issues=issues,
+                    meta=meta,
+                    section_label=sec_label,
+                )
 
             out_lines.append("")
             out_lines.append(q_tex)
@@ -1761,55 +1776,122 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
 # ==================== 🆕 v1.6.3 新增：问题检测与日志系统 ====================
 
-def detect_question_issues(slug: str, q_index: int, raw_block: str, tex_block: str) -> List[str]:
-    """🆕 v1.6.3：检测题目中的可疑模式
+def detect_question_issues(
+    slug: str,
+    q_index: int,
+    raw_block: str,
+    tex_block: str,
+    meta: Optional[Dict[str, str]] = None,
+    section_label: Optional[str] = None,
+) -> List[str]:
+    """🆕 v1.6.4：检测题目中的可疑模式（增强版）
 
     Args:
         slug: 试卷 slug（如 "nanjing_2026_sep"）
         q_index: 题号（从 1 开始）
         raw_block: 原始 Markdown 片段
         tex_block: 生成的 TeX 片段
+        meta: 解析得到的元信息字典（答案、难度、知识点、解析等）
+        section_label: 当前大题标题（如 "单选题"、"多选题" 等）
 
     Returns:
         问题列表
     """
-    issues = []
+    issues: List[str] = []
 
-    # 1) 检测 meta 形式的【分析】（不应该出现）
+    # ---------- 1) 原有检查逻辑（保留 & 复刻） ----------
+
+    # 1.1 检测 meta 形式的【分析】（不应该出现）
     if "【分析】" in raw_block and "【分析】" in tex_block:
         issues.append("Contains meta 【分析】 in both raw and tex (should be discarded)")
     elif "【分析】" in tex_block:
         issues.append("Contains meta 【分析】 in tex (should be discarded)")
 
-    # 2) 检测 *$x$* 或其他星号+math 模式
+    # 1.2 检测 *$x$* 或其他 star + math 模式
     if re.search(r'\*\s*\$', tex_block) or re.search(r'\$\s*\*', tex_block):
         issues.append("Star-emphasis around inline math, e.g. *$x$*")
 
-    # 3) 检测空 $$ 或 $$$x$ 模式
+    # 1.3 检测空 $$ 或形如 $$\(
     if re.search(r'\$\s*\$', tex_block):
-        issues.append("Empty inline math $$")
+        issues.append("Empty inline/ display math $$")
     if re.search(r'\$\s*\$\s*\\\(', tex_block):
         issues.append("Suspicious pattern $$\\(")
 
-    # 4) 检测行内 math 分隔符数量明显不匹配
+    # 1.4 检测行内 math 分隔符数量明显不匹配
     open_count = tex_block.count(r'\(')
     close_count = tex_block.count(r'\)')
     if open_count != close_count:
-        issues.append(f"Unbalanced inline math delimiters: \\( {open_count} vs \\) {close_count}")
+        issues.append(f"Unbalanced inline math delimiters: ${open_count} vs$ {close_count}")
 
-    # 5) 检测全角括号残留
+    # 1.5 检测全角括号残留
     if '（' in tex_block or '）' in tex_block:
         issues.append("Fullwidth brackets （）found in tex")
 
-    # 6) 检测"故选"残留
+    # 1.6 检测"故选"残留
     if re.search(r'故选[:：][ABCD]+', tex_block):
         issues.append("'故选' pattern found in tex")
+
+    # ---------- 2) 新增：基于 meta 的一致性检查 ----------
+
+    if meta is not None:
+        # 辅助函数：安全取值并 strip
+        def _get(key: str) -> str:
+            return (meta.get(key) or "").strip()
+
+        answer = _get("answer")
+        difficulty = _get("difficulty")
+        topics = _get("topics")
+        explain = _get("explain")
+        analysis = _get("analysis")
+
+        # 2.1 检查"分析"字段是否仍然存在（按规范应丢弃，仅允许作为中间态，而不应写入 TeX）
+        if analysis:
+            issues.append("Meta contains 'analysis' field (【分析】) – it should not be used in output")
+
+        # 2.2 检查 section/大题 与答案必需性
+        sec = section_label or ""
+        is_choice_section = ("单选" in sec) or ("多选" in sec)
+
+        # 对选择题，小题通常必须有答案
+        if is_choice_section and not answer:
+            issues.append("Choice question in section '{0}' has no 【答案】 meta".format(sec or "?"))
+
+        # 对于非选择题，答案缺失不一定是致命错误，但可以提示
+        if not is_choice_section and not answer:
+            issues.append("Question has no 【答案】 meta (section='{0}')".format(sec or "?"))
+
+        # 2.3 meta 与 TeX 的映射一致性
+        has_answer_macro = "\\answer{" in tex_block
+        has_explain_macro = "\\explain{" in tex_block
+
+        if answer and not has_answer_macro:
+            issues.append("Meta has answer but TeX is missing \\answer{}")
+        if has_answer_macro and not answer:
+            issues.append("TeX has \\answer{} but meta.answer is empty")
+
+        if explain and not has_explain_macro:
+            issues.append("Meta has explain but TeX is missing \\explain{}")
+        if has_explain_macro and not explain:
+            issues.append("TeX has \\explain{} but meta.explain is empty")
+
+        # 2.4 确保 \\explain{} 不会偷偷吃进【分析】内容
+        # 这里只做简单文本级检测：如果 raw_block 里有"【分析】"且 meta.explain 为空，则额外提示
+        if "【分析】" in raw_block and not explain:
+            issues.append("Raw block contains 【分析】 but meta.explain is empty – this question is treated as 'no explain'")
 
     return issues
 
 
-def append_issue_log(slug: str, q_index: int, raw_block: str, tex_block: str, issues: List[str]) -> None:
-    """🆕 v1.6.3：将问题记录到 debug 日志
+def append_issue_log(
+    slug: str,
+    q_index: int,
+    raw_block: str,
+    tex_block: str,
+    issues: List[str],
+    meta: Optional[Dict[str, str]] = None,
+    section_label: Optional[str] = None,
+) -> None:
+    """🆕 v1.6.4：将问题记录到 debug 日志（增强版）
 
     Args:
         slug: 试卷 slug
@@ -1817,6 +1899,8 @@ def append_issue_log(slug: str, q_index: int, raw_block: str, tex_block: str, is
         raw_block: 原始 Markdown 片段
         tex_block: 生成的 TeX 片段
         issues: 问题列表
+        meta: 解析得到的元信息字典（可选）
+        section_label: 当前大题标题（如 "单选题" / "多选题" 等）
     """
     if not issues:
         return
@@ -1826,20 +1910,37 @@ def append_issue_log(slug: str, q_index: int, raw_block: str, tex_block: str, is
     log_file = debug_dir / f"{slug}_issues.log"
 
     with log_file.open("a", encoding="utf-8") as f:
-        f.write(f"\n{'='*80}\n")
-        f.write(f"# Question {q_index}\n")
-        f.write(f"{'='*80}\n\n")
+        f.write(f"{'='*80}\n")
+        f.write(f"# Q{q_index} issues (section={section_label or 'N/A'})\n\n")
+
+        # 简要 meta 概览（如果有）
+        if meta is not None:
+            # 只展示关键信息，避免日志太冗长
+            summary_keys = ["answer", "difficulty", "topics", "explain", "analysis"]
+            f.write("## Meta summary:\n")
+            for key in summary_keys:
+                if key in meta:
+                    val = (meta.get(key) or "").strip()
+                    if len(val) > 80:
+                        val_display = val[:77] + "..."
+                    else:
+                        val_display = val
+                    f.write(f"- {key}: {val_display}\n")
+            f.write("\n")
+
         f.write("## Issues:\n")
         for issue in issues:
             f.write(f"- {issue}\n")
+
         f.write("\n## Raw Markdown:\n")
         f.write("```markdown\n")
         f.write(raw_block.strip() + "\n")
         f.write("```\n\n")
+
         f.write("## Generated TeX:\n")
         f.write("```tex\n")
         f.write(tex_block.strip() + "\n")
-        f.write("```\n")
+        f.write("```\n\n")
 
 
 def init_issue_log(slug: str) -> None:

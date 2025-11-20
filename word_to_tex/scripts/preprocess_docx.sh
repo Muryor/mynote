@@ -38,8 +38,11 @@ echo "━━━━━━━━━━━━━━━━━━━━━━━━�
 # Step 1: Convert docx to markdown
 echo "步骤 1/5: Pandoc 转换 docx → markdown"
 RAW_MD="$OUTPUT_DIR/${OUTPUT_NAME}_raw.md"
-pandoc "$INPUT_DOCX" -o "$RAW_MD" --extract-media="$OUTPUT_DIR/figures/raw"
+# 使用文件名作为图片输出目录，避免覆盖
+FIGURES_DIR="$OUTPUT_DIR/figures/${OUTPUT_NAME}"
+pandoc "$INPUT_DOCX" -o "$RAW_MD" --extract-media="$FIGURES_DIR"
 echo "✅ 生成: $RAW_MD"
+echo "✅ 图片提取到: $FIGURES_DIR/media/"
 
 # Step 2: Preprocess markdown (add # to section headers, preserve images)
 echo "步骤 2/5: 预处理 markdown（Python 安全处理）"

@@ -145,6 +145,40 @@ extract_errors() {
   echo "--- Log tail (last 80 lines) ---" >> "$error_log"
   tail -n 80 "$logfile" >> "$error_log" || true
 
+  # 🆕 智能错误分析
+  {
+    echo "━━━ 智能错误分析 (高频模式) ━━━"
+    echo ""
+
+    if grep -q "Runaway argument" "$logfile"; then
+      echo "【错误类型】Runaway argument"
+      echo "【常见原因】"
+      echo "  1. \\explain{...} 中存在空行（连续两个换行会被 TeX 视为 \\par）"
+      echo "  2. 某个宏的参数块内花括号 { } 不平衡"
+      echo "  3. 数学环境 \\( / \\) 或 \\[ / \\] 未成对出现"
+      echo ""
+      echo "【建议操作】"
+      echo "  • 运行: VALIDATE_BEFORE_BUILD=1 ./build.sh ${TYPE} ${role}"
+      echo "    （会调用 tools/validate_tex.py 进行预检查）"
+      echo "  • 或单独运行: tools/locate_error.sh ${logfile}"
+      echo ""
+    fi
+
+    if grep -q "Missing \$inserted" "$logfile"; then
+      echo "【错误类型】Missing \$ inserted (数学模式缺失)"
+      echo "【建议】检查该行附近是否缺少 \$，或者把数学符号包在$ ... $ 中。"
+      echo ""
+    fi
+
+    if grep -q "Undefined control sequence" "$logfile"; then
+      echo "【错误类型】Undefined control sequence"
+      echo "【建议】"
+      echo "  • 检查命令是否拼写错误"
+      echo "  • 检查是否忘记加载对应宏包（例如 amsmath, tikz 等）"
+      echo ""
+    fi
+  } >> "$error_log"
+
   # Console summary
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
   echo "Compilation summary: type=${TYPE} role=${role}"
@@ -190,6 +224,30 @@ compile() {
   printf "\\input{%s}\n" "${MAIN}"     >> "${wrap}"
   
   echo "📝 编译 ${TYPE} (${role} 模式)..."
+  
+  # ---------- 新增：预编译 LaTeX 语法检查 ----------
+  if [[ -n "${VALIDATE_BEFORE_BUILD:-}" ]]; then
+    echo "🔍 运行预编译检查 (tools/validate_tex.py)..."
+    if command -v python3 &>/dev/null && [[ -f "${ROOT}/tools/validate_tex.py" ]]; then
+      # 从 metadata.tex 中提取 \examSourceFile
+      local meta_file="${ROOT}/settings/metadata.tex"
+      local source_file=""
+      if [[ -f "$meta_file" ]]; then
+        source_file=$(grep "^\\\\newcommand{\\\\examSourceFile}" "$meta_file" | sed -n 's/.*{\(.*\)}/\1/p' | head -1)
+      fi
+      if [[ -n "$source_file" && -f "${ROOT}/${source_file}" ]]; then
+        # 这里的 source_file 就是 content/exams/auto/.../converted_exam.tex
+        if ! python3 "${ROOT}/tools/validate_tex.py" "${ROOT}/${source_file}"; then
+          echo "⚠️  预检查发现问题，继续尝试编译，但很可能失败（建议先修复上述错误）"
+        fi
+      else
+        echo "ℹ️  未能从 metadata.tex 中解析 examSourceFile，跳过预检查"
+      fi
+    else
+      echo "ℹ️  未找到 python3 或 tools/validate_tex.py，跳过预检查"
+    fi
+  fi
+  # ---------- 预检查结束 ----------
   
   # 运行 latexmk，捕获返回值
   local ret=0
