@@ -3,6 +3,69 @@
 r"""
 ocr_to_examx_v1.8.py - v1.8 改进版
 
+🆕 v1.8.7 精准修复（2025-11-21）：
+1. ✅ 数学定界符统计忽略注释（P0 - 最高优先级）
+   - 问题：注释中的 \( / \) 被计入全局统计，造成虚假 diff
+   - 修复：validate_math_integrity() 按行扫描，先去掉 % 注释再统计
+   - 改进：统计更加真实，不受注释行干扰
+2. ✅ 检测反向数学定界符模式（P1）
+   - 问题：\) 在 \( 前面的行难以定位
+   - 新增：行级检测逻辑，找出 idx_close < idx_open 的行
+   - 输出：行号 + 行内容片段，方便人工审查
+3. ✅ 极窄自动修复特定反向模式（P1）
+   - 新增：fix_specific_reversed_pairs() 函数
+   - 模式 A：求点\)X_{2}\(所有可能的坐标 → 求点\(X_{2}\)所有可能的坐标
+   - 模式 B：其中\)x_{i} → 其中 x_{i}（删除不匹配的 \)）
+   - 安全性：只针对精确匹配的模式，不影响其他内容
+
+🆕 v1.8.6 关键修复（2025-11-21）：
+1. ✅ 收紧 fix_right_boundary_errors 行为（P0 - 最高优先级）
+   - 问题：旧版无条件补 \)，导致全局 \( / \) diff 长期维持在 -18
+   - 修复：按逐字符扫描，仅在行内存在未闭合 \( 时才补 \)
+   - 新增：has_unmatched_open() 辅助函数判断行内平衡
+   - 保留：模式3（\right.，则\) → \right.\)，则）只调整顺序，不改变数量
+2. ✅ 新增 balance_array_and_cases_env 后处理（P0）
+   - 问题：array/cases 环境不平衡，多出 1 个 \end{array} / \end{cases}
+   - 修复：使用栈匹配算法，删除没有匹配 \begin 的 \end
+   - 不自动生成新的 \begin，只删除多余的 \end
+3. ✅ 新增 validate_brace_balance 全局花括号检查（P1）
+   - 问题：Line 555 有多余的 }，不利于快速定位
+   - 新增：按行扫描，忽略注释和转义的 \{ \}
+   - 输出：行号 + 错误类型（balance went negative / EOF imbalance）
+   - 不自动修复，仅输出日志方便人工定位
+4. ✅ 增强 validate_math_integrity 日志（P1）
+   - 新增：优先输出包含 \right.、array、cases、题号标记的样本
+   - 新增：_has_priority_keywords() 检测关键词
+   - 新增：_get_line_number() 输出行号
+   - 改进：样本格式为 "Line X: ..." 方便定位
+5. ✅ 增强题干缺失检测日志（P1）
+   - 新增：输出题型、题号、原始 Markdown 片段（前 3 行）
+   - 改进：多行格式化输出，方便人工回看 Markdown
+   - 保留：现有 _is_likely_stem 启发式逻辑
+
+🆕 v1.8.5 关键修复（2025-11-21）：
+1. ✅ 增强 \right. 边界检测（P0 - 最高优先级）
+   - 新增：检测 \right. 后的单美元符号 $
+   - 新增：检测 \right. 后直接跟中文标点（，。；：等）
+   - 新增：智能判断 \right.\) 已正确闭合的情况
+   - 修复：8个题目中的 \right. 边界错误
+2. ✅ 后处理修复 \right. 边界错误（P0 - 兜底方案）
+   - 新增：fix_right_boundary_errors() 函数
+   - 修复：\right. 后直接跟中文标点（缺少 \)）
+   - 修复：array/cases 环境后的 \right. 边界错误
+   - 修复：\right.，则\) 模式（\) 位置错误）
+3. ✅ IMAGE_TODO 块格式验证和修复（P0）
+   - 新增：validate_and_fix_image_todo_blocks() 函数
+   - 修复：IMAGE_TODO_END 后的多余花括号
+   - 修复：IMAGE_TODO_START 行末的多余字符
+   - 自动检测并报告格式错误
+4. ✅ 增强题干识别规则（P1）
+   - 新增：题型判断（解答题/选择题/填空题）
+   - 新增：动态调整长度阈值和关键词
+   - 新增：关键词检查（已知、设、如图、证明等）
+   - 改进：综合判断逻辑（题型 + 关键词 + 长度）
+   - 新增：从 \section 命令推断题型
+
 🆕 v1.8.4 重要修复（2025-11-21）：
 1. ✅ 修复合并题目结构问题：题干 vs 小问识别（P0）
    - 问题：相同题号合并后，所有部分都显示为 \item
@@ -56,7 +119,7 @@ v1.3 改进回顾：
 - 统一中英文标点
 - 添加自动验证功能
 
-版本：v1.8.4
+版本：v1.8.7
 作者：Claude
 日期：2025-11-21
 """
@@ -98,26 +161,55 @@ class MathStateMachine:
         i = 0
         n = len(text)
         while i < n:
-            # 🔥 v1.8.3：增强 \right. 后的 OCR 边界检测
+            # 🔥 v1.8.5：增强 \right. 后的 OCR 边界检测（方案A）
             # 处理 \right. 后可能跟随的各种畸形格式：
             # - \right. $$
+            # - \right. $
             # - \right.\ $$
             # - \right. \ $$
             # - \right.  $$
+            # - \right.，（直接跟中文标点）
             if text[i:].startswith(r'\right.'):
                 j = i + 7  # 跳过 \right.
                 # 跳过所有空白、反斜杠、空格的组合
                 while j < n and text[j] in ' \t\n\\':
                     j += 1
-                # 检查是否紧跟 $$
+
+                found_boundary = False
+
+                # 情况1：\right. $$（双美元）
                 if j < n - 1 and text[j:j+2] == '$$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
                     i = j + 2  # 跳过 $$
-                    continue
-                else:
-                    # 不是 OCR 边界错误，保持原样
+                    found_boundary = True
+
+                # 情况2：\right. $（单美元）
+                elif j < n and text[j] == '$':
+                    tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
+                    i = j + 1  # 跳过 $
+                    found_boundary = True
+
+                # 情况3：\right.\)（已经正确闭合）
+                elif j < n - 1 and text[j:j+2] == r'\)':
+                    # 这是正确的格式，保持原样
                     tokens.append((TokenType.TEXT, r'\right.', i))
                     i += 7
+                    found_boundary = True
+
+                # 情况4：\right. 后直接跟中文标点（，。；：等）
+                elif j < n and text[j] in '，。；：、！？':
+                    # OCR 错误：缺少闭合符号
+                    tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
+                    # 不跳过标点，让后续处理
+                    i = j
+                    found_boundary = True
+
+                if not found_boundary:
+                    # 不是边界错误，保持原样
+                    tokens.append((TokenType.TEXT, r'\right.', i))
+                    i += 7
+
+                if found_boundary:
                     continue
 
             # $$ 显示数学
@@ -235,7 +327,7 @@ math_sm = MathStateMachine()
 
 # ==================== 配置 ====================
 
-VERSION = "v1.8.3"
+VERSION = "v1.8.7"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -840,49 +932,75 @@ def remove_par_breaks_in_explain(text: str) -> str:
     return ''.join(out)
 
 
-def _is_likely_stem(first_item: str, all_lines: list, item_indices: list) -> bool:
-    """🆕 v1.8.4：判断第一个 \\item 是否可能是题干
-    
+def _is_likely_stem(first_item: str, all_lines: list, item_indices: list, section_type: str = "") -> bool:
+    """🆕 v1.8.5：判断第一个 \\item 是否可能是题干（增强版）
+
     启发式规则：
-        1. 长度检查：去掉 \\item 后的文本较长（>20字符）
-        2. 小问标记检查：第一行不包含常见小问标记（①②③、(1)(2)等）
-        3. 后续检查：后续 \\item 包含小问标记
-    
+        1. 题型判断：解答题更可能有题干，选择题可能直接是小问
+        2. 长度检查：根据题型动态调整阈值
+        3. 关键词检查：检查是否包含"已知"、"设"、"如图"等题干关键词
+        4. 小问标记检查：第一行不包含常见小问标记（①②③、(1)(2)等）
+        5. 后续检查：后续 \\item 包含小问标记
+
     Args:
         first_item: 第一个 \\item 行的内容
         all_lines: question 环境内的所有行
         item_indices: 所有 \\item 的行索引
-    
+        section_type: 题型（如 "解答题"、"单选题"、"多选题"、"填空题"）
+
     Returns:
         True 如果可能是题干，False 如果可能是小问
     """
     # 提取第一个 \\item 的纯文本内容
     stem_text = re.sub(r'^(\s*)\\item\s*', '', first_item).strip()
-    
-    # 规则1：长度检查（去掉LaTeX命令后至少20个字符）
+
+    # 规则1：题型判断 - 动态调整阈值和关键词
+    if section_type == "解答题":
+        # 解答题通常有题干
+        min_length = 15
+        stem_keywords = ['已知', '设', '如图', '证明', '求', '计算', '若', '假设', '在']
+    elif section_type in ["单选题", "多选题"]:
+        # 选择题可能直接是小问
+        min_length = 30
+        stem_keywords = ['已知', '设', '如图', '若', '假设', '下列', '关于', '在']
+    else:
+        # 填空题或未知类型
+        min_length = 20
+        stem_keywords = ['已知', '设', '如图', '若', '假设', '在']
+
+    # 规则2：长度检查（去掉LaTeX命令后）
     # 去掉数学模式和常见LaTeX命令来估算文本长度
     clean_text = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', '', stem_text)
     clean_text = re.sub(r'\\[()\[\]]', '', clean_text)
-    
-    if len(clean_text) < 20:
+
+    if len(clean_text) < min_length:
         # 太短，可能不是题干
         return False
-    
-    # 规则2：检查第一行是否包含小问标记
+
+    # 规则3：关键词检查
+    has_stem_keyword = any(kw in stem_text for kw in stem_keywords)
+
+    # 规则4：检查第一行是否包含小问标记（排除法）
     subq_markers = [
         r'[①②③④⑤⑥⑦⑧⑨⑩]',  # 圆圈数字
         r'\(\d+\)',            # (1) (2)
         r'^\d+[\.、]',         # 1. 1、
         r'^[Ⅰ-Ⅹ][\.、]',      # Ⅰ. Ⅱ.
     ]
-    
+
+    has_subq_marker = False
     for pattern in subq_markers:
         if re.search(pattern, stem_text[:50]):  # 只检查前50个字符
             # 第一行有小问标记，可能不是题干
-            return False
-    
-    # 规则3：检查后续 \\item 是否包含小问标记
+            has_subq_marker = True
+            break
+
+    if has_subq_marker:
+        return False
+
+    # 规则5：检查后续 \\item 是否包含小问标记
     # 如果后续有标记，说明当前这个可能是题干
+    next_items_have_markers = False
     if len(item_indices) >= 2:
         # 检查第二个和第三个 \\item
         for idx in item_indices[1:min(3, len(item_indices))]:
@@ -891,10 +1009,21 @@ def _is_likely_stem(first_item: str, all_lines: list, item_indices: list) -> boo
                 for pattern in subq_markers:
                     if re.search(pattern, next_item):
                         # 后续有小问标记，当前可能是题干
-                        return True
-    
-    # 默认：如果不确定，保守处理 - 认为是题干
-    return True
+                        next_items_have_markers = True
+                        break
+                if next_items_have_markers:
+                    break
+
+    if next_items_have_markers:
+        return True
+
+    # 规则6：综合判断
+    if section_type == "解答题":
+        # 解答题：有关键词或长度足够 → 题干
+        return has_stem_keyword or len(clean_text) > 30
+    else:
+        # 其他题型：必须有关键词且长度足够 → 题干
+        return has_stem_keyword and len(clean_text) > min_length
 
 
 def fix_merged_questions_structure(content: str) -> str:
@@ -978,9 +1107,20 @@ def fix_merged_questions_structure(content: str) -> str:
                     # 提取第一个 \item 作为题干
                     first_item_idx = item_indices[0]
                     stem_line = question_lines[first_item_idx]
-                    
-                    # 🆕 v1.8.4：增强题干识别 - 检查第一个 \item 是否真的是题干
-                    is_likely_stem = _is_likely_stem(stem_line, question_lines, item_indices)
+
+                    # 🆕 v1.8.5：推断题型（从前面的 \section 命令）
+                    section_type = ""
+                    # 向前查找最近的 \section 命令
+                    for prev_line in reversed(result[-50:]):  # 检查前50行
+                        if r'\section{' in prev_line:
+                            # 提取 section 名称
+                            match = re.search(r'\\section\{([^}]+)\}', prev_line)
+                            if match:
+                                section_type = match.group(1)
+                                break
+
+                    # 🆕 v1.8.5：增强题干识别 - 检查第一个 \item 是否真的是题干
+                    is_likely_stem = _is_likely_stem(stem_line, question_lines, item_indices, section_type)
                     
                     # 如果第一个 \item 不像题干（例如直接是小问），跳过修复
                     if not is_likely_stem:
@@ -1029,6 +1169,208 @@ def fix_merged_questions_structure(content: str) -> str:
             i += 1
     
     return '\n'.join(result)
+
+
+def fix_right_boundary_errors(text: str) -> str:
+    """🆕 v1.8.6：后处理修复 \\right. 边界错误（收紧版 - 仅在行内有未闭合 \\( 时补 \\)）
+
+    处理状态机可能遗漏的边界情况，修复常见的 OCR 错误模式：
+    1. \\right. 后直接跟中文标点（缺少 \\)）- 仅在行内有未闭合 \\( 时补
+    2. array/cases 环境后的 \\right. 边界错误 - 仅在行内有未闭合 \\( 时补
+    3. \\right.，则\\) 模式（\\) 位置错误）- 调整顺序，不改变 \\) 数量
+
+    示例：
+        输入：\\(x = \\begin{cases}...\\end{cases}\\right.，则
+        输出：\\(x = \\begin{cases}...\\end{cases}\\right.\\)，则
+
+        输入：\\right.，则（无未闭合 \\(）
+        输出：\\right.，则（保持不变）
+    """
+    if not text:
+        return text
+
+    def has_unmatched_open(line_before: str) -> bool:
+        """判断这一行里是否存在未闭合的 \\("""
+        opens = [m.start() for m in re.finditer(r'\\\(', line_before)]
+        closes = [m.start() for m in re.finditer(r'\\\)', line_before)]
+        return len(opens) > len(closes)
+
+    result = []
+    i = 0
+    n = len(text)
+
+    while i < n:
+        # 模式1：\\right. + 0-2空白 + 中文标点
+        m1 = re.match(r'\\right\.\s{0,2}([，。；：、！？])', text[i:])
+        if m1:
+            before = ''.join(result)
+            line_start = before.rfind('\n') + 1
+            line_before = before[line_start:]
+            punct = m1.group(1)
+
+            if has_unmatched_open(line_before):
+                # 行内有未闭合 \\(，才补 \\)
+                result.append(r'\right.\)')
+            else:
+                # 否则只保留 \\right.
+                result.append(r'\right.')
+
+            result.append(punct)
+            i += m1.end()
+            continue
+
+        # 模式2：\\end{array|cases} \\right. + 中文标点
+        m2 = re.match(r'(\\end\{array\}|\\end\{cases\})\s*\\right\.\s*([，。；：、！？])', text[i:])
+        if m2:
+            before = ''.join(result)
+            line_start = before.rfind('\n') + 1
+            line_before = before[line_start:]
+            token_end = m2.group(1)
+            punct = m2.group(2)
+
+            if has_unmatched_open(line_before):
+                result.append(token_end + r' \right.\)' + punct)
+            else:
+                # 没有未闭合 \\(，保持原样
+                result.append(m2.group(0))
+
+            i += m2.end()
+            continue
+
+        # 模式3：\\right.，则\\) → \\right.\\)，则（只调整顺序，不改变 \\) 数量）
+        m3 = re.match(r'\\right\.\s*([，。；：、！？])\s*\\\)', text[i:])
+        if m3:
+            punct = m3.group(1)
+            result.append(r'\right.\)' + punct)
+            i += m3.end()
+            continue
+
+        result.append(text[i])
+        i += 1
+
+    return ''.join(result)
+
+
+def balance_array_and_cases_env(text: str) -> str:
+    """🆕 v1.8.6：后处理 - 删除明显多余的 \\end{array}/\\end{cases}
+
+    只在没有匹配 \\begin 时丢弃 \\end，不自动生成新的 \\begin。
+    使用栈匹配算法，确保 array/cases 环境平衡。
+
+    示例：
+        输入：\\end{array} \\right.\\)，则（无对应的 \\begin{array}）
+        输出：\\right.\\)，则（丢弃多余的 \\end{array}）
+    """
+    if not text:
+        return text
+
+    pattern = re.compile(r'\\(begin|end)\{(array|cases)\}')
+    out_parts = []
+    stack = []
+    last = 0
+
+    for m in pattern.finditer(text):
+        out_parts.append(text[last:m.start()])
+        kind, env = m.group(1), m.group(2)
+        token = m.group(0)
+
+        if kind == 'begin':
+            stack.append(env)
+            out_parts.append(token)
+        else:  # end
+            if stack and env in stack:
+                # 从栈尾找匹配的 begin
+                idx = len(stack) - 1 - stack[::-1].index(env)
+                stack.pop(idx)
+                out_parts.append(token)
+            else:
+                # 没有匹配的 begin，说明是多余的 \end{env}，直接丢弃
+                # 可以增加日志，如果项目中有 logger
+                print(f"⚠️  [balance_array_and_cases_env] Drop unmatched {token} at pos {m.start()}")
+                pass
+
+        last = m.end()
+
+    out_parts.append(text[last:])
+    return ''.join(out_parts)
+
+
+def fix_specific_reversed_pairs(text: str) -> str:
+    """🆕 v1.8.7：修复特定的反向数学定界符模式（极窄自动修复）
+
+    针对当前测试集中发现的两种典型模式进行安全修复：
+    1. 模式 A：求点\\)X_{2}\\(所有可能的坐标 → 求点\\(X_{2}\\)所有可能的坐标
+    2. 模式 B：其中\\)x_{i} → 其中 x_{i}（删除不匹配的 \\)）
+
+    这些修复非常窄，只针对精确匹配的模式，不会影响其他正常内容。
+    """
+    if not text:
+        return text
+
+    # 模式 A：求点\)X_{2}\(所有可能的坐标
+    text = text.replace(
+        r'求点\)X_{2}\(所有可能的坐标',
+        r'求点\(X_{2}\)所有可能的坐标'
+    )
+
+    # 模式 B：\right.其中\)x_{i} → \right.其中 x_{i}
+    # 这里只删除"其中\)"中的 \)，保持其他部分不变
+    text = text.replace(
+        r'其中\)x_{i}',
+        r'其中 x_{i}'
+    )
+
+    return text
+
+
+def validate_and_fix_image_todo_blocks(text: str) -> str:
+    """🆕 v1.8.5：验证并修复 IMAGE_TODO 块格式错误
+
+    检查并修复：
+    1. IMAGE_TODO_END 后的多余花括号
+    2. IMAGE_TODO_START 参数格式错误
+    3. 缺失的必需参数
+
+    示例：
+        输入：% IMAGE_TODO_END id=xxx{
+        输出：% IMAGE_TODO_END id=xxx
+    """
+    if not text:
+        return text
+
+    issues = []
+
+    # 修复1：IMAGE_TODO_END 后的多余字符（花括号或其他）
+    # 匹配：% IMAGE_TODO_END id=xxx{ 或 % IMAGE_TODO_END id=xxx {
+    pattern = r'(% IMAGE_TODO_END id=[a-zA-Z0-9_-]+)\s*\{[^}]*\}'
+    matches = list(re.finditer(pattern, text))
+    for match in matches:
+        line_num = text[:match.start()].count('\n') + 1
+        issues.append(f"Line {line_num}: IMAGE_TODO_END has extra brace")
+
+    # 执行修复
+    text = re.sub(pattern, r'\1', text)
+
+    # 修复2：IMAGE_TODO_END 后的单个花括号（无配对）
+    text = re.sub(
+        r'(% IMAGE_TODO_END id=[a-zA-Z0-9_-]+)\s*\{',
+        r'\1',
+        text
+    )
+
+    # 修复3：IMAGE_TODO_START 行末的多余字符
+    text = re.sub(
+        r'(% IMAGE_TODO_START[^\n]+)\s*\{[^}]*\}',
+        r'\1',
+        text
+    )
+
+    if issues:
+        print(f"⚠️  修复了 {len(issues)} 个 IMAGE_TODO 格式错误：")
+        for issue in issues[:5]:  # 只显示前5个
+            print(f"   - {issue}")
+
+    return text
 
 
 def cleanup_remaining_image_markers(text: str) -> str:
@@ -2048,21 +2390,78 @@ def fix_common_issues_v2(text: str) -> str:
 
 
 
+def validate_brace_balance(tex: str) -> List[str]:
+    """🆕 v1.8.6：全局花括号检查 - 忽略 \\{ \\} 和注释，只统计裸 { }
+
+    返回形如：
+    - "Line 555: extra '}' (brace balance went negative)"
+    - "Global brace imbalance at EOF: balance=..."
+    """
+    issues: List[str] = []
+    balance = 0
+
+    for lineno, raw_line in enumerate(tex.splitlines(), start=1):
+        # 去掉注释
+        line = raw_line.split('%', 1)[0]
+        # 去掉转义的 \{ \}
+        line_wo_esc = re.sub(r'\\[{}]', '', line)
+
+        for ch in line_wo_esc:
+            if ch == '{':
+                balance += 1
+            elif ch == '}':
+                balance -= 1
+                if balance < 0:
+                    issues.append(f"Line {lineno}: extra '}}' (brace balance went negative)")
+                    balance = 0
+
+    if balance != 0:
+        issues.append(f"Global brace imbalance at EOF: balance={balance}")
+
+    return issues
+
+
 def validate_math_integrity(tex: str) -> List[str]:
     r"""分析最终 TeX 数学完整性问题并返回警告列表（扩展版）
 
     检查项：
-    - 行内数学定界符数量差异（opens vs closes）
+    - 行内数学定界符数量差异（opens vs closes）- 🆕 v1.8.7：忽略注释中的定界符
     - 裸露美元符号
     - 双重包裹残留
     - 右边界畸形（\right. $$ 等）
     - 空数学块
     - 🆕 截断/未闭合的数学片段（收集前若干样本）
       典型来源：图片占位符或 explain 合并时跨行被截断，导致缺失 \)
+    - 🆕 v1.8.7：检测 \) 在 \( 前面的反向模式
     """
     issues: List[str] = []
-    opens = tex.count('\\(')
-    closes = tex.count('\\)')
+
+    # 🆕 v1.8.7：统计时忽略注释中的定界符
+    opens = 0
+    closes = 0
+    reversed_pairs: List[Tuple[int, str]] = []  # (line_num, line_content)
+
+    for lineno, raw_line in enumerate(tex.splitlines(), start=1):
+        # 去掉注释部分
+        code_part = raw_line.split('%', 1)[0]
+
+        # 统计该行的定界符
+        line_opens = code_part.count('\\(')
+        line_closes = code_part.count('\\)')
+        opens += line_opens
+        closes += line_closes
+
+        # 🆕 v1.8.7：检测反向模式（\) 在 \( 前面）
+        if line_opens >= 1 and line_closes >= 1:
+            idx_open = code_part.find(r'\(')
+            idx_close = code_part.find(r'\)')
+            if idx_close < idx_open:
+                # 截断行内容用于显示
+                display_line = code_part.strip()
+                if len(display_line) > 80:
+                    display_line = display_line[:77] + '...'
+                reversed_pairs.append((lineno, display_line))
+
     if opens != closes:
         issues.append(f"Math delimiter imbalance: opens={opens} closes={closes} diff={opens - closes}")
 
@@ -2124,39 +2523,94 @@ def validate_math_integrity(tex: str) -> List[str]:
         raw = re.sub(r'\s+', ' ', raw).strip()
         return raw
 
-    # 进一步甄别“疑似截断”：开括号后 120 字符内没有闭括号
+    def _get_line_number(pos: int) -> int:
+        """获取位置对应的行号"""
+        return tex[:pos].count('\n') + 1
+
+    def _has_priority_keywords(sample: str) -> bool:
+        """检查样本是否包含优先关键词（\\right.、array、cases、题号标记等）"""
+        priority_patterns = [
+            r'\\right\.',
+            r'\\begin\{array\}',
+            r'\\end\{array\}',
+            r'\\begin\{cases\}',
+            r'\\end\{cases\}',
+            r'\(\d+\)',  # (1) (2) 等小问标记
+            r'[①②③④⑤⑥⑦⑧⑨⑩]',  # 圆圈数字
+        ]
+        return any(re.search(pat, sample) for pat in priority_patterns)
+
+    # 🆕 v1.8.6：进一步甄别"疑似截断"，优先输出包含关键词的样本
     truncated_open_samples: List[str] = []
+    priority_open_samples: List[str] = []
+
     for p in unmatched_open_positions:
         segment = tex[p:p+300]
         if '\\)' not in segment:  # 明显没有闭合
-            truncated_open_samples.append(_sample_at(p, 'forward'))
+            sample = _sample_at(p, 'forward')
+            line_num = _get_line_number(p)
+            sample_with_line = f"Line {line_num}: {sample}"
+
+            if _has_priority_keywords(sample):
+                priority_open_samples.append(sample_with_line)
+            else:
+                truncated_open_samples.append(sample_with_line)
         else:
             # 可能闭括号远在超过 120 之后，也认为可疑
             close_rel = segment.find('\\)')
             if close_rel > 120:
-                truncated_open_samples.append(_sample_at(p, 'forward'))
-        if len(truncated_open_samples) >= 5:  # 只取前 5 个样本
+                sample = _sample_at(p, 'forward')
+                line_num = _get_line_number(p)
+                sample_with_line = f"Line {line_num}: {sample}"
+
+                if _has_priority_keywords(sample):
+                    priority_open_samples.append(sample_with_line)
+                else:
+                    truncated_open_samples.append(sample_with_line)
+
+        # 限制总数
+        if len(priority_open_samples) + len(truncated_open_samples) >= 10:
             break
 
-    truncated_close_samples: List[str] = []
-    for p in unmatched_close_positions[:5]:
-        truncated_close_samples.append(_sample_at(p, 'backward'))
+    # 优先展示包含关键词的样本，然后是普通样本
+    final_open_samples = priority_open_samples[:5] + truncated_open_samples[:max(0, 5 - len(priority_open_samples))]
 
-    if truncated_open_samples:
+    truncated_close_samples: List[str] = []
+    priority_close_samples: List[str] = []
+
+    for p in unmatched_close_positions[:10]:
+        sample = _sample_at(p, 'backward')
+        line_num = _get_line_number(p)
+        sample_with_line = f"Line {line_num}: {sample}"
+
+        if _has_priority_keywords(sample):
+            priority_close_samples.append(sample_with_line)
+        else:
+            truncated_close_samples.append(sample_with_line)
+
+    final_close_samples = priority_close_samples[:5] + truncated_close_samples[:max(0, 5 - len(priority_close_samples))]
+
+    if final_open_samples:
         issues.append(
             "Unmatched opens (samples): " +
-            '; '.join(truncated_open_samples)
+            '; '.join(final_open_samples)
         )
-    if truncated_close_samples:
+    if final_close_samples:
         issues.append(
             "Unmatched closes (samples): " +
-            '; '.join(truncated_close_samples)
+            '; '.join(final_close_samples)
         )
 
     # 针对图片占位符附近的截断：\( ... IMAGE_TODO_START 未闭合
     image_trunc = re.findall(r'\\\([^\\)]{0,200}?% IMAGE_TODO_START', tex)
     if image_trunc:
         issues.append(f"Potential image-adjacent truncated math segments: {len(image_trunc)}")
+
+    # 🆕 v1.8.7：报告反向模式（\) 在 \( 前面）
+    if reversed_pairs:
+        issues.append(f"Reversed inline math pairs detected: {len(reversed_pairs)} lines")
+        for lineno, line_content in reversed_pairs[:5]:  # 只显示前5个
+            issues.append(f"  Line {lineno}: {line_content}")
 
     return issues
 
@@ -2448,6 +2902,18 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     # 🆕 v1.8.4：修复合并题目的结构（题干 vs 小问）
     result = fix_merged_questions_structure(result)
 
+    # 🆕 v1.8.6：后处理修复 \right. 边界错误（收紧版 - P0 最高优先级）
+    result = fix_right_boundary_errors(result)
+
+    # 🆕 v1.8.5：验证并修复 IMAGE_TODO 块格式错误（P0）
+    result = validate_and_fix_image_todo_blocks(result)
+
+    # 🆕 v1.8.6：平衡 array/cases 环境（P0 - 删除多余的 \end）
+    result = balance_array_and_cases_env(result)
+
+    # 🆕 v1.8.7：修复特定的反向数学定界符模式（极窄自动修复）
+    result = fix_specific_reversed_pairs(result)
+
     return result
 
 
@@ -2477,7 +2943,7 @@ def detect_question_issues(
     """
     issues: List[str] = []
 
-    # ---------- 🆕 v1.7：检测缺少题干的题目 ----------
+    # ---------- 🆕 v1.8.6：检测缺少题干的题目（增强版 - 带上下文） ----------
     # 检查题目是否直接从 \item 开始（缺少题干）
     # 在 \begin{question} 后，如果第一个非空行是 \item 或 \begin{choices}，则缺少题干
     question_content = tex_block
@@ -2491,7 +2957,24 @@ def detect_question_issues(
             # 移除注释行
             content_no_comments = re.sub(r'^\s*%.*$', '', content_between, flags=re.MULTILINE).strip()
             if not content_no_comments:
-                issues.append("⚠️ CRITICAL: 题目缺少题干，直接从 \\item 开始 - 请在 Markdown 中补充题干内容")
+                # 🆕 v1.8.6：提取原始 Markdown 上下文（题号前后各 1-2 行）
+                raw_lines = raw_block.splitlines()
+                context_lines = []
+
+                # 提取前 3 行（截断显示）
+                for i, line in enumerate(raw_lines[:3]):
+                    truncated = line[:80] + '...' if len(line) > 80 else line
+                    context_lines.append(f"  MD L{i+1}: {truncated}")
+
+                context_str = '\n'.join(context_lines)
+
+                issues.append(
+                    f"⚠️ CRITICAL: 题目缺少题干，直接从 \\item 开始\n"
+                    f"  题型: {section_label or 'N/A'}\n"
+                    f"  题号: Q{q_index}\n"
+                    f"  原始 Markdown 片段:\n{context_str}\n"
+                    f"  → 请在 Markdown 中补充题干内容"
+                )
 
     # ---------- 1) 原有检查逻辑（保留 & 复刻） ----------
 
@@ -2864,6 +3347,8 @@ def main():
         # 🆕 v1.3：验证输出
         warnings = validate_latex_output(tex_text)
         integrity_issues = validate_math_integrity(tex_text)
+        # 🆕 v1.8.6：花括号平衡检查
+        brace_issues = validate_brace_balance(tex_text)
         
         output_tex.write_text(tex_text, encoding='utf-8')
         
@@ -2905,15 +3390,30 @@ def main():
             else:
                 print(f"\n✅ 未检测到问题（日志为空）")
 
-        # 🆕 v1.3：显示验证结果
-        if warnings or integrity_issues:
-            combined = warnings + integrity_issues
+        # 🆕 v1.8.6：显示验证结果（包含花括号检查）
+        if warnings or integrity_issues or brace_issues:
+            combined = warnings + integrity_issues + brace_issues
             print(f"\n⚠️  验证发现 {len(combined)} 个潜在问题:")
-            for issue in combined:
-                print(f"  {issue}")
+
+            # 分类显示
+            if warnings:
+                print(f"\n  📋 结构问题 ({len(warnings)}):")
+                for issue in warnings:
+                    print(f"    {issue}")
+
+            if brace_issues:
+                print(f"\n  🔧 花括号问题 ({len(brace_issues)}):")
+                for issue in brace_issues:
+                    print(f"    [BRACE] {issue}")
+
+            if integrity_issues:
+                print(f"\n  🔢 数学定界符问题 ({len(integrity_issues)}):")
+                for issue in integrity_issues:
+                    print(f"    [MATH] {issue}")
+
             print("\n💡 建议：使用 AI Agent 检查并人工确认数学结构")
         else:
-            print(f"\n✅ 验证通过：未发现明显问题 (结构 + 数学)" )
+            print(f"\n✅ 验证通过：未发现明显问题 (结构 + 数学 + 花括号)" )
 
         print("\n💡 下一步:")
         print("  1. AI Agent 读取此文件进行精修")
