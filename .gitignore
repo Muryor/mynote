@@ -53,3 +53,6 @@ word_to_tex/figures/raw/
 
 # Temporary backups
 tmp/
+# Testing outputs
+tools/testing/tools/testing/test_out/*.tex
+tools/testing/tools/testing/test_out/*.md
