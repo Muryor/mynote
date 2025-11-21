@@ -1348,13 +1348,17 @@ def split_sections(text: str) -> List[Tuple[str, str]]:
 def split_questions(section_body: str) -> List[str]:
     """拆分题目（智能合并相同题号）
     
+    🆕 v1.8.5：改进题目拆分逻辑，避免将解答题的小问误识别为新题
+    - 只在题号连续递增时才拆分新题
+    - 相同题号或题号不连续的行不会被拆分（可能是小问）
+    
     修复：连续相同题号的内容会合并到一个题目中
     例如：17. 题干  17. (1)...  17. (2)... → 合并为一题
     """
     lines = section_body.splitlines()
     blocks = []
     current = []
-    last_question_num = None
+    last_question_num = 0  # 记录上一题的题号，初始为0
 
     def flush():
         if current:
@@ -1363,17 +1367,19 @@ def split_questions(section_body: str) -> List[str]:
 
     for line in lines:
         stripped = line.strip()
-        # 匹配题号
+        # 匹配题号：1. 或 1． 或 1、
         match = re.match(r"^(\d+)[\.．、]\s*", stripped)
         if match:
-            current_num = match.group(1)
-            # 如果题号改变，才创建新题目
-            if last_question_num is not None and current_num != last_question_num:
+            num = int(match.group(1))
+            # 只有在题号连续递增时才认为是新题
+            # 或者是第一题（last_question_num == 0）
+            if last_question_num == 0 or num == last_question_num + 1:
                 flush()
-                last_question_num = current_num
-            elif last_question_num is None:
-                last_question_num = current_num
-            current.append(line)
+                last_question_num = num
+                current.append(line)
+            else:
+                # 题号不连续（包括相同题号），可能是小问标号，不拆分
+                current.append(line)
         else:
             current.append(line)
 
@@ -2017,7 +2023,29 @@ def fix_common_issues_v2(text: str) -> str:
     # 去除遗留的孤立单美元（不在配对内）：删除
     # 匹配单独一行只包含 $ 或行首/行末的单美元
     text = re.sub(r'(^|\s)(\$)(?=\s|$)', lambda m: m.group(1), text)
+    
+    # 🆕 v1.8.6: 修复被错误分隔的数学模式
+    # 
+    # 问题：$$text1$$中文$$text2$$ 被转换成 \(text1\)中文\(text2\)
+    # 但实际上整行应该在一个数学模式内（特别是在 explain 中）
+    #
+    # 策略1: 移除 \)[1-3个中文]\( 中间的数学分隔符
+    # 例如：\)的\( → 的，\)平面\( → 平面
+    text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
+    
+    # 策略2: 处理 \right. 后跟中文和数学的情况
+    # \right.\)，得\( → \right.，得
+    text = re.sub(r'(\\right\.)\\\)([，。、；：,]{0,2}[\u4e00-\u9fa5]{0,3})\\\(', r'\1\2', text)
+    
+    # 策略3: 只合并被错误拆分的极短距离行内数学模式
+    # 问题：$$A$$的$$B$$ → \(A\)的\(B\) （这是正确的，不应该合并）
+    # 问题：$$text$$，得$$x$$ → \(text\)，得\(x\) （这也是正确的，不应该合并）
+    # 但是：如果只有1-3个中文字符被包裹，可能是错误：$$word$$中$$text$$ → 应该是 \(word中text\)
+    # 解决方案：只合并 \)和\(之间只有1-3个**纯中文**字符的情况
+    text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
+    
     return text
+
 
 
 def validate_math_integrity(tex: str) -> List[str]:
