@@ -1,119 +1,84 @@
 # 常见 OCR 错误及修复方法
 
-> **文档版本**：v1.1（2025-11-20）
-> **维护说明**：记录 Word → Markdown → LaTeX 流水线中常见的 OCR 转换错误及修复方法
+> **文档版本**：v2.0（2025-11-21）
+> **维护说明**：记录 Word → Markdown → LaTeX 流水线中仍需人工处理的 OCR 转换问题
+> **状态更新**：✅ 已通过 MathStateMachine 解决大部分数学公式问题
 
 ---
 
 ## 📋 目录
 
-1. [Meta 区域问题](#1-meta-区域问题)
-2. [数学公式错误](#2-数学公式错误)
-3. [括号与定界符问题](#3-括号与定界符问题)
-4. [环境与结构错误](#4-环境与结构错误)
-5. [图片相关问题](#5-图片相关问题)
-6. [文本格式问题](#6-文本格式问题)
-7. [编译错误模式](#7-编译错误模式)
-8. [题目结构问题](#8-题目结构问题-新增)
+1. [Meta 区域问题](#1-meta-区域问题) - ✅ 已自动化
+2. [特殊符号 OCR 错误](#2-特殊符号-ocr-错误) - ⚠️ 需人工确认
+3. [括号与定界符问题](#3-括号与定界符问题) - ✅ 大部分已解决
+4. [环境与结构错误](#4-环境与结构错误) - ⚠️ 需人工确认
+5. [图片相关问题](#5-图片相关问题) - ✅ 已自动化
+6. [文本格式问题](#6-文本格式问题) - ✅ 已自动化
+7. [编译错误模式](#7-编译错误模式) - ✅ 工具链完善
 
 ---
 
-## 1. Meta 区域问题
+## ✅ 已自动化解决的问题
 
-### 1.1 【分析】内容未删除
+以下问题已通过工具链自动处理，无需人工干预：
 
-**错误现象**：
-```latex
-\explain{
-  【详解】这是正确的解析内容
-  【分析】这是应该删除的内容
-}
-```
+### 数学公式处理（MathStateMachine v1.8）
+- ✅ 双重包裹：`$$\(...\)$$` → `\(...\)`
+- ✅ 定界符统一：`$...$` / `$$...$$` → `\(...\)`
+- ✅ OCR 边界修复：`\right. $$` 自动处理
+- ✅ 裸美元符号：自动清理
+- ✅ 空数学块：自动删除
+- ✅ Unicode 符号：∵/∴ → `\because` / `\therefore`
 
-**根本原因**：
-- OCR 将试卷中的"分析"部分识别为元数据
-- `ocr_to_examx.py` 只应保留【详解】内容
+### Meta 区域（ocr_to_examx.py v1.8）
+- ✅ 【分析】过滤：完全舍弃，不进入 `\explain{}`
+- ✅ 【详解】标记清理：自动移除
+- ✅ 题干缺失检测：自动标记 `% ⚠️ TODO`
+- ✅ 图片属性残留：自动清理 `width="..."` / `height="..."`
+- ✅ 空行处理：`\explain{}` 中空行 → `\par`
 
-**检测方法**：
-```bash
-grep -n "【分析】" content/exams/auto/*/converted_exam.tex
-```
-
-**修复方法**：
-```bash
-# 手动删除 \explain 中的【分析】段落
-# 或增强 Python 转换器的过滤逻辑
-```
-
-**预防措施**：
-- 在 `ocr_to_examx.py` 的 `detect_question_issues()` 中增加【分析】检测
-- 转换时报告包含【分析】的题目到 `debug/<slug>_issues.log`
+### 图片处理
+- ✅ 统一 IMAGE_TODO 格式
+- ✅ 支持 `**章节标题**` 格式（raw markdown）
+- ✅ 内联/独立图片自动识别
 
 ---
 
-### 1.2 【详解】标记残留
+## ⚠️ 仍需人工确认的问题
+
+### 1. Meta 区域问题
+
+#### 1.1 空 \explain 或 \explain 缺失
 
 **错误现象**：
 ```latex
-\explain{
-  【详解】解：因为 $f(x) = \sin x$...
-}
-```
-
-**根本原因**：
-- 转换时未移除【详解】标记本身
-
-**检测方法**：
-```bash
-grep -n "【详解】" content/exams/auto/*/converted_exam.tex
-```
-
-**修复方法**：
-```latex
-\explain{
-  解：因为 $f(x) = \sin x$...
-}
-```
-
-**预防措施**：
-- 在 `ocr_to_examx.py` 中添加 `.replace("【详解】", "")` 处理
-- 自动化清理所有元标记
-
----
-
-### 1.3 空 \explain 或 \explain 缺失
-
-**错误现象**：
-```latex
-\begin{question}[题目内容]
-  ...
-\end{question}
+\begin{question}
+  已知函数 \(f(x) = \sin x\)，求...
+  \begin{choices}
+    \item A 选项
+    \item B 选项
+  \end{choices}
+  \answer{A}
 % 缺少 \explain{...}
+\end{question}
 ```
 
 **根本原因**：
-- OCR 未识别到【详解】部分
-- 或 Markdown 中答案缺失
+- 原始 Word 文档缺少【详解】内容
+- OCR 未识别到答案解析
 
 **检测方法**：
 ```bash
-python3 tools/validate_tex.py content/exams/auto/*/converted_exam.tex
-# 查找 "Question missing \explain" 警告
+# 自动检测（已集成）
+python3 tools/core/ocr_to_examx.py input.md output/ --title "测试"
+# 查看 word_to_tex/output/debug/*_issues.log
 ```
 
 **修复方法**：
-```latex
-\begin{question}[题目内容]
-  ...
-\end{question}
-\explain{
-  % TODO: 补充解析内容
-}
-```
+- 优先从原始试卷补充答案解析
+- 临时方案：添加空 `\explain{}`
 
-**预防措施**：
-- `ocr_to_examx.py` 的 `detect_question_issues()` 已检测此问题
-- 查看 `debug/<slug>_issues.log` 中的报告
+**状态**：✅ 已有检测工具，仅需人工补充内容
 
 ---
 
