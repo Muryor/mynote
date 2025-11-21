@@ -1,0 +1,21 @@
+% 测试编译文件
+\documentclass[12pt,a4paper]{article}
+
+% 基本包
+\usepackage{xeCJK}
+\usepackage{amsmath,amssymb}
+\usepackage{enumitem}
+\usepackage{tikz}
+
+% 使用 preamble.sty
+\usepackage{../../../../settings/preamble}
+
+% 使用 examx.sty
+\usepackage{../../../../styles/examx}
+
+\begin{document}
+
+% 导入转换后的题目
+\input{converted_exam.tex}
+
+\end{document}

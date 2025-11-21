@@ -3,6 +3,19 @@
 r"""
 ocr_to_examx_v1.8.py - v1.8 改进版
 
+🆕 v1.8.4 重要修复（2025-11-21）：
+1. ✅ 修复合并题目结构问题：题干 vs 小问识别（P0）
+   - 问题：相同题号合并后，所有部分都显示为 \item
+   - 修复：第一个 \item 转为题干，后续包裹在 enumerate 中
+   - 新增：fix_merged_questions_structure 后处理函数
+2. ✅ 增强题干识别逻辑（P1）
+   - 新增：_is_likely_stem 启发式判断函数
+   - 检测：字数、小问标记（①②③、(1)(2)等）、后续内容
+   - 避免：误将真实小问识别为题干
+3. ✅ 修复 IMAGE_TODO 路径转义问题（P0）
+   - 问题：路径中的下划线导致 LaTeX 编译错误
+   - 修复：自动转义 _ 为 \_
+
 🆕 v1.8 P0/P1 修复（2025-11-20）：
 1. ✅ 修复数学模式边界解析错误：\right.\ $$ → \right.\) （P0）
    - 修复分段函数/矩阵后紧跟文本时的数学模式闭合问题
@@ -43,9 +56,9 @@ v1.3 改进回顾：
 - 统一中英文标点
 - 添加自动验证功能
 
-版本：v1.7
+版本：v1.8.4
 作者：Claude
-日期：2025-11-20
+日期：2025-11-21
 """
 
 import re
@@ -825,6 +838,197 @@ def remove_par_breaks_in_explain(text: str) -> str:
             i += 1
 
     return ''.join(out)
+
+
+def _is_likely_stem(first_item: str, all_lines: list, item_indices: list) -> bool:
+    """🆕 v1.8.4：判断第一个 \\item 是否可能是题干
+    
+    启发式规则：
+        1. 长度检查：去掉 \\item 后的文本较长（>20字符）
+        2. 小问标记检查：第一行不包含常见小问标记（①②③、(1)(2)等）
+        3. 后续检查：后续 \\item 包含小问标记
+    
+    Args:
+        first_item: 第一个 \\item 行的内容
+        all_lines: question 环境内的所有行
+        item_indices: 所有 \\item 的行索引
+    
+    Returns:
+        True 如果可能是题干，False 如果可能是小问
+    """
+    # 提取第一个 \\item 的纯文本内容
+    stem_text = re.sub(r'^(\s*)\\item\s*', '', first_item).strip()
+    
+    # 规则1：长度检查（去掉LaTeX命令后至少20个字符）
+    # 去掉数学模式和常见LaTeX命令来估算文本长度
+    clean_text = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', '', stem_text)
+    clean_text = re.sub(r'\\[()\[\]]', '', clean_text)
+    
+    if len(clean_text) < 20:
+        # 太短，可能不是题干
+        return False
+    
+    # 规则2：检查第一行是否包含小问标记
+    subq_markers = [
+        r'[①②③④⑤⑥⑦⑧⑨⑩]',  # 圆圈数字
+        r'\(\d+\)',            # (1) (2)
+        r'^\d+[\.、]',         # 1. 1、
+        r'^[Ⅰ-Ⅹ][\.、]',      # Ⅰ. Ⅱ.
+    ]
+    
+    for pattern in subq_markers:
+        if re.search(pattern, stem_text[:50]):  # 只检查前50个字符
+            # 第一行有小问标记，可能不是题干
+            return False
+    
+    # 规则3：检查后续 \\item 是否包含小问标记
+    # 如果后续有标记，说明当前这个可能是题干
+    if len(item_indices) >= 2:
+        # 检查第二个和第三个 \\item
+        for idx in item_indices[1:min(3, len(item_indices))]:
+            if idx < len(all_lines):
+                next_item = all_lines[idx]
+                for pattern in subq_markers:
+                    if re.search(pattern, next_item):
+                        # 后续有小问标记，当前可能是题干
+                        return True
+    
+    # 默认：如果不确定，保守处理 - 认为是题干
+    return True
+
+
+def fix_merged_questions_structure(content: str) -> str:
+    """🆕 v1.8.4：修复合并题目的结构问题（增强版）
+    
+    问题场景：
+        当同一题号的多个部分被合并后，所有部分都显示为 \\item，
+        但正确结构应该是：第一部分=题干，后续部分=小问
+    
+    示例：
+        输入（错误）：
+            \\begin{question}
+            \\item 甲、乙两人组队参加挑战...  （应该是题干）
+            \\item 已知甲先上场...              （这才是小问1）
+            \\item 如果n关都挑战成功...         （这是小问2）
+            \\end{question}
+        
+        输出（正确）：
+            \\begin{question}
+            甲、乙两人组队参加挑战...  （题干）
+            
+            \\begin{enumerate}[label=(\\arabic*)]
+            \\item 已知甲先上场...      （小问1）
+            \\item 如果n关都挑战成功... （小问2）
+            \\end{enumerate}
+            \\end{question}
+    
+    🆕 v1.8.4 增强检测逻辑：
+        1. 找到 \\begin{question} 后第一个 \\item
+        2. 检查第一个 \\item 是否为题干（启发式规则）：
+           - 字数较多（>20字符）且不包含小问标记（①②③、(1)(2)等）
+           - 后续有其他 \\item 且包含小问标记
+        3. 如果满足条件，将第一个 \\item 提取为题干，其余包裹在 enumerate 中
+    
+    Args:
+        content: 完整的 LaTeX 内容
+    
+    Returns:
+        修复后的 LaTeX 内容
+    """
+    lines = content.split('\n')
+    result = []
+    i = 0
+    
+    while i < len(lines):
+        line = lines[i]
+        
+        # 检测 question 环境开始
+        if r'\begin{question}' in line:
+            result.append(line)
+            i += 1
+            
+            # 收集 question 环境内的所有行
+            question_lines = []
+            question_start = i
+            depth = 1
+            
+            while i < len(lines) and depth > 0:
+                current_line = lines[i]
+                if r'\begin{question}' in current_line:
+                    depth += 1
+                elif r'\end{question}' in current_line:
+                    depth -= 1
+                    if depth == 0:
+                        break
+                question_lines.append(current_line)
+                i += 1
+            
+            # 分析 question 内容
+            item_indices = []
+            for idx, qline in enumerate(question_lines):
+                if r'\item' in qline and not qline.strip().startswith('%'):
+                    item_indices.append(idx)
+            
+            # 如果有多个 \item，需要修复结构
+            if len(item_indices) >= 2:
+                # 检查是否已经包含 enumerate（避免重复处理）
+                has_enumerate = any(r'\begin{enumerate}' in qline for qline in question_lines)
+                
+                if not has_enumerate:
+                    # 提取第一个 \item 作为题干
+                    first_item_idx = item_indices[0]
+                    stem_line = question_lines[first_item_idx]
+                    
+                    # 🆕 v1.8.4：增强题干识别 - 检查第一个 \item 是否真的是题干
+                    is_likely_stem = _is_likely_stem(stem_line, question_lines, item_indices)
+                    
+                    # 如果第一个 \item 不像题干（例如直接是小问），跳过修复
+                    if not is_likely_stem:
+                        result.extend(question_lines)
+                        if i < len(lines):
+                            result.append(lines[i])
+                            i += 1
+                        continue
+                    
+                    # 去掉 \item 前缀得到题干
+                    stem_content = re.sub(r'^(\s*)\\item\s*', r'\1', stem_line)
+                    
+                    # 构建新的 question 内容
+                    new_question_lines = []
+                    
+                    # 添加题干之前的内容（如果有）
+                    new_question_lines.extend(question_lines[:first_item_idx])
+                    
+                    # 添加题干
+                    new_question_lines.append(stem_content)
+                    new_question_lines.append('')  # 空行分隔
+                    
+                    # 添加 enumerate 环境包裹剩余的 \item
+                    new_question_lines.append(r'\begin{enumerate}[label=(\arabic*)]')
+                    
+                    # 添加剩余的 \item（从第二个 \item 开始）
+                    new_question_lines.extend(question_lines[first_item_idx + 1:])
+                    
+                    # 添加 enumerate 结束标记
+                    new_question_lines.append(r'\end{enumerate}')
+                    
+                    result.extend(new_question_lines)
+                else:
+                    # 已有 enumerate，保持原样
+                    result.extend(question_lines)
+            else:
+                # 只有 0 或 1 个 \item，保持原样
+                result.extend(question_lines)
+            
+            # 添加 \end{question}
+            if i < len(lines):
+                result.append(lines[i])
+                i += 1
+        else:
+            result.append(line)
+            i += 1
+    
+    return '\n'.join(result)
 
 
 def cleanup_remaining_image_markers(text: str) -> str:
@@ -1986,10 +2190,13 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
     context_after = clean_context(img.get('context_after', '').strip())
 
     # 🆕 v1.7：构建占位块，IMAGE_TODO_END 后不添加额外的 \n
+    # 🆕 v1.8.4：转义路径中的特殊字符（下划线等）
+    path_escaped = path.replace('_', '\\_') if path else ''
+    
     if is_inline:
         # 内联图片：不使用 center 环境
         block = (
-            f"\n% IMAGE_TODO_START id={img_id} path={path} width={width}% inline={inline} "
+            f"\n% IMAGE_TODO_START id={img_id} path={path_escaped} width={width}% inline={inline} "
             f"question_index={q_idx} sub_index={sub_idx}\n"
         )
         if context_before:
@@ -2006,7 +2213,7 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
         # 独立图片：使用 center 环境
         block = (
             "\\begin{center}\n"
-            f"% IMAGE_TODO_START id={img_id} path={path} width={width}% inline={inline} "
+            f"% IMAGE_TODO_START id={img_id} path={path_escaped} width={width}% inline={inline} "
             f"question_index={q_idx} sub_index={sub_idx}\n"
         )
         if context_before:
@@ -2209,6 +2416,9 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     result = re.sub(r'故选[:：][ABCD]+\.?[^\n}]*', '', result)
     # 清理"故答案为"
     result = re.sub(r'故答案为[:：]?[ABCD]*\.?', '', result)
+
+    # 🆕 v1.8.4：修复合并题目的结构（题干 vs 小问）
+    result = fix_merged_questions_structure(result)
 
     return result
 
