@@ -59,12 +59,12 @@ class TeXValidator:
         content_cleaned = content
         content_cleaned = re.sub(r'\\left\\{', '', content_cleaned)
         content_cleaned = re.sub(r'\\right\\}', '', content_cleaned)
-        content_cleaned = re.sub(r'\\left\\[', '', content_cleaned)
-        content_cleaned = re.sub(r'\\right\\]', '', content_cleaned)
-        content_cleaned = re.sub(r'\\left\\(', '', content_cleaned)
-        content_cleaned = re.sub(r'\\right\\)', '', content_cleaned)
-        content_cleaned = re.sub(r'\\right\\.', '', content_cleaned)
-        content_cleaned = re.sub(r'\\left\\.', '', content_cleaned)
+        content_cleaned = re.sub(r'\\left\\\[', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\\]', '', content_cleaned)
+        content_cleaned = re.sub(r'\\left\\\(', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\\)', '', content_cleaned)
+        content_cleaned = re.sub(r'\\right\\\\.', '', content_cleaned)
+        content_cleaned = re.sub(r'\\left\\\\.', '', content_cleaned)
 
         stack: List[int] = []
 

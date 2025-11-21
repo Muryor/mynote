@@ -85,16 +85,24 @@ class MathStateMachine:
         i = 0
         n = len(text)
         while i < n:
-            # 特例：\right. 后紧跟 $$ （OCR 常见）
+            # 🔥 v1.8.3：增强 \right. 后的 OCR 边界检测
+            # 处理 \right. 后可能跟随的各种畸形格式：
+            # - \right. $$
+            # - \right.\ $$
+            # - \right. \ $$
+            # - \right.  $$
             if text[i:].startswith(r'\right.'):
-                j = i + 7
-                while j < n and text[j] in ' \\':
+                j = i + 7  # 跳过 \right.
+                # 跳过所有空白、反斜杠、空格的组合
+                while j < n and text[j] in ' \t\n\\':
                     j += 1
-                if text[j:j+2] == '$$':
+                # 检查是否紧跟 $$
+                if j < n - 1 and text[j:j+2] == '$$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                    i = j + 2
+                    i = j + 2  # 跳过 $$
                     continue
                 else:
+                    # 不是 OCR 边界错误，保持原样
                     tokens.append((TokenType.TEXT, r'\right.', i))
                     i += 7
                     continue
@@ -143,10 +151,20 @@ class MathStateMachine:
         tokens = self.tokenize(text)
         out = []
         i = 0
+        math_depth = 0  # 跟踪数学模式深度
+
         while i < len(tokens):
             t_type, val, pos = tokens[i]
+
+            # 🔥 v1.8.3：智能处理 \right. 边界
             if t_type == TokenType.RIGHT_BOUNDARY:
-                out.append(r'\right.\)')  # 补全成闭合的行内数学
+                # 检查是否在数学模式内（有未闭合的 \(）
+                if math_depth > 0:
+                    out.append(r'\right.\)')
+                    math_depth -= 1
+                else:
+                    # 不在数学模式内，保持原样（这是正常的 \right.）
+                    out.append(r'\right.')
                 i += 1
                 continue
             if t_type == TokenType.DOLLAR_DOUBLE:
@@ -162,6 +180,7 @@ class MathStateMachine:
                     i += 1
                 out.append(r'\(' + ''.join(buf).strip() + r'\)')
                 continue
+
             if t_type == TokenType.DOLLAR_SINGLE:
                 i += 1
                 buf = []
@@ -180,8 +199,16 @@ class MathStateMachine:
                 if buf:
                     out.append(r'\(' + ''.join(buf) + r'\)')
                 continue
-            if t_type in (TokenType.LATEX_OPEN, TokenType.LATEX_CLOSE):
+
+            if t_type == TokenType.LATEX_OPEN:
                 out.append(val)
+                math_depth += 1
+                i += 1
+                continue
+
+            if t_type == TokenType.LATEX_CLOSE:
+                out.append(val)
+                math_depth = max(0, math_depth - 1)
                 i += 1
                 continue
             out.append(val)
@@ -195,7 +222,7 @@ math_sm = MathStateMachine()
 
 # ==================== 配置 ====================
 
-VERSION = "v1.7"
+VERSION = "v1.8.3"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -726,58 +753,77 @@ def split_long_lines_in_explain(text: str, max_length: int = 800) -> str:
 
 
 def remove_par_breaks_in_explain(text: str) -> str:
-    r"""移除 \explain{...} 中的空段落（严格基于大括号计数）
-    解决 TeX 中段落断开导致的 "Paragraph ended before \explain code was complete"。
+    r"""移除 \explain{...} 中的空段落（改进版：正确处理嵌套括号）
 
-    🆕 v1.7：将空行替换为 \par 而不是删除
+    🆕 v1.8.2：完全重写，修复括号计数错误
+    - 正确处理 \{ \} 转义括号（不计入 depth）
+    - 正确处理反斜杠转义（\\ 后的字符不处理）
+    - 将空段落替换为 % 注释而非 \par（更安全）
     """
-    # 规范化换行符
     text = text.replace("\r\n", "\n").replace("\r", "\n")
 
     out = []
     i = 0
     n = len(text)
+
     while i < n:
         if text.startswith("\\explain{", i):
-            # 复制宏名
             out.append("\\explain{")
             i += len("\\explain{")
             depth = 1
             buf = []
+
             while i < n and depth > 0:
-                ch = text[i]
-                # 处理转义的大括号 \{ 或 \}：作为普通字符，不计入深度
-                if ch == '\\' and i + 1 < n and text[i + 1] in '{}':
-                    buf.append(text[i:i+2])
-                    i += 2
+                # 处理反斜杠转义序列
+                if text[i] == '\\' and i + 1 < n:
+                    next_char = text[i + 1]
+                    # \{ 和 \} 不计入括号深度
+                    if next_char in '{}':
+                        buf.append(text[i:i+2])
+                        i += 2
+                        continue
+                    # 其他反斜杠序列（如 \\, \left, \right 等）直接复制
+                    buf.append(text[i])
+                    i += 1
                     continue
-                # 🆕 v1.7：处理换行：若遇到空段落（\n\s*\n），替换为 \par
-                if ch == '\n':
-                    # 查看是否为空段落
+
+                # 检测空段落（连续两个换行，中间只有空白）
+                if text[i] == '\n':
                     j = i + 1
                     while j < n and text[j] in ' \t':
                         j += 1
                     if j < n and text[j] == '\n':
-                        # 将空段落替换为 \par
-                        buf.append('\n\\par\n')
+                        # 空段落：替换为注释行
+                        buf.append('\n%\n')
                         i = j + 1
                         continue
-                if ch == '{':
+
+                # 普通大括号计数
+                if text[i] == '{':
                     depth += 1
-                elif ch == '}':
+                    buf.append(text[i])
+                    i += 1
+                elif text[i] == '}':
                     depth -= 1
                     if depth == 0:
-                        # 关闭，写入缓冲并结束此 explain
+                        # 找到匹配的闭括号
                         out.append(''.join(buf))
                         out.append('}')
                         i += 1
                         break
-                buf.append(ch)
-                i += 1
-            continue
+                    buf.append(text[i])
+                    i += 1
+                else:
+                    buf.append(text[i])
+                    i += 1
+
+            # 如果循环结束但 depth > 0，说明括号不匹配（保留原内容）
+            if depth > 0:
+                out.append(''.join(buf))
         else:
             out.append(text[i])
             i += 1
+
     return ''.join(out)
 
 
@@ -2070,54 +2116,68 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
             q_index += 1  # 题号递增
             raw_block = block  # 保存原始 Markdown 片段
 
-            # 🆕 传递 question_index 和 slug 用于生成图片 ID
-            content, meta, images = extract_meta_and_images(block, question_index=q_index, slug=slug)
+            try:
+                # 🆕 传递 question_index 和 slug 用于生成图片 ID
+                content, meta, images = extract_meta_and_images(block, question_index=q_index, slug=slug)
 
-            # 使用增强的转换函数（返回3个值）
-            stem, options, extracted_analysis = convert_choices(content)
+                # 使用增强的转换函数（返回3个值）
+                stem, options, extracted_analysis = convert_choices(content)
 
-            # 合并提取的解析和元信息中的解析
-            if extracted_analysis and not meta.get('explain'):
-                meta['explain'] = extracted_analysis
-            elif extracted_analysis:
-                meta['explain'] = meta['explain'] + '\n' + extracted_analysis
+                # 合并提取的解析和元信息中的解析
+                if extracted_analysis and not meta.get('explain'):
+                    meta['explain'] = extracted_analysis
+                elif extracted_analysis:
+                    meta['explain'] = meta['explain'] + '\n' + extracted_analysis
 
-            # 🆕 传递 question_index 和 slug 到 build_question_tex
-            q_tex = build_question_tex(stem, options, meta, images, sec_label,
-                                      question_index=q_index, slug=slug)
+                # 🆕 传递 question_index 和 slug 到 build_question_tex
+                q_tex = build_question_tex(stem, options, meta, images, sec_label,
+                                          question_index=q_index, slug=slug)
 
-            # 🆕 v1.6.4：检测问题并记录日志（传入 meta & section_label）
-            if enable_issue_detection and slug:
-                issues = detect_question_issues(
-                    slug=slug,
-                    q_index=q_index,
-                    raw_block=raw_block,
-                    tex_block=q_tex,
-                    meta=meta,
-                    section_label=sec_label,
-                )
-                append_issue_log(
-                    slug=slug,
-                    q_index=q_index,
-                    raw_block=raw_block,
-                    tex_block=q_tex,
-                    issues=issues,
-                    meta=meta,
-                    section_label=sec_label,
-                )
+                # 🆕 v1.6.4：检测问题并记录日志（传入 meta & section_label）
+                if enable_issue_detection and slug:
+                    issues = detect_question_issues(
+                        slug=slug,
+                        q_index=q_index,
+                        raw_block=raw_block,
+                        tex_block=q_tex,
+                        meta=meta,
+                        section_label=sec_label,
+                    )
+                    append_issue_log(
+                        slug=slug,
+                        q_index=q_index,
+                        raw_block=raw_block,
+                        tex_block=q_tex,
+                        issues=issues,
+                        meta=meta,
+                        section_label=sec_label,
+                    )
 
-            out_lines.append("")
-            out_lines.append(q_tex)
+                # 验证生成的 TeX 是否完整
+                if r'\begin{question}' in q_tex and r'\end{question}' not in q_tex:
+                    print(f"⚠️  Q{q_index} 缺少 \\end{{question}}，自动补全")
+                    q_tex += "\n\\end{question}"
+
+                out_lines.append("")
+                out_lines.append(q_tex)
+            except Exception as e:
+                import traceback
+                print(f"⚠️  Q{q_index} ({sec_label}) 转换失败: {str(e)}")
+                print(f"   {traceback.format_exc()}")
+                out_lines.append("")
+                out_lines.append(r"\begin{question}")
+                out_lines.append(f"% ERROR: Q{q_index} 转换失败 - {str(e)}")
+                out_lines.append(r"\end{question}")
 
     out_lines.append("")
 
     # 最终处理：清理空行和分割超长行
     result = "\n".join(out_lines)
     result = remove_blank_lines_in_macro_args(result)
-    result = clean_question_environments(result)
     result = split_long_lines_in_explain(result, max_length=800)
-    # 进一步严格移除 explain{} 中的空段落，避免段落中断导致的宏参数报错
+    # 🔥 v1.8.3：重新启用（已修复括号计数逻辑）
     result = remove_par_breaks_in_explain(result)
+    # 🔥 v1.8.1：clean_question_environments 仍然禁用（正则匹配问题）
 
     # 最终兜底：规范/移除残留的 $$ 显示数学标记
     # 1) 将成对 $$...$$ 统一为行内 \(...\)（与 smart_inline_math 行为一致）
