@@ -1142,10 +1142,15 @@ def split_sections(text: str) -> List[Tuple[str, str]]:
 
 
 def split_questions(section_body: str) -> List[str]:
-    """拆分题目"""
+    """拆分题目（智能合并相同题号）
+    
+    修复：连续相同题号的内容会合并到一个题目中
+    例如：17. 题干  17. (1)...  17. (2)... → 合并为一题
+    """
     lines = section_body.splitlines()
     blocks = []
     current = []
+    last_question_num = None
 
     def flush():
         if current:
@@ -1154,8 +1159,16 @@ def split_questions(section_body: str) -> List[str]:
 
     for line in lines:
         stripped = line.strip()
-        if re.match(r"^\d+[\.．、]\s*", stripped):
-            flush()
+        # 匹配题号
+        match = re.match(r"^(\d+)[\.．、]\s*", stripped)
+        if match:
+            current_num = match.group(1)
+            # 如果题号改变，才创建新题目
+            if last_question_num is not None and current_num != last_question_num:
+                flush()
+                last_question_num = current_num
+            elif last_question_num is None:
+                last_question_num = current_num
             current.append(line)
         else:
             current.append(line)
