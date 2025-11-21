@@ -1,3 +1,9 @@
+# image_jobs.jsonl 全量字段规范 (Full)
+
+> 精简版请参考 `IMAGE_JOBS_FORMAT.md`；此文件保留全部字段说明、示例与扩展建议。
+
+（以下为原始完整内容）
+
 # image_jobs.jsonl 字段规范与使用指南
 
 本文档定义由 `tools/images/export_image_jobs.py` 导出的 `image_jobs.jsonl` 每行 JSON 对象的字段、目录推断逻辑以及下游（看图→生成 TikZ）脚本/Agent 的统一写入规范。
@@ -154,8 +160,8 @@ python tools/images/write_snippets_from_jsonl.py \
 
 ## 10. 后续扩展建议
 
-- 如需支持多版本 TikZ，可在目录下新增子目录版本号（例如 `tikz_snippets/v2/`），并在 JSON 中扩展 `tikz_version` 字段。
-- 若需要校验代码质量，可增加一个预检查：检测 `\begin{tikzpicture}` 与 `\end{tikzpicture}` 是否成对出现。
+- 支持多版本 TikZ：`tikz_snippets/v2/` + 字段 `tikz_version`
+- 预检查：检测 `\begin{tikzpicture}` 与 `\end{tikzpicture}` 是否成对
 
 ---
 

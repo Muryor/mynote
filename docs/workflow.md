@@ -1,499 +1,110 @@
-# LaTeX 试卷流水线测试与开发指南 (v3.3)
+# LaTeX 试卷流水线测试与开发指南 (v3.4)
 
-> **文档版本**：v3.3（2025-11-21）
-> **更新内容**：
-> - v3.3: **重大升级** - 实现 MathStateMachine 状态机数学处理管线
->   - 替换旧正则管线，实现完美数学定界符平衡（balance_diff = 0）
->   - 新增截断检测功能（未匹配括号样本收集）
->   - 支持 `**章节标题**` 格式（raw markdown 文件）
->   - 添加 A/B 对比测试工具（math_sm_comparison.py）
->   - 完整性验证集成到转换流程
-> - v3.2: 新增统一表格美化环境 examtableboxed（试卷带竖线）和 examtable（讲义 booktabs 风格）
-> - v3.1: 升级 ocr_to_examx.py 到 v1.7，增强题干检测、图片属性清理、空行处理
-> - v3.0: 集成 meta 自检、预编译验证、智能错误分析、回归测试
+> **文档版本**：v3.4（2025-01-XX）  
+> **核心特性**：
+> - 🔥 MathStateMachine 状态机数学处理（v1.8.7 - balance_diff ≤ 1）
+> - ✅ 智能预编译检查 + 错误诊断工具链
+> - ✅ IMAGE_TODO 统一占位符 + TikZ 自动化流水线
+> - ✅ Meta 自检 + 【分析】强制过滤
+
+---
+
+## 📚 配套文档导航
+
+### 核心必读（按顺序）
+
+1. **本文档（workflow.md）** - 完整流程概览与快速入门
+2. **[REFERENCE.md](REFERENCE.md)** - 格式规范速查手册
+   - 元信息映射、IMAGE_TODO 格式、image_jobs.jsonl 字段、\exstep 语法
+3. **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - 错误诊断与修复指南
+   - 预编译检查、编译错误诊断、常见问题详解（8 大类）
+
+### 深度参考（按需查阅）
+
+- **[IMAGE_JOBS_FULL.md](IMAGE_JOBS_FULL.md)** - image_jobs.jsonl 完整字段定义
+- **[EXPLAIN_FULL.md](EXPLAIN_FULL.md)** - \exstep 详解格式详细示例
+- **[TIKZ_AGENT_PROMPT.md](TIKZ_AGENT_PROMPT.md)** - AI 生成 TikZ 的标准 Prompt
+
+### 归档与开发
+
+- **[archive/CHANGELOG.md](archive/CHANGELOG.md)** - 版本历史（v3.0-v3.4）
+- **[dev/IMAGE_PIPELINE_TASKS.md](dev/IMAGE_PIPELINE_TASKS.md)** - 图片流水线开发任务清单（Tasks A/B/C/D）
+
+---
 
 ## 角色定位
+
 你是一名**本地 LaTeX 试卷流水线工程师**，负责执行和验证整个考试流水线，并能根据需要自动调用脚本、定位错误、修复格式，并产出稳定的 examx 结构化 TeX + PDF。
 
 本文档涵盖：
 1. **阶段一**：文本 & 结构流水线（Word → Markdown → examx TeX → PDF）
-2. **阶段二**：图片 → TikZ 自动化流水线（IMAGE_TODO → AI 生成 → 回填 TikZ）
-3. **质量保证**：预编译检查、智能错误分析、回归测试
-
-### 📚 配套文档
-
-- **[KNOWN_ISSUES.md](KNOWN_ISSUES.md)**：常见 OCR 错误及修复方法
-  - 记录 Word → Markdown → LaTeX 流水线中的典型问题
-  - 包含错误现象、根本原因、检测方法、修复步骤、预防措施
-  - 涵盖 7 大类问题：Meta 区域、数学公式、括号定界符、环境结构、图片处理、文本格式、编译错误
-  - 提供高频问题统计和工具链使用建议
-  - **使用场景**：遇到转换/编译错误时，优先查阅此文档寻找已知解决方案
-
----
-
-## 流水线总览（v3.0 增强版）
-
-### 完整数据流
-
-```text
-Word → Pandoc → Markdown
-     → ocr_to_examx.py (v1.8 🆕 MathStateMachine)
-         ├─ 🔥 MathStateMachine 状态机（新）
-         │   ├─ 统一数学定界符: $ / $$ → \(...\)
-         │   ├─ OCR 边界修复: \right. $$ → \right.\)
-         │   ├─ 防止双重包裹: $$\(...\)$$ → \(...\)
-         │   └─ 完美括号配对（balance_diff = 0）
-         ├─ 🆕 数学完整性检测
-         │   ├─ 定界符平衡检查
-         │   ├─ 截断片段样本收集
-         │   ├─ 裸 $ 符号检测
-         │   └─ 空数学块清理
-         ├─ 元信息一致性验证
-         ├─ 【分析】过滤检查
-         ├─ 题干缺失检测
-         ├─ 图片属性残留清理
-         ├─ \explain 空行自动处理
-         └─ 问题日志生成 (debug/<slug>_issues.log)
-     → examx TeX（含 IMAGE_TODO 占位）
-
-     ┌─────── 编译路径 ─────────┐
-     │                          │
-     │ validate_tex.py (🆕 改进) │  ← 预编译检查（可选）
-     │   ├─ explain 空行检测    │
-     │   ├─ 🆕 智能括号平衡检查  │
-     │   ├─ 🆕 题干缺失检测      │
-     │   └─ 环境匹配验证        │
-     │                          │
-     → build.sh (v2.1)          │
-         ├─ 智能错误分析        │
-         ├─ 错误定位提示        │
-         └─ last_error.log      │
-     → PDF                      │
-     └──────────────────────────┘
-     
-     ┌─────── 图片路径 ──────────┐
-     │                           │
-     → export_image_jobs.py      │
-     → image_jobs.jsonl          │
-     → AI Agent (生成 TikZ)      │
-     → tikz_snippets/{id}.tex    │
-     → apply_tikz_snippets.py    │
-     → 最终 PDF（含 TikZ 图）    │
-     └───────────────────────────┘
-```
-
-**新增工具链**（v3.3）：
-- ✅ `MathStateMachine`：状态机数学处理（替换旧正则管线）
-- ✅ `math_sm_comparison.py`：A/B 对比测试工具
-- ✅ `--legacy-math` flag：回退选项（仅测试用）
-- ✅ 数学完整性验证：自动检测并报告问题
-
-**v3.0 工具链**：
-- ✅ `validate_tex.py`：预编译语法检查
-- ✅ `locate_error.sh`：快速定位 LaTeX 错误
-- ✅ `test_compile.sh`：四组合回归测试
-- ✅ `workflow_validate.sh`：一键验证完整流程
-- ✅ 增强的 `build.sh`：智能错误分析 + 预检查集成
-
----
-
----
-
-## 一、项目核心规范（文本 & 结构部分）
-
-### 1.1 文件结构
-
-```text
-mynote/
-├── tools/
-│   ├── core/
-│   │   └── ocr_to_examx.py       # Markdown → examx TeX
-│   └── images/
-│       ├── process_images_to_tikz.py     # 图片处理主工具
-│       ├── export_image_jobs.py          # 新增：导出 image_jobs.jsonl
-│       ├── apply_tikz_snippets.py        # 新增：回填 TikZ 片段
-│       ├── generate_tikz_placeholders.py # 历史脚本（逐步替代）
-│       └── generate_tikz_from_images.py  # 历史脚本（逐步替代）
-├── word_to_tex/
-│   ├── scripts/
-│   │   └── preprocess_docx.sh    # 完整转换流程封装
-│   ├── input/                     # 存放待转换的 DOCX
-│   └── output/                    # 转换输出
-├── content/exams/auto/            # 生成的试卷存放位置
-│   └── <exam_slug>/
-│       ├── converted_exam.tex     # 带 IMAGE_TODO 占位的 TeX
-│       ├── image_jobs.jsonl       # 图片任务列表
-│       └── tikz_snippets/         # AI 生成的 TikZ 片段
-│           └── {id}.tex
-├── settings/
-│   └── metadata.tex               # 编译配置（指定试卷源）
-├── build.sh                       # 编译脚本
-└── output/                        # PDF 输出目录
-```
-
-### 1.2 关键工具说明
-
-#### `ocr_to_examx.py`（v1.8 🆕 MathStateMachine）
-
-**输入**：Pandoc 生成的 Markdown（含题号、选项、元信息标记）  
-**输出**：examx 风格 TeX 文件（含 IMAGE_TODO 占位符）
-
-**核心功能**：
-
-- **🆕 MathStateMachine 状态机**（v1.8）：
-  - 词法分析：识别 `$`, `$$`, `\(`, `\)`, `\[`, `\]`, 右定界符边界等
-  - 状态机处理：统一转换为 `\(...\)` 行内数学，避免所有双重包裹问题
-  - OCR 边界修复：自动处理 `\right. $$` → `\right.\)` 等 OCR 常见错误
-  - 括号配对：确保 `\left` / `\right` 完美平衡（balance_diff = 0）
+2. **阶段二**：图片 → TikZ 自动化流水线（精简概览，详见 dev/IMAGE_PIPELINE_TASKS.md）
+3. **质量保证**：预编译检查、智能错误分析、回归测试（详见 TROUBLESHOOTING.md）
+  ## 九、阶段二：图片 → TikZ （精简概览）
 
-- **🆕 数学完整性验证**（v1.8 增强）：
-  - 定界符平衡检查：`\(` 与 `\)` 数量必须相等
-  - 截断片段样本收集：自动提取疑似不完整的数学片段
-  - 裸 `$` 符号检测：识别所有未转换的 dollar 符号
-  - 空数学块清理：自动删除 `\(\)` 等无效内容
+  > 外链：`IMAGE_JOBS_FORMAT.md`（精简规范） · `IMAGE_JOBS_FULL.md`（完整字段） · `TIKZ_AGENT_PROMPT.md`（生成提示）
 
-- **原有功能**：
-  - 按章节分类（单选题/多选题/填空题/解答题）
-  - 识别题号、题干、选项
-  - 解析元信息：`【答案】`、`【难度】`、`【知识点】`、`【详解】`
-  - 文本清洗：数学公式、中文标点、"故选"等
-  - **图片处理**：所有 Markdown 图片转换为 IMAGE_TODO_START/END 占位块
-  - 生成 examx 结构
-  - 元信息一致性验证
-  - 【分析】过滤检查
-  - 题干缺失检测
-  - 图片属性残留清理
-  - `\explain` 空行自动处理
-  - 问题日志生成 (`debug/<slug>_issues.log`)
+  ### 9.1 流水线概要
 
-**使用**：
+  ```text
+  Markdown → ocr_to_examx.py → converted_exam.tex
+    → export_image_jobs.py → image_jobs.jsonl
+    → AI 生成 TikZ (id,tikz_code)
+    → write_snippets_from_jsonl.py → tikz_snippets/{id}.tex
+    → apply_tikz_snippets.py → converted_exam_tikz.tex → build.sh → PDF
+  ```
 
-```bash
-# 标准使用（默认状态机管线）
-python3 tools/core/ocr_to_examx.py <input.md或文件夹> <output目录或.tex>
+  ### 9.2 IMAGE_TODO 最小格式
 
-# 回退到旧管线（仅测试用）
-python3 tools/core/ocr_to_examx.py --legacy-math <input> <output>
-```
+  ```tex
+  % IMAGE_TODO_START id=<slug-Qx-imgy> path=<path> width=60% inline=false question_index=3 sub_index=1
+  \begin{tikzpicture}
+    % TODO: AI_AGENT_REPLACE_ME (id=<slug-Qx-imgy>)
+  \end{tikzpicture}
+  % IMAGE_TODO_END id=<slug-Qx-imgy>
+  ```
 
-**关键参数**：
+  必需字段：id / path / width / inline；可选：question_index / sub_index / CONTEXT_BEFORE / CONTEXT_AFTER。
 
-- `input`：输入路径（.md 文件或包含 `*_local.md` 的文件夹）
-- `output`：输出路径（目录或 .tex 文件）
-- `--title`：试卷标题（可选，默认从输入路径推断）
-- `--legacy-math`：使用旧正则管线（默认禁用，仅测试用）
+  ### 9.3 image_jobs.jsonl 关键
 
-**测试结果**（4 份真实试卷）：
+  最小核心：`id, exam_dir, tikz_snippets_dir, tex_file, question_index, sub_index, path, width_pct, inline`。
+  目录推断顺序：显式 `tikz_snippets_dir` → `exam_dir` → `exam_prefix`（详见 `IMAGE_JOBS_FORMAT.md`）。
 
-| 试卷 | 题目数 | balance_diff | 文件大小变化 | 裸 $ 符号 |
-|------|--------|--------------|--------------|-----------|
-| 南京 2026 | 17 | 0 ✅ | -36.9% | 0 ✅ |
-| 丽水 2026 | 7 | 0 ✅ | -52.9% | 0 ✅ |
-| 高考 2025 | 7 | 0 ✅ | -50.8% | 0 ✅ |
-| 杭州 2025 | 14 | -4 ⚠️ | -45.7% | 0 ✅ |
+  ### 9.4 AI 输出约定
 
-**改进效果**：
+  - 输入：单条 job + 原图
+  - 输出：完整 `\begin{tikzpicture}...\end{tikzpicture}`
+  - 允许语义化简化；禁止空环境。
 
-- ✅ 3/4 试卷达到完美括号平衡（balance_diff = 0）
-- ✅ 杭州试卷改进 78%（-18 → -4）
-- ✅ 文件大小平均减少 46.6%（去除冗余数学包裹）
-- ✅ 100% 消除裸 `$` 符号
+  ### 9.5 写入与回填
 
-#### `math_sm_comparison.py`（v1.8 新增）
+  写入：`write_snippets_from_jsonl.py`（或 utils）。日志统一：`[TikZ] write snippet: id=... -> <path>`。
+  回填：`apply_tikz_snippets.py` 默认使用同目录 `tikz_snippets/`；缺失片段跳过并统计。
 
-**功能**：对比测试状态机管线与旧正则管线
+  ### 9.6 常见问题速查
 
-**使用方法**：
+  | 问题 | 根因 | 处理 |
+  |------|------|------|
+  | 片段未写入 | 目录推断失败 | 打印路径核对字段 |
+  | 回填缺失 | AI 未生成 | 重跑生成或检查过滤 |
+  | 写错目录 | 硬编码旧路径 | 使用推断函数 |
 
-```bash
-cd tools/testing
-python3 math_sm_comparison.py ../../word_to_tex/output/nanjing_2026_sep_preprocessed.md
-```
+  ### 9.7 最低成功标准（阶段二）
 
-**报告内容**：
+  - 全部图片生成合法 IMAGE_TODO 块
+  - image_jobs.jsonl 可推断目录
+  - 至少 1 张图替换为 TikZ
+  - 编译通过，无环境/定界符错误
 
-- 定界符平衡对比（Legacy vs State Machine）
-- 裸 `$` 符号统计
-- 文件大小变化
-- 截断片段样本（如有）
-- WARNING 标记（balance_diff 异常、truncation 检测等）
+  ### 9.8 外链索引
 
-**输出示例**：
+  - 规范：`IMAGE_JOBS_FORMAT.md`
+  - 完整：`IMAGE_JOBS_FULL.md`
+  - Prompt：`TIKZ_AGENT_PROMPT.md`
+  - 工具：`export_image_jobs.py` · `apply_tikz_snippets.py` · `write_snippets_from_jsonl.py`
 
-```markdown
-# Math Processing Comparison
-
-## File: nanjing_2026_sep_preprocessed.md
-
-## Math Delimiter Balance
-- Legacy pipeline: \( count = 85, \) count = 94, balance_diff = -9 ⚠️
-- State machine: \( count = 94, \) count = 94, balance_diff = 0 ✅
-
-## Stray Dollar Signs
-- Legacy: 0
-- State Machine: 0
-
-## File Size
-- Legacy: 45231 bytes
-- State Machine: 28567 bytes (-36.9%)
-
-✅ All checks passed (State Machine)
-```
-
-#### `export_image_jobs.py`（新增）
-
-**输入**：包含 IMAGE_TODO_START/END 的 TeX 文件  
-**输出**：`image_jobs.jsonl`（图片任务列表）
-
-**使用**：
-
-```bash
-python tools/images/export_image_jobs.py --files <tex文件> --output <jsonl路径>
-```
-
-#### `apply_tikz_snippets.py`（新增）
-
-**输入**：TeX 文件 + tikz_snippets 目录  
-**输出**：回填 TikZ 后的 TeX 文件
-
-**使用**：
-
-```bash
-python tools/images/apply_tikz_snippets.py \
-    --tex-file <tex文件> \
-    --snippets-dir <tikz_snippets目录> \
-    --output <输出文件>
-```
-
-#### `process_images_to_tikz.py`
-
-**输入**：包含 `% IMAGE_TODO:` 标记的 TeX 文件  
-**输出**：处理后的 TeX（包含 TikZ 代码或 `\includegraphics`）
-
-**三种模式**：
-
-```bash
-# 模式1：转换WMF为PNG并使用\includegraphics（推荐用于快速验证）
-python tools/images/process_images_to_tikz.py --mode include --files <tex文件>
-
-# 模式2：生成TikZ模板供手工填充
-python tools/images/process_images_to_tikz.py --mode template --files <tex文件>
-
-# 模式3：仅转换WMF为PNG
-python tools/images/process_images_to_tikz.py --mode convert --files <tex文件>
-```
-
-**注意**：
-
-- WMF 转换需要系统安装 LibreOffice (`soffice`) 或 ImageMagick (`convert`)
-- `--files` 可以指定多个文件或使用通配符
-- 如果没有 `--files`，默认处理 `content/exams/auto/*/converted_exam.tex`
-- **此工具将逐步被 export_image_jobs.py + apply_tikz_snippets.py 替代**
-
-#### `validate_tex.py`（v3.1 改进）
-
-**预编译语法检查工具**，在 LaTeX 编译前检测常见错误
-
-**🆕 v3.1 改进（2025-11-20）**：
-- ✅ **智能花括号检查**：移除数学定界符（`\left\{`、`\right\}` 等）后再检查，避免误报
-- ✅ **题干缺失检测**：检测 `\begin{question}` 后直接跟 `\item` 的情况
-
-**检查项目**：
-- ✅ `\explain` 宏中的段落分隔（双换行）- Runaway argument 根因
-- ✅ 🆕 智能花括号 `{}` 配对平衡（忽略数学定界符）
-- ✅ 数学定界符 `\(\)` 和 `\[\]` 配对
-- ✅ 环境 `\begin{}` / `\end{}` 平衡
-- ✅ 🆕 题目缺少题干检测
-
-**使用**：
-
-```bash
-# 单独运行
-python3 tools/validate_tex.py <tex文件>
-
-# 集成到 build.sh（推荐）
-VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
-```
-
-**输出示例**：
-
-```text
-🔍 Validating /path/to/converted_exam.tex ...
-❌ Found 3 error(s):
-  • Line 47: \explain macro contains paragraph breaks
-  • Line 58: Unmatched closing brace '}'
-  • Line 123: Question starts with \item (missing stem) - 题目缺少题干，直接从小问开始
-```
-
-**退出码**：
-- `0`：无错误
-- `1`：发现错误
-
-#### `locate_error.sh`（新增 v3.0）
-
-**快速定位 LaTeX 编译错误**，解析日志并显示上下文
-
-**使用**：
-
-```bash
-tools/locate_error.sh output/.aux/wrap-exam-teacher.log
-```
-
-**功能**：
-- 提取错误类型：Runaway argument / Missing $ inserted / Undefined control sequence
-- 显示错误位置（文件 + 行号）
-- 显示前后 5 行上下文
-- 提供常见原因和修复建议
-
-**输出示例**：
-
-```text
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-❌ Runaway argument 错误
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-📍 文件: content/exams/auto/test/converted_exam.tex
-📍 行号: 47
-
-【前后文】:
-  42: \answer{A}
-  43: \explain{
-  44:   第一行解释...
-  45:
-  46:   第二段解释...  ← 这里有空行！
-  47: }
-  48: \end{question}
-
-【常见原因】:
-  • \explain{} 内部有段落分隔（双换行或空行）
-  • 括号未闭合
-  
-【建议】:
-  • 运行 VALIDATE_BEFORE_BUILD=1 ./build.sh
-  • 使用 % 注释掉空行
-```
-
-#### `test_compile.sh`（新增 v3.0）
-
-**四组合回归测试**，验证所有编译模式
-
-**使用**：
-
-```bash
-tools/test_compile.sh
-```
-
-**测试组合**：
-- exam × teacher
-- exam × student  
-- handout × teacher
-- handout × student
-
-**输出示例**：
-
-```text
-🧪 开始编译回归测试...
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▶ 测试组合: TYPE=exam, MODE=teacher
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ exam (teacher) - PASS
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-▶ 测试组合: TYPE=exam, MODE=student
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ exam (student) - PASS
-
-...
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📊 测试结果汇总
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ 通过: 4
-❌ 失败: 0
-```
-
-#### `workflow_validate.sh`（新增 v3.0）
-
-**一键工作流验证脚本**，自动执行完整测试流程
-
-**使用**：
-
-```bash
-tools/workflow_validate.sh <tex文件路径>
-```
-
-**验证步骤**：
-1. ✅ 文件存在性检查
-2. ✅ 预编译语法检查（validate_tex.py）
-3. ✅ 教师版编译测试
-4. ✅ 学生版编译测试
-5. ✅ PDF 生成验证
-6. ✅ 文件大小检查（>10KB）
-
-#### `preprocess_docx.sh`（推荐）
-
-**完整流程封装**，自动执行 Pandoc → ocr_to_examx.py → agent_refine.py
-
-**使用**：
-
-```bash
-word_to_tex/scripts/preprocess_docx.sh \
-    <输入DOCX路径> \
-    <输出前缀名> \
-    <试卷标题>
-```
-
-**示例**：
-
-```bash
-word_to_tex/scripts/preprocess_docx.sh \
-    "word_to_tex/input/江苏省南京市2026届高三上学期9月学情调研数学试题.docx" \
-    "nanjing_2026_sep" \
-    "江苏省南京市2026届高三上学期9月学情调研数学试题"
-```
-
-**输出**：
-
-- `word_to_tex/output/<前缀>_raw.md` - Pandoc 原始输出
-- `word_to_tex/output/<前缀>_preprocessed.md` - 预处理后的 Markdown
-- `word_to_tex/output/<前缀>_examx.tex` - examx 风格 TeX
-- `content/exams/auto/<前缀>/converted_exam.tex` - 精炼后的最终版本（含 IMAGE_TODO 占位）
-- `word_to_tex/output/figures/` - 提取的图片（如果有）
-
-### 1.3 `ocr_to_examx.py` v1.7 增强功能
-
-**🆕 v1.7 新增功能（2025-11-20）**：
-- ✅ **题干缺失检测**：自动检测题目是否缺少题干（直接从 `\item` 开始）
-- ✅ **图片属性残留清理**：自动删除 `height="..."` 和 `width="..."` 等 Markdown 残留
-- ✅ **小问编号格式统一**：不自动添加 `\mathrm`，使用普通文本 `(i)`、`(ii)` 等
-- ✅ **IMAGE_TODO 块优化**：生成后不添加额外空行，避免 `\explain` 参数提前结束
-- ✅ **\explain 空行自动处理**：将空行替换为 `\par`，避免 Runaway argument 错误
-
-**v1.6 meta 自检系统**：
-- ✅ 题目级 meta 一致性验证
-- ✅ 检测非法 `【分析】` 混入
-- ✅ Section 与题型要求验证（如单选题必须有答案）
-- ✅ TeX 宏（answer/explain）缺失检查
-- ✅ 常见格式问题检测（`*$x$*`, `$ $`, 全角括号等）
-- ✅ 生成详细问题日志：`word_to_tex/output/debug/<slug>_issues.log`
-
-**问题日志增强**：
-- meta summary（答案、难度、知识点统计）
-- 原始 Markdown 片段
-- 生成的 TeX 片段
-- 完整 issue 列表（带行号和上下文）
-
-**自测功能**：
-
-```bash
-python3 tools/core/ocr_to_examx.py --selftest
-```
-
-### 1.4 元信息映射规则（⚠️ 核心规范）
-
-| Markdown 标记 | examx 命令 | 处理规则 |
-|--------------|-----------|---------|
+  （本节精简，其它开发任务与扩展移至外链）
 | `【答案】A` | `\answer{A}` | 直接映射 |
 | `【难度】0.85` | `\difficulty{0.85}` | 直接映射 |
 | `【知识点】...` 或 `【考点】...` | `\topics{...}` | 合并为一个 |
@@ -518,56 +129,24 @@ python3 tools/core/ocr_to_examx.py --selftest
    - 检查 `\explain{}` 内容是否全部来自`【详解】`
    - 对比原始 Markdown 确认`【分析】`内容未被使用
 
-### 1.5 编译规范（v2.1 增强）
+### 1.4 编译规范
 
 **步骤**：
 
-1. 修改 `settings/metadata.tex`，设置：
+1. 修改 `settings/metadata.tex`：`\newcommand{\examSourceFile}{content/exams/auto/<前缀>/converted_exam.tex}`
 
-   ```latex
-   \newcommand{\examSourceFile}{content/exams/auto/<前缀>/converted_exam.tex}
-   ```
-
-2. 运行编译（推荐使用预检查）：
-
+2. 运行编译：
    ```bash
    # 带预检查（推荐）
    VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
    
    # 标准编译
-   ./build.sh exam teacher    # 生成教师版（含答案和解析）
-   ./build.sh exam student    # 生成学生版（无答案）
-   ./build.sh exam both       # 同时生成两个版本
+   ./build.sh exam teacher/student/both
    ```
 
-3. 检查输出：
-   - PDF 位于 `output/wrap-exam-teacher.pdf` 或 `output/wrap-exam-student.pdf`
-   - 如果编译失败，查看 `output/last_error.log`
-   - 日志保存在 `output/build.log`
+3. 检查输出：`output/wrap-exam-*.pdf`、`output/last_error.log`、`output/build.log`
 
-**build.sh v2.1 新特性**：
-
-- ✅ **预编译检查集成**（VALIDATE_BEFORE_BUILD=1）
-  - 自动从 metadata.tex 提取源文件
-  - 运行 validate_tex.py 进行语法检查
-  - 发现问题时给出警告但继续编译
-  
-- ✅ **智能错误分析**（extract_errors 增强）
-  - 识别错误类型：Runaway argument / Missing $ / Undefined control sequence
-  - 提取文件名和行号
-  - 提供常见原因分析
-  - 给出修复建议（如运行 validate_tex.py）
-  
-- ✅ **BSD grep 兼容**（macOS 友好）
-  - 使用 sed 替代 grep -oP（Perl regex）
-  - 跨平台兼容性改进
-  
-- ✅ **其他改进**
-  - 自动提取并显示错误上下文
-  - 智能区分真实错误和引用警告
-  - 自动清理失败的中间文件
-  - 对 `LastPage` 未定义等警告自动强制完成编译
-  - 保存错误摘要到 `output/last_error.log`
+**build.sh 特性**：预编译检查集成、智能错误分析、跨平台兼容、自动错误定位
 
 ---
 
@@ -690,41 +269,13 @@ cat content/exams/auto/<slug>/debug/<slug>_issues.log
 
 #### Step 1：查看智能错误摘要
 
-build.sh 会自动在终端显示错误分析：
-
-```text
-❌ 编译返回码非 0，未匹配致命错误模式但仍失败（teacher 模式）
-
-📍 编译中断位置：
-l.58 \(\therefore e = 2\)．}
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-🔍 智能错误分析
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-可能的错误类型：
-  • Missing $ inserted
-  • Runaway argument
-
-常见原因：
-  1. \explain{} 宏内部有空行（段落分隔）
-  2. 花括号不配对
-  3. 数学模式定界符不匹配
-
-建议操作：
-  • 运行预编译检查：VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
-  • 使用错误定位工具：tools/locate_error.sh output/.aux/wrap-exam-teacher.log
-```
+build.sh 自动显示错误类型、位置、原因和修复建议。
 
 #### Step 2：查看详细错误日志
 
 ```bash
 cat output/last_error.log
-```
-
-或使用错误定位工具（更友好）：
-
-```bash
+# 或使用错误定位工具（更友好）
 tools/locate_error.sh output/.aux/wrap-exam-teacher.log
 ```
 
@@ -759,65 +310,23 @@ locate_error.sh 会显示：
 VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
 ```
 
-### 3.3 回归测试流程
+### 3.4 回归测试流程
 
-**何时使用**：
-- 修改了 ocr_to_examx.py
-- 修改了 build.sh 或编译配置
-- 修改了 preamble.sty 等公共文件
-- 准备提交代码前
+**何时使用**：修改了核心脚本或配置文件、准备提交代码前
 
-**运行测试**：
+**运行测试**：`tools/test_compile.sh`
 
-```bash
-tools/test_compile.sh
-```
+**测试覆盖**：exam/handout × teacher/student（4种组合）
 
-**测试覆盖**：
-- ✅ exam + teacher
-- ✅ exam + student
-- ✅ handout + teacher（如果配置了 handout 源文件）
-- ✅ handout + student（如果配置了 handout 源文件）
+**失败处理**：查看错误摘要 → 使用 locate_error.sh 定位 → 修复后重测
 
-**输出解读**：
+### 3.5 完整工作流验证
 
-```text
-✅ exam (teacher) - PASS
-✅ exam (student) - PASS
-❌ handout (teacher) - FAIL
-   [...错误摘要...]
+**使用**：`tools/workflow_validate.sh content/exams/auto/<slug>/converted_exam.tex`
 
-📊 测试结果汇总
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✅ 通过: 2
-❌ 失败: 1
-```
+**验证步骤**：文件检查 → 预编译 → 教师版/学生版编译 → PDF 验证
 
-**失败处理**：
-- 查看错误摘要
-- 使用 locate_error.sh 定位问题
-- 修复后重新运行测试
-
-### 3.4 完整工作流验证
-
-使用一键验证脚本：
-
-```bash
-tools/workflow_validate.sh content/exams/auto/<slug>/converted_exam.tex
-```
-
-**验证步骤**：
-1. ✅ 检查文件存在
-2. ✅ 预编译语法检查
-3. ✅ 教师版编译
-4. ✅ 学生版编译
-5. ✅ PDF 文件验证
-6. ✅ 文件大小检查（>10KB）
-
-**成功标准**：
-- 所有步骤都显示 ✅
-- 生成的 PDF 可以正常打开
-- PDF 文件大小合理（通常 >50KB）
+**成功标准**：所有步骤✅、PDF可打开、文件大小合理（>50KB）
 
 ---
 
@@ -1135,35 +644,19 @@ mv settings/metadata.tex.bak settings/metadata.tex
 
 ### 8.2 调试技巧
 
-**快速定位问题**：
+**快速诊断命令**：
 ```bash
-# 1. 预检查
+# 预检查 + 错误过滤
 VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher 2>&1 | grep -A 5 "Found.*error"
 
-# 2. 编译并查看错误
-./build.sh exam teacher 2>&1 | tail -50
-
-# 3. 详细错误定位
+# 详细错误定位
 tools/locate_error.sh output/.aux/wrap-exam-teacher.log
 
-# 4. 检查问题日志
+# 检查问题日志
 cat word_to_tex/output/debug/*_issues.log | grep "CRITICAL\|ERROR"
 ```
 
-**常见错误速查**：
-```bash
-# 查找 explain 空行问题
-grep -n "^$" content/exams/auto/*/converted_exam.tex | grep -B 2 -A 2 "explain"
-
-# 查找【分析】残留
-grep -r "【分析】\|分析】" content/exams/auto/*/converted_exam.tex
-
-# 查找括号不配对
-python3 tools/validate_tex.py content/exams/auto/*/converted_exam.tex
-
-# 统计题目数量
-grep -c "\\begin{question}" content/exams/auto/*/converted_exam.tex
-```
+**常见检查**：explain 空行、【分析】残留、括号配对、题目统计（参见 KNOWN_ISSUES.md）
 
 ### 8.3 版本控制建议
 
@@ -1392,7 +885,7 @@ converted_exam_tikz.tex
 
 #### JSONL 单行示例
 
-> **完整字段说明与推断规则详见：[IMAGE_JOBS_FORMAT.md](./IMAGE_JOBS_FORMAT.md)**
+> **完整字段说明与推断规则详见：[IMAGE_JOBS_FULL.md](IMAGE_JOBS_FULL.md)**
 
 每一行是一个 JSON 对象，代表一个图片任务（image_job）。以下为简化示例（实际导出包含更多字段）：
 
@@ -1418,7 +911,7 @@ converted_exam_tikz.tex
 
 **关键字段**：
 - `exam_prefix` / `exam_dir` / `tikz_snippets_dir`：由 `export_image_jobs.py` 自动推断并填充，确保下游 Agent 可直接使用。
-- 完整字段说明、目录推断逻辑（唯一真理）、使用示例请参阅 **[IMAGE_JOBS_FORMAT.md](./IMAGE_JOBS_FORMAT.md)**。
+- 完整字段说明、目录推断逻辑（唯一真理）、使用示例请参阅 **[IMAGE_JOBS_FULL.md](IMAGE_JOBS_FULL.md)**。
 
 #### 字段说明
 
@@ -1456,89 +949,14 @@ converted_exam_tikz.tex
 
 ### 9.4 给 AI 画 TikZ 的标准系统 Prompt 模板
 
-> 这个 Prompt 是给"看图生成 TikZ"大模型 / Agent 用的，可以直接放到它的 System 区 / 说明文档里。
+> 完整 Prompt 模板参见：**[TIKZ_AGENT_PROMPT.md](TIKZ_AGENT_PROMPT.md)**
 
-```markdown
-你是一名专业的 LaTeX TikZ 绘图助手，专门为高中数学试卷生成严谨、可编译的 TikZ 代码。
+**核心要求**：
 
-你的任务：根据给定的 **image_job** 元数据和对应的图片内容，生成一段完整的 `tikzpicture` 环境，用于替换试卷中的图片。
-
----
-
-## 输入信息
-
-你将获得两部分信息：
-
-1. 一个 JSON 对象 `image_job`（结构示例）：
-
-```json
-{
-  "id": "nanjing2026-Q3-img1",
-  "exam_slug": "nanjing2026",
-  "tex_file": "content/exams/auto/nanjing2026/converted_exam.tex",
-  "question_index": 3,
-  "sub_index": 1,
-  "path": "word_to_tex/output/figures/media/image1.png",
-  "width_pct": 60,
-  "inline": false,
-  "context_before": "已知函数 f(x) 在区间 [0,1] 上单调递增，其图像如下所示：",
-  "context_after": "则下列结论中正确的是（    ）。",
-  "todo_block_start_line": 241,
-  "todo_block_end_line": 250
-}
-```
-
-2. 对应的图片内容，由外部工具加载 `image_job.path` 所指向的图片文件。
-
-你可以假设外部工具已经把这张图片展示给你，你"看得见"图中的坐标轴、图像、线段、点、注记等。
-
----
-
-## 生成 TikZ 的要求
-
-1. **输出格式**
-   - 只输出一段完整的 TikZ 环境：
-     ```tex
-     \begin{tikzpicture}
-       ...
-     \end{tikzpicture}
-     ```
-   - 不要输出解释、注释或 Markdown 文本
-   - 不要包含 `\documentclass`、`\begin{document}` 等内容
-
-2. **风格与规范**
-   - 使用标准 `tikz`（和必要的 `pgfplots`）语法，避免依赖冷门宏包
-   - 文字标签尽量使用英文字母或数学模式，例如 `$A$`、`$f(x)$`，不要输出中文
-   - 坐标轴、网格、曲线要清晰、可读，优先保持数学结构正确，而非像素级完全一致
-   - 如果图像是函数图像或统计图，尽量用解析式或关键点来绘制，而不是硬编码大量离散点
-
-3. **坐标与大小**
-   - 结合 `image_job.width_pct` 决定图像的相对尺寸，但你不需要直接使用这个百分比
-   - 推荐使用 `scale` 或 `axis` 的 `width`/`height` 控制整体大小，例如：
-     ```tex
-     \begin{tikzpicture}[scale=1.0]
-     ...
-     \end{tikzpicture}
-     ```
-   - 坐标轴范围请根据图像内容合理设置，例如 `-1` 到 `4`，`0` 到 `5` 等
-
-4. **保持数学语义**
-   - 你的目标是让试卷中的图像在数学意义上与原图一致：
-     - 若原图是一次函数、二次函数、绝对值函数、指数函数等，请按正确的函数形状绘制
-     - 若原图是几何图形（如三角形、圆、扇形），请尽量保留角度和相对位置关系
-   - 不需要完全还原所有装饰性细节（如细小刻度、阴影），优先保证可读和易于编译
-
-5. **鲁棒性**
-   - 如果图片极其复杂（比如多子图、复杂统计图），可以适当简化，只画最关键的部分，让学生能够使用这幅图解题
-   - 禁止输出空的 `tikzpicture`；如果你实在看不清某部分，可以根据题目上下文做合理推断
-
----
-
-## 最重要的一点
-
-**始终只输出纯 TikZ 代码**，不要添加任何额外说明文字。
-你的输出会被直接写入 LaTeX 源文件并编译成试卷。
-```
+1. **输入**：image_job JSON 对象 + 对应图片
+2. **输出**：纯 TikZ 代码（`\begin{tikzpicture}...\end{tikzpicture}`）
+3. **风格**：使用标准 tikz/pgfplots，避免中文标签，优先数学语义正确
+4. **鲁棒性**：复杂图可适当简化，禁止输出空 tikzpicture
 
 ### 9.5 给代码 Agent 的开发任务（可直接复制当成子任务）
 
@@ -1678,3 +1096,52 @@ for job in jobs:
 4. 把发现的问题补充到"问题清单"里
 
 **祝测试与重构顺利！🚀**
+
+---
+
+## 附录：版本历史
+
+### v3.4（2025-11-21）- 精准数学定界符修复
+
+**ocr_to_examx.py v1.8.7**：
+- 数学定界符统计忽略注释（diff 从 -3 改善到 -1，67% 改善）
+- 检测反向数学定界符模式（\) 在 \( 前面）
+- 极窄自动修复特定反向模式（安全、不影响其他内容）
+
+**ocr_to_examx.py v1.8.6**：
+- 收紧 fix_right_boundary_errors 行为（diff 从 -18 改善到 -3，83% 改善）
+- 新增 balance_array_and_cases_env 后处理（删除多余的 \end）
+- 新增 validate_brace_balance 全局花括号检查
+- 增强 validate_math_integrity 日志（优先显示关键词样本）
+- 增强题干缺失检测日志（带上下文）
+
+### v3.3（2025-11-20）- MathStateMachine 状态机
+
+**重大升级**：
+- 实现 MathStateMachine 状态机数学处理管线
+- 替换旧正则管线，实现完美数学定界符平衡（balance_diff = 0）
+- 新增截断检测功能（未匹配括号样本收集）
+- 支持 `**章节标题**` 格式（raw markdown 文件）
+- 添加 A/B 对比测试工具（math_sm_comparison.py）
+- 完整性验证集成到转换流程
+
+### v3.2（2025-11-19）- 表格美化环境
+
+- 新增统一表格美化环境 examtableboxed（试卷带竖线）
+- 新增 examtable（讲义 booktabs 风格）
+
+### v3.1（2025-11-18）- ocr_to_examx.py v1.7
+
+- 题干缺失检测：自动检测题目是否缺少题干
+- 图片属性残留清理：删除 height/width 属性
+- 小问编号格式统一：使用普通文本
+- IMAGE_TODO 块优化：避免额外空行
+- \explain 空行自动处理：替换为 \par
+
+### v3.0（2025-11-17）- 质量保证工具链
+
+- 集成 meta 自检系统
+- 新增预编译验证工具（validate_tex.py）
+- 新增智能错误分析（locate_error.sh）
+- 新增回归测试（test_compile.sh）
+- 增强 build.sh：智能错误分析 + 预检查集成
