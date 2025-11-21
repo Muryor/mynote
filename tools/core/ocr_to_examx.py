@@ -53,6 +53,145 @@ import argparse
 import shutil
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+from enum import Enum, auto  # 引入枚举支持（状态机需要）
+
+# ==================== 数学状态机（来自 ocr_to_examx_complete.py） ====================
+# 注意：此状态机完全取代原先基于正则的 smart_inline_math / sanitize_math 等管线。
+# 旧函数保留但标记为 DEPRECATED，主流程不再调用，避免相互干扰。
+
+class TokenType(Enum):
+    TEXT = auto()
+    DOLLAR_SINGLE = auto()
+    DOLLAR_DOUBLE = auto()
+    LATEX_OPEN = auto()
+    LATEX_CLOSE = auto()
+    RIGHT_BOUNDARY = auto()
+    NEWLINE = auto()
+    EOF = auto()
+
+
+class MathStateMachine:
+    r"""数学模式状态机 - 统一解析/规范所有数学定界符
+
+    设计目标：
+    1. 支持混合出现的 $ ... $、$$ ... $$、\( ... \) 以及 OCR 生成的 \right. $$ 等畸形边界
+    2. 将所有显示/行内数学统一规范为行内形式：\( ... \)（与 examx 包兼容）
+    3. 保持已有正确的 \( ... \) / \) 不被二次包裹
+    4. 防止跨行单美元未闭合造成吞并后续文本
+    """
+
+    def tokenize(self, text: str) -> List:
+        tokens = []
+        i = 0
+        n = len(text)
+        while i < n:
+            # 特例：\right. 后紧跟 $$ （OCR 常见）
+            if text[i:].startswith(r'\right.'):
+                j = i + 7
+                while j < n and text[j] in ' \\':
+                    j += 1
+                if text[j:j+2] == '$$':
+                    tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
+                    i = j + 2
+                    continue
+                else:
+                    tokens.append((TokenType.TEXT, r'\right.', i))
+                    i += 7
+                    continue
+
+            # $$ 显示数学
+            if i < n - 1 and text[i:i+2] == '$$':
+                tokens.append((TokenType.DOLLAR_DOUBLE, '$$', i))
+                i += 2
+                continue
+
+            # 单 $ 行内数学
+            if text[i] == '$':
+                tokens.append((TokenType.DOLLAR_SINGLE, '$', i))
+                i += 1
+                continue
+
+            # \( 与 \)
+            if i < n - 1 and text[i:i+2] == r'\(':
+                tokens.append((TokenType.LATEX_OPEN, r'\(', i))
+                i += 2
+                continue
+            if i < n - 1 and text[i:i+2] == r'\)':
+                tokens.append((TokenType.LATEX_CLOSE, r'\)', i))
+                i += 2
+                continue
+
+            # 普通文本块收集
+            j = i
+            while j < n:
+                if text[j] in '$\n':
+                    break
+                if j < n - 1 and text[j:j+2] in [r'\(', r'\)', '$$']:
+                    break
+                if text[j:].startswith(r'\right.'):
+                    break
+                j += 1
+            if j > i:
+                tokens.append((TokenType.TEXT, text[i:j], i))
+                i = j
+            else:
+                tokens.append((TokenType.TEXT, text[i], i))
+                i += 1
+        return tokens
+
+    def process(self, text: str) -> str:
+        tokens = self.tokenize(text)
+        out = []
+        i = 0
+        while i < len(tokens):
+            t_type, val, pos = tokens[i]
+            if t_type == TokenType.RIGHT_BOUNDARY:
+                out.append(r'\right.\)')  # 补全成闭合的行内数学
+                i += 1
+                continue
+            if t_type == TokenType.DOLLAR_DOUBLE:
+                # 收集直到下一个 $$
+                i += 1
+                buf = []
+                while i < len(tokens):
+                    tt, tv, _ = tokens[i]
+                    if tt == TokenType.DOLLAR_DOUBLE:
+                        i += 1
+                        break
+                    buf.append(tv)
+                    i += 1
+                out.append(r'\(' + ''.join(buf).strip() + r'\)')
+                continue
+            if t_type == TokenType.DOLLAR_SINGLE:
+                i += 1
+                buf = []
+                while i < len(tokens):
+                    tt, tv, _ = tokens[i]
+                    if tt == TokenType.DOLLAR_SINGLE:
+                        i += 1
+                        break
+                    # 禁止跨行的单美元延伸
+                    if '\n' in tv:
+                        out.append('$')
+                        out.extend(buf)
+                        break
+                    buf.append(tv)
+                    i += 1
+                if buf:
+                    out.append(r'\(' + ''.join(buf) + r'\)')
+                continue
+            if t_type in (TokenType.LATEX_OPEN, TokenType.LATEX_CLOSE):
+                out.append(val)
+                i += 1
+                continue
+            out.append(val)
+            i += 1
+        return ''.join(out)
+
+
+# 单例实例供全局调用
+math_sm = MathStateMachine()
+
 
 # ==================== 配置 ====================
 
@@ -183,6 +322,7 @@ def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
     return text
 
 
+# DEPRECATED: 已被 MathStateMachine 替换，保留以兼容旧测试；主流程不再调用
 def smart_inline_math(text: str) -> str:
     r"""智能转换行内公式：$...$ -> \(...\)，$$...$$ -> \(...\)
 
@@ -250,6 +390,7 @@ def smart_inline_math(text: str) -> str:
     return text
 
 
+# DEPRECATED: 已被 MathStateMachine 统一处理双重包裹
 def fix_double_wrapped_math(text: str) -> str:
     r"""修正双重包裹的数学公式
     
@@ -338,6 +479,7 @@ def clean_residual_image_attrs(text: str) -> str:
     return text
 
 
+# DEPRECATED: 状态机后不再需要变量自动包裹，可能导致过度包裹
 def wrap_math_variables(text: str) -> str:
     """智能包裹数学变量（增强版）"""
     # 保护已有的数学模式
@@ -451,6 +593,7 @@ def _sanitize_math_block(block: str) -> str:
     return block
 
 
+# DEPRECATED: 状态机已处理数学定界符与 OCR 边界，此函数仅保留兼容性
 def sanitize_math(text: str) -> str:
     """扫描全文，仅修正数学环境内的 OCR 错误
     
@@ -912,7 +1055,12 @@ def clean_markdown(text: str) -> str:
 # ==================== 题目解析函数 ====================
 
 def split_sections(text: str) -> List[Tuple[str, str]]:
-    """拆分章节"""
+    """拆分章节（支持 markdown 标题和加粗格式）
+    
+    支持两种格式：
+    1. Markdown 标题：# 一、单选题
+    2. 加粗格式：**一、单选题**
+    """
     lines = text.splitlines()
     sections = []
     current_title = None
@@ -920,10 +1068,18 @@ def split_sections(text: str) -> List[Tuple[str, str]]:
 
     for line in lines:
         stripped = line.strip()
+        # 优先匹配 markdown 标题格式
         m = re.match(
             r"^#+\s*(一、单选题|二、单选题|二、多选题|三、填空题|四、解答题)",
             stripped,
         )
+        # 如果不匹配，尝试匹配加粗格式 **章节标题**
+        if not m:
+            m = re.match(
+                r"^\*\*(一、单选题|二、单选题|二、多选题|三、填空题|四、解答题)\*\*",
+                stripped,
+            )
+        
         if m:
             if current_title is not None:
                 sections.append((current_title, "\n".join(current_lines).strip()))
@@ -1481,6 +1637,7 @@ def handle_subquestions(content: str) -> str:
     return '\n'.join(result_lines)
 
 
+# DEPRECATED: 状态机已避免这些行内异常，保留兜底测试使用
 def fix_inline_math_glitches(text: str) -> str:
     """🆕 修复行内数学的各种异常模式
 
@@ -1509,76 +1666,208 @@ def fix_inline_math_glitches(text: str) -> str:
 
 
 def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
-    """统一处理文本
+    r"""统一入口：题干/选项/解析文本的 LaTeX 处理（状态机版）
 
-    🆕 v1.5 改进：添加双重包裹修正
-    🆕 v1.3 改进：更强的"故选"清理规则
-    🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
-    🆕 v1.6.3：修复 *$x$* 和空 math delimiter 问题
+    重构目标：
+    1. 保留原有“非数学”清理与转义逻辑（故选/【详解】/OCR 边界修复等）
+    2. 用 MathStateMachine 完全替换旧的 smart_inline_math / sanitize_math 等正则管线
+    3. 数学定界符统一：$...$ / $$...$$ → \(...\)，保持已有 \(...\) 不重复包裹
+    4. 在状态机处理后做轻量兜底清理（空数学块、图片属性残留等）
     """
     if not text:
         return text
 
-    # 🆕 v1.6.3：在进行 inline math 转换之前，先处理 Markdown 强调
-    # 把 *$x$* 这种"星号包着数学"的形式改成纯数学
-    text = re.sub(r'\*\s*(\$[^$]+\$)\s*\*', r'\1', text)
-    # 把 *x* / *a* 这种简单强调，改成 \emph{x}，避免后续被误识别为数学
-    text = re.sub(r'\*([A-Za-z0-9])\*', r'\\emph{\1}', text)
+    # ---------- 1. 前置：纯文本/非数学层面清理（原逻辑保留） ----------
+    text = re.sub(r'\*\s*(\$[^$]+\$)\s*\*', r'\1', text)  # *$x$* → $x$
+    text = re.sub(r'\*([A-Za-z0-9])\*', r'\\emph{\1}', text)  # *x* → \emph{x}
 
-    # 🆕 v1.3 改进：更强的"故选"清理规则
-    # 清理结尾的"故选"（支持多种标点）
+    # "故选" / "故答案为" 系列清理
     text = re.sub(r'[,，。\.;；]\s*故选[:：][ABCD]+[.。]?\s*$', '', text)
-    # 清理单独一行的"故选"
     text = re.sub(r'\n+故选[:：][ABCD]+[.。]?\s*$', '', text)
-    # 清理开头的"故选"（罕见但可能）
     text = re.sub(r'^\s*故选[:：][ABCD]+[.。]?\s*', '', text)
-    # 清理"故答案为"
     text = re.sub(r'\n+故答案为[:：]', '', text)
-    # 额外：删除"单独一行"的"故选：X"
-    text = re.sub(
-        r'^\s*故选[:：][ABCD]+[.。]?\s*$',
-        '',
-        text,
-        flags=re.MULTILINE,
-    )
-    # 进一步：清理句末的"，故选：X"之类尾巴（保留前面的解析内容）
-    text = re.sub(
-        r'[，,]?\s*故选[:：]\s*[ABCD]+[。．.]*\s*$',
-        '',
-        text,
-        flags=re.MULTILINE,
-    )
-    # 清理"【详解】"标记
+    text = re.sub(r'^\s*故选[:：][ABCD]+[.。]?\s*$', '', text, flags=re.MULTILINE)
+    text = re.sub(r'[，,]?\s*故选[:：]\s*[ABCD]+[。．.]*\s*$', '', text, flags=re.MULTILINE)
     text = re.sub(r'^【?详解】?[:：]?\s*', '', text)
 
-    # 🆕 v1.5.1：预处理 - 修复 OCR 常见的 \right.\\) 模式
-    # 这个问题出现在 array 环境结尾，需要在 smart_inline_math 之前修复
+    # OCR 边界畸形预处理（保持原逻辑）
     text = re.sub(r'\\\\right\.\s*\\\\\\\)', r'\\\\right.', text)
     text = re.sub(r'\\\\right\.\\\\\+\)', r'\\\\right.', text)
 
-    # 将文本中的 Unicode ∵/∴ 替换为可编译的数学符号（包裹为行内数学）
-    # 数学环境内的替换由 sanitize_math 再次保证
+    # Unicode 符号替换（先行包裹为数学，后续状态机会规范）
+    # ∵/∴ 直接替换为命令（不再包裹美元，避免生成孤立 $）
     if '∵' in text or '∴' in text:
-        text = text.replace('∵', '$\\because$').replace('∴', '$\\therefore$')
+        text = text.replace('∵', '\\because ').replace('∴', '\\therefore ')
 
+    # 非数学模式下的 LaTeX 特殊字符转义
     if not is_math_heavy:
         text = escape_latex_special(text, in_math_mode=False)
 
-    text = smart_inline_math(text)
-    # 🆕 v1.5 新增：修正可能的双重包裹
-    text = fix_double_wrapped_math(text)
-    # 🆕 v1.8: 禁用 wrap_math_variables - 它会破坏已正确包裹的数学模式
-    # text = wrap_math_variables(text)
+    # ---------- 2. 数学模式统一：状态机处理 ----------
+    global math_sm
+    text = math_sm.process(text)
 
-    # 🆕 v1.5.1：修正数学环境内的 OCR 错误（delimiter mismatches）
-    # 🆕 v1.8: 禁用 sanitize_math - 它的查找逻辑会破坏已正确的数学模式配对
-    # if is_math_heavy:
-    #     text = sanitize_math(text)
-
-    # 🆕 v1.6.3：最后兜底清理各种空/多余 inline math
-    text = fix_inline_math_glitches(text)
+    # ---------- 3. 轻量后处理：常见空块/残留修复 ----------
+    text = fix_common_issues_v2(text)
 
     return text
+
+
+def fix_common_issues_v2(text: str) -> str:
+    r"""状态机后的兜底纯文本修复（只处理不改变数学语义的残留）
+
+    包含：
+    - 空的行内/显示数学块 \(\) / \[\] 删除
+    - \because\(\) / \therefore\(\) 清理为纯命令
+    - OCR 产生的数组边界畸形（\right.\\) → \right.\)）
+    - 图片残余属性清理（利用原 clean_residual_image_attrs）
+    - 去除孤立的重复显示公式定界符（状态机已规范，兜底防御）
+    """
+    if not text:
+        return text
+    # 空数学块
+    text = re.sub(r'\\\(\s*\\\)', '', text)
+    text = re.sub(r'\\\[\s*\\\]', '', text)
+    # 清理 \because\(\) / \therefore\(\)
+    text = re.sub(r'\\because\s*\\\(\\\)', r'\\because ', text)
+    text = re.sub(r'\\therefore\s*\\\(\\\)', r'\\therefore ', text)
+    # 数组/分段等环境边界畸形（与 complete 版本保持一致）
+    text = text.replace(r'\right.\\)', r'\right.\)')
+    text = text.replace(r'\right)\\)', r'\right)\)')
+    # 图片属性残留（复用已有函数）
+    text = clean_residual_image_attrs(text)
+    # 移除任何残留的裸 $$（状态机后理论上不会出现）
+    text = text.replace('$$', '')
+
+    # 清理外层多余美元: $\(x\)$ → \(x\)
+    text = re.sub(r'\$(\\\([^$]+?\\\))\$', r'\1', text)
+    # 清理 $\because$ → \because （以及 \therefore）
+    text = re.sub(r'\$(\\because)\$', r'\1', text)
+    text = re.sub(r'\$(\\therefore)\$', r'\1', text)
+    # 清理简单变量形式 $x$ 若单字符且不在已有数学（保守：仅字母/数字）→ \(x\)
+    def _wrap_simple_var(m: re.Match) -> str:
+        var = m.group(1)
+        return f'\\({var}\\)'
+    text = re.sub(r'(?<!\\)\$([a-zA-Z0-9])\$', _wrap_simple_var, text)
+    # 再次移除可能产生的空数学块 \(\)
+    text = re.sub(r'\\\(\s*\\\)', '', text)
+    # 去除遗留的孤立单美元（不在配对内）：删除
+    # 匹配单独一行只包含 $ 或行首/行末的单美元
+    text = re.sub(r'(^|\s)(\$)(?=\s|$)', lambda m: m.group(1), text)
+    return text
+
+
+def validate_math_integrity(tex: str) -> List[str]:
+    r"""分析最终 TeX 数学完整性问题并返回警告列表（扩展版）
+
+    检查项：
+    - 行内数学定界符数量差异（opens vs closes）
+    - 裸露美元符号
+    - 双重包裹残留
+    - 右边界畸形（\right. $$ 等）
+    - 空数学块
+    - 🆕 截断/未闭合的数学片段（收集前若干样本）
+      典型来源：图片占位符或 explain 合并时跨行被截断，导致缺失 \)
+    """
+    issues: List[str] = []
+    opens = tex.count('\\(')
+    closes = tex.count('\\)')
+    if opens != closes:
+        issues.append(f"Math delimiter imbalance: opens={opens} closes={closes} diff={opens - closes}")
+
+    stray = len(re.findall(r'(?<!\\)\$', tex))
+    if stray:
+        issues.append(f"Stray dollar signs detected: {stray}")
+
+    double_wrapped = (
+        len(re.findall(r'\$\s*\\\(.*?\\\)\s*\$', tex, flags=re.DOTALL)) +
+        len(re.findall(r'\$\$\s*\\\(.*?\\\)\s*\$\$', tex, flags=re.DOTALL))
+    )
+    if double_wrapped:
+        issues.append(f"Double-wrapped math segments: {double_wrapped}")
+
+    right_glitch = (
+        len(re.findall(r'\\right\.\s*\$\$', tex)) +
+        len(re.findall(r'\\right\.\\\\\)', tex))
+    )
+    if right_glitch:
+        issues.append(f"Right boundary glitches: {right_glitch}")
+
+    empty_math = (
+        len(re.findall(r'\\\(\s*\\\)', tex)) +
+        len(re.findall(r'\\\[\s*\\\]', tex))
+    )
+    if empty_math:
+        issues.append(f"Empty math blocks: {empty_math}")
+
+    # 🆕 截断检测：使用顺序扫描匹配未配对的 \\( 和 \\)
+    unmatched_open_positions: List[int] = []
+    unmatched_close_positions: List[int] = []
+
+    token_iter = list(re.finditer(r'(\\\(|\\\))', tex))
+    stack: List[int] = []
+    for m in token_iter:
+        tok = m.group(0)
+        pos = m.start()
+        if tok == '\\(':  # open
+            stack.append(pos)
+        else:  # ')'
+            if stack:
+                stack.pop()
+            else:
+                unmatched_close_positions.append(pos)
+    # 剩余 stack 中的是未闭合 open
+    unmatched_open_positions.extend(stack)
+
+    def _sample_at(pos: int, direction: str = 'forward', span: int = 140) -> str:
+        """获取从 pos 起的上下文样本，去除换行与多余空格"""
+        if direction == 'forward':
+            raw = tex[pos:pos+span]
+        else:
+            start = max(0, pos-span)
+            raw = tex[start:pos+10]
+        # 截断到第一个 '\\)' （若存在）
+        end_delim = raw.find('\\)')
+        if end_delim != -1:
+            raw = raw[:end_delim+2]
+        raw = re.sub(r'\s+', ' ', raw).strip()
+        return raw
+
+    # 进一步甄别“疑似截断”：开括号后 120 字符内没有闭括号
+    truncated_open_samples: List[str] = []
+    for p in unmatched_open_positions:
+        segment = tex[p:p+300]
+        if '\\)' not in segment:  # 明显没有闭合
+            truncated_open_samples.append(_sample_at(p, 'forward'))
+        else:
+            # 可能闭括号远在超过 120 之后，也认为可疑
+            close_rel = segment.find('\\)')
+            if close_rel > 120:
+                truncated_open_samples.append(_sample_at(p, 'forward'))
+        if len(truncated_open_samples) >= 5:  # 只取前 5 个样本
+            break
+
+    truncated_close_samples: List[str] = []
+    for p in unmatched_close_positions[:5]:
+        truncated_close_samples.append(_sample_at(p, 'backward'))
+
+    if truncated_open_samples:
+        issues.append(
+            "Unmatched opens (samples): " +
+            '; '.join(truncated_open_samples)
+        )
+    if truncated_close_samples:
+        issues.append(
+            "Unmatched closes (samples): " +
+            '; '.join(truncated_close_samples)
+        )
+
+    # 针对图片占位符附近的截断：\( ... IMAGE_TODO_START 未闭合
+    image_trunc = re.findall(r'\\\([^\\)]{0,200}?% IMAGE_TODO_START', tex)
+    if image_trunc:
+        issues.append(f"Potential image-adjacent truncated math segments: {len(image_trunc)}")
+
+    return issues
 
 
 def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = False) -> str:
@@ -2180,6 +2469,7 @@ def main():
     parser.add_argument("input", help="输入路径（.md 文件或 OCR 文件夹）")
     parser.add_argument("output", help="输出路径（目录或 .tex 文件）")
     parser.add_argument("--title", help="试卷标题", default=None)
+    parser.add_argument("--legacy-math", action="store_true", help="使用旧数学正则管线 (smart_inline_math 等) 进行数学处理，仅测试比较用")
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
     
     args = parser.parse_args()
@@ -2187,6 +2477,34 @@ def main():
     try:
         print(f"🔍 OCR 试卷预处理脚本 - {VERSION}")
         print("━" * 60)
+        # 可选：切换到旧数学管线（A/B 测试用）
+        _orig_process = None
+        if args.legacy_math:
+            print("⚠️ 使用 legacy 数学管线 (smart_inline_math 等) — 仅供比较测试")
+            _orig_process = process_text_for_latex
+            def _legacy_wrapper(t: str, is_math_heavy: bool = False):
+                if not t:
+                    return t
+                # 前置清理（复用现行版本的初段逻辑）
+                t = re.sub(r'\*\s*(\$[^$]+\$)\s*\*', r'\1', t)
+                t = re.sub(r'\*([A-Za-z0-9])\*', r'\\emph{\1}', t)
+                t = re.sub(r'[,，。\.;；]\s*故选[:：][ABCD]+[.。]?\s*$', '', t)
+                t = re.sub(r'\n+故选[:：][ABCD]+[.。]?\s*$', '', t)
+                t = re.sub(r'^\s*故选[:：][ABCD]+[.。]?\s*', '', t)
+                t = re.sub(r'\n+故答案为[:：]', '', t)
+                t = re.sub(r'^\s*故选[:：][ABCD]+[.。]?\s*$', '', t, flags=re.MULTILINE)
+                t = re.sub(r'[，,]?\s*故选[:：]\s*[ABCD]+[。．.]*\s*$', '', t, flags=re.MULTILINE)
+                t = re.sub(r'^【?详解】?[:：]?\s*', '', t)
+                if '∵' in t or '∴' in t:
+                    t = t.replace('∵', '$\\because$').replace('∴', '$\\therefore$')
+                if not is_math_heavy:
+                    t = escape_latex_special(t, in_math_mode=False)
+                t = smart_inline_math(t)
+                t = fix_double_wrapped_math(t)
+                t = fix_inline_math_glitches(t)
+                return t
+            process_text_for_latex = _legacy_wrapper  # type: ignore
+
         md_file, images_dir = find_markdown_and_images(args.input)
         
         print(f"📄 Markdown: {md_file.name}")
@@ -2234,6 +2552,7 @@ def main():
         
         # 🆕 v1.3：验证输出
         warnings = validate_latex_output(tex_text)
+        integrity_issues = validate_math_integrity(tex_text)
         
         output_tex.write_text(tex_text, encoding='utf-8')
         
@@ -2276,13 +2595,14 @@ def main():
                 print(f"\n✅ 未检测到问题（日志为空）")
 
         # 🆕 v1.3：显示验证结果
-        if warnings:
-            print(f"\n⚠️  验证发现 {len(warnings)} 个潜在问题:")
-            for warning in warnings:
-                print(f"  {warning}")
-            print("\n💡 建议：使用 AI Agent 进行人工检查")
+        if warnings or integrity_issues:
+            combined = warnings + integrity_issues
+            print(f"\n⚠️  验证发现 {len(combined)} 个潜在问题:")
+            for issue in combined:
+                print(f"  {issue}")
+            print("\n💡 建议：使用 AI Agent 检查并人工确认数学结构")
         else:
-            print(f"\n✅ 验证通过：未发现明显问题")
+            print(f"\n✅ 验证通过：未发现明显问题 (结构 + 数学)" )
 
         print("\n💡 下一步:")
         print("  1. AI Agent 读取此文件进行精修")
@@ -2302,6 +2622,9 @@ def main():
                 print(f"❌ {e}")
                 raise
 
+        # 恢复原数学处理函数（若启用 legacy）
+        if _orig_process is not None:
+            process_text_for_latex = _orig_process  # type: ignore
         return 0
         
     except Exception as e:

@@ -283,7 +283,7 @@ output/                          — build artifacts (PDFs)
 
 ## Word→Examx Conversion
 
-This repository includes a streamlined pipeline to convert Microsoft Word exam documents (`.docx`) into the project's `examx` LaTeX format and verify compilation. The conversion pipeline is implemented in `tools/ocr_to_examx.py` (v1.4) and refined with `tools/agent_refine.py`.
+This repository includes a streamlined pipeline to convert Microsoft Word exam documents (`.docx`) into the project's `examx` LaTeX format and verify compilation. The conversion pipeline is implemented in `tools/core/ocr_to_examx.py` (v1.8) with MathStateMachine-based math processing, and refined with `tools/core/agent_refine.py`.
 
 Quick summary:
 
@@ -360,6 +360,92 @@ python3 tools/images/apply_tikz_snippets.py \
 ```
 
 This pipeline enforces a **single source of truth** for TikZ directory inference (`utils.get_tikz_snippets_dir`) and standardized logging. External agents or scripts must follow the same fallback rules (see `IMAGE_JOBS_FORMAT.md`).
+
+### Math Processing: State Machine vs Legacy Pipeline
+
+**🆕 v1.8 Update (2025-11-20)**: The conversion pipeline now uses a **MathStateMachine** for robust math delimiter processing, replacing the legacy regex-based pipeline (`smart_inline_math`, `sanitize_math`, etc.).
+
+#### Key Improvements
+
+The state machine approach provides:
+
+- **Unified math normalization**: All `$...$` and `$$...$$` → `\(...\)` (examx-compatible)
+- **No double-wrapping**: Preserves existing `\(...\)` without re-wrapping
+- **OCR boundary fixes**: Handles malformed patterns like `\right. $$` automatically
+- **Perfect delimiter balance**: Achieves `balance_diff = 0` (vs `-9` with legacy pipeline)
+- **Zero stray dollars**: Eliminates isolated `$` characters
+
+#### Testing & Comparison
+
+**Quick comparison test** (using existing preprocessed markdown):
+
+```bash
+# Run A/B comparison: state machine vs legacy pipeline
+python3 tools/testing/math_sm_comparison.py \
+  word_to_tex/output/nanjing_2026_sep_preprocessed.md
+
+# View detailed report
+cat tools/testing/test_out/math_sm_comparison_report.md
+```
+
+**Sample metrics** (Nanjing 2026 Sep exam):
+
+| Metric | State Machine | Legacy | Improvement |
+|--------|---------------|--------|-------------|
+| Balance diff | 0 ✅ | -9 ⚠️ | Perfect balance |
+| Stray $ | 0 | 1 | 100% reduction |
+| File size | 17.6 KB | 27.3 KB | 36% smaller |
+| Questions | 17 | 19 | More accurate |
+
+**Legacy fallback** (for regression testing only):
+
+```bash
+# Force use of legacy pipeline (NOT recommended for production)
+python3 tools/core/ocr_to_examx.py input.md output.tex --legacy-math
+```
+
+**Integrity validation** (automatic on every conversion):
+
+The pipeline now includes built-in math integrity checks:
+
+- Delimiter balance: `\(` vs `\)` count
+- Stray dollar detection
+- Empty math blocks: `\(\)` or `\[\]`
+- Double-wrapped segments: `$$\(...\)$$`
+- Right boundary glitches: `\right. $$`
+- **🆕 Truncation detection**: Unmatched delimiters with context samples
+
+Example validation output:
+
+```
+⚠️  验证发现 2 个潜在问题:
+  Math delimiter imbalance: opens=329 closes=333 diff=-4
+  Unmatched closes (samples): ...\alpha \) 以及 ...; ...定义域为 \) 则...
+```
+
+**Interpreting results**:
+
+- `balance_diff = 0`: Perfect (current state machine achieves this)
+- `balance_diff ≠ 0`: Indicates potential truncation (common in legacy pipeline)
+- `Unmatched opens`: Look for missing `\)` near image placeholders or `\explain{}` merges
+- `Unmatched closes`: Look for spurious `\)` from OCR artifacts
+
+**Debugging workflow**:
+
+1. Run conversion with integrity validation (automatic)
+2. If imbalance detected, check `Unmatched opens/closes` samples
+3. Search output `.tex` for sample contexts to locate issues
+4. Common root causes:
+   - Image placeholder insertion breaking math mode
+   - `\explain{}` merging across section boundaries
+   - OCR artifacts: `\right. $$` patterns
+
+**Best practices**:
+
+- Always use the **default state machine** pipeline (no `--legacy-math` flag)
+- Review `validate_math_integrity` warnings before manual edits
+- Use comparison harness for regression testing when updating pipeline
+- For persistent imbalance, examine unmatched sample contexts
 
 ---
 
