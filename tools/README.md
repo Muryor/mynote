@@ -30,12 +30,41 @@ tools/
 │   ├── run_conversion_once.py      # 单次转换（已废弃）
 │   └── final_reconvert.zsh         # 旧版重新转换脚本
 │
+├── run_pipeline.py          # 🆕 快速转换与校验工具（开发/调试）
+├── validate_tex.py          # TeX 预编译校验工具
+├── locate_error.sh          # 错误定位工具
+├── test_compile.sh          # 回归测试脚本
+│
 └── docs/                    # 文档
     ├── OCR_TO_EXAMX_SUMMARY.md          # ocr_to_examx 功能总结
     └── V15_IMPLEMENTATION_REPORT.md     # v1.5 版本实现报告
 ```
 
 ## 🚀 使用方法
+
+### 快速转换与校验（推荐用于开发调试）
+
+```bash
+# 转换 + 校验（默认）
+python3 tools/run_pipeline.py input.md --slug exam-2025
+
+# 只转换，不校验
+python3 tools/run_pipeline.py input.md --slug exam-2025 --no-validate
+
+# 指定输出路径和标题
+python3 tools/run_pipeline.py input.md \
+    --slug exam-2025 \
+    --title "2025年期末试卷" \
+    --out-tex output/result.tex
+
+# 查看帮助
+python3 tools/run_pipeline.py --help
+```
+
+**退出码**：
+- `0`：成功
+- `1`：转换失败
+- `2`：转换成功但校验失败
 
 ### 批量转换测试
 

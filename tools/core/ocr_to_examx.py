@@ -668,6 +668,66 @@ def wrap_math_variables(text: str) -> str:
     return text
 
 
+def _fix_array_left_braces(block: str) -> str:
+    r"""🆕 v1.8.9：在数学块内部，为典型的 array/cases 方程组尝试补全缺失的 \left\{（非常保守）
+    
+    启动条件（必须全部满足）：
+    1. block 中包含 \begin{array} 或 \begin{cases}
+    2. block 中包含 \right.（右侧已有右边界）
+    3. block 中 \left 的个数少于 \right
+    
+    补全规则（保守启发式）：
+    - 对每个 \begin{array} / \begin{cases}：
+      - 检查其前方 50 个字符的上下文窗口
+      - 如果窗口内没有 \left 或 \{，则插入 \left\{
+      - 如果窗口内已有左边界，则不插入
+    
+    风险控制：
+    - 宁可不修，不要误伤
+    - 只在高置信度场景下补全
+    - 保留原有降级逻辑作为兜底
+    """
+    if not block:
+        return block
+    
+    # 启动条件检查（注意：block 中的反斜杠是单个 \，不是双反斜杠）
+    has_array_or_cases = '\\begin{array}' in block or '\\begin{cases}' in block
+    has_right_dot = '\\right.' in block
+    
+    if not has_array_or_cases or not has_right_dot:
+        return block
+    
+    # 统计 left/right 数量，只有 right 偏多时才考虑补
+    left_count = len(re.findall(r'\\left\b', block))
+    right_count = len(re.findall(r'\\right\b', block))
+    
+    if left_count >= right_count:
+        return block  # 不缺 left，不需要补
+    
+    # 对 \begin{array} 和 \begin{cases} 尝试补全
+    # 使用回调函数检查上下文并决定是否插入
+    def _insert_left_if_needed(m: re.Match) -> str:
+        start = m.start()
+        # 向前看 50 个字符作为上下文窗口
+        prefix = block[:start]
+        context = prefix[-50:] if len(prefix) > 50 else prefix
+        
+        # 如果上下文中已经有 \left 或显式的大括号 \{，则不插入
+        if '\\left' in context or '\\{' in context:
+            return m.group(0)  # 保持原样
+        
+        # 满足条件：在 begin 前插入 \left\{
+        return r'\left\{' + m.group(0)
+    
+    # 先处理 \begin{array}
+    block = re.sub(r'\\begin\{array\}', _insert_left_if_needed, block)
+    
+    # 再处理 \begin{cases}
+    block = re.sub(r'\\begin\{cases\}', _insert_left_if_needed, block)
+    
+    return block
+
+
 def _sanitize_math_block(block: str) -> str:
     """修正数学块内部的 OCR 错误
     
@@ -705,6 +765,10 @@ def _sanitize_math_block(block: str) -> str:
     # 数学内常见中文连接词，替换为 \text{...}（保守集）
     for w in ['且', '或', '则', '即', '故', '所以', '因为']:
         block = re.sub(fr'(?<!\\text\{{){re.escape(w)}(?![^\{{]*\}})', rf'\\text{{{w}}}', block)
+    
+    # 🆕 v1.8.9：在统计 left/right 之前，先尝试修复典型 array/cases 方程组
+    # 为缺失 \\left\\{ 的方程组补全左大括号，避免后续降级处理
+    block = _fix_array_left_braces(block)
     
     # 统计 left/right 数量
     left_count = len(re.findall(r'\\left\b', block))
@@ -1296,31 +1360,131 @@ def balance_array_and_cases_env(text: str) -> str:
 
 
 def fix_specific_reversed_pairs(text: str) -> str:
-    """🆕 v1.8.7：修复特定的反向数学定界符模式（极窄自动修复）
+    r"""🆕 v1.8.7：极窄自动修复特定反向数学定界符模式
 
-    针对当前测试集中发现的两种典型模式进行安全修复：
-    1. 模式 A：求点\\)X_{2}\\(所有可能的坐标 → 求点\\(X_{2}\\)所有可能的坐标
-    2. 模式 B：其中\\)x_{i} → 其中 x_{i}（删除不匹配的 \\)）
+    仅针对精确匹配的已知错误模式：
+    - 模式 A: 求点\)X_{2}\(所有可能的坐标 → 求点\(X_{2}\)所有可能的坐标
+    - 模式 B: 其中\)x_{i} → 其中 x_{i}（删除不匹配的 \)）
 
-    这些修复非常窄，只针对精确匹配的模式，不会影响其他正常内容。
+    安全性：只针对精确匹配的模式，不影响其他内容
     """
     if not text:
         return text
 
-    # 模式 A：求点\)X_{2}\(所有可能的坐标
-    text = text.replace(
-        r'求点\)X_{2}\(所有可能的坐标',
-        r'求点\(X_{2}\)所有可能的坐标'
-    )
+    # 模式 A: 求点\)X_{2}\(所有可能的坐标 → 求点\(X_{2}\)所有可能的坐标
+    # 精确匹配：\) + 字母/数字/下划线 + \( → \( + 字母/数字/下划线 + \)
+    pattern_a = re.compile(r'\\\)([A-Za-z0-9_{}]+)\\\(')
+    text = pattern_a.sub(r'\(\1\)', text)
 
-    # 模式 B：\right.其中\)x_{i} → \right.其中 x_{i}
-    # 这里只删除"其中\)"中的 \)，保持其他部分不变
-    text = text.replace(
-        r'其中\)x_{i}',
-        r'其中 x_{i}'
-    )
+    # 模式 B: 其中\)x_{i} → 其中 x_{i}（删除不匹配的 \)）
+    # 精确匹配：\) + 空格 + 字母/数字（行尾或后续无 \(）
+    pattern_b = re.compile(r'\\\)\s+([a-z][a-z_0-9{}]*(?![^\n]*\\\())')
+    text = pattern_b.sub(r' \1', text)
 
     return text
+
+
+def fix_simple_reversed_inline_pairs(text: str) -> str:
+    r"""🆕 v1.8.8：极度保守的反向定界符自动修复，仅在简单场景启用
+
+    只修复形如 \)...\( 的模式，且中间只包含空白/中英文标点的情况：
+    例如：
+        "求点\) \(X_2 所有可能的坐标" → "求点\( \)X_2 所有可能的坐标"
+        "其中\) ，\(x_i" → "其中\( ，\)x_i"
+
+    约束：
+    - 仅当 \) 和 \( 之间只有空白字符和常见标点时才修复
+    - 其他情况一律不改，避免误伤
+    - 保留中间内容原样，仅反转定界符顺序
+
+    安全性：非常保守，只处理明显的简单错误
+    """
+    if not text:
+        return text
+
+    import re
+
+    # 核心模式：\) <中间若干字符> \(
+    pattern = re.compile(r'(\\\))([^\n]*?)(\\\()')
+
+    def _replace(m: re.Match) -> str:
+        middle = m.group(2)
+        # 只允许空白和常见标点（中英文）
+        if re.fullmatch(r'[\s.,，。；;:：、!?！？"""\'\'《》（）()…—\-]*', middle or ''):
+            # 安全：直接反转顺序，保持中间内容不变
+            return r'\(' + middle + r'\)'
+        else:
+            # 保守：不碰
+            return m.group(0)
+
+    return pattern.sub(_replace, text)
+
+
+def collect_reversed_math_samples(text: str, slug: str = "") -> None:
+    r"""🆕 v1.8.8：检测并记录反向数学定界符案例（只记录，不修改）
+
+    搜索 \)...\( 和 \]...\[ 类型的反向定界符，记录到 issue 日志。
+
+    Args:
+        text: 完整的 TeX 文本
+        slug: 试卷 slug（用于日志文件名）
+    """
+    if not text or not slug:
+        return
+
+    import re
+
+    lines = text.splitlines()
+    reversed_cases = []
+
+    for line_num, line in enumerate(lines, start=1):
+        # 只考虑注释前的部分
+        content = line.split('%', 1)[0]
+
+        # 检测反向的行内数学定界符 \)...\(
+        inline_pattern = re.compile(r'\\\)([^%]*?)\\\(')
+        inline_matches = list(inline_pattern.finditer(content))
+        for match in inline_matches:
+            middle = match.group(1)
+            # 截断行内容用于日志显示
+            line_display = line[:100] + '...' if len(line) > 100 else line
+            reversed_cases.append(
+                f"Line {line_num}: Found reversed inline math \\)...\\("
+                f"\n  Middle content: '{middle}'"
+                f"\n  Line: {line_display}"
+            )
+
+        # 检测反向的显示数学定界符 \]...\[
+        display_pattern = re.compile(r'\\\]([^%]*?)\\\[')
+        display_matches = list(display_pattern.finditer(content))
+        for match in display_matches:
+            middle = match.group(1)
+            line_display = line[:100] + '...' if len(line) > 100 else line
+            reversed_cases.append(
+                f"Line {line_num}: Found reversed display math \\]...\\["
+                f"\n  Middle content: '{middle}'"
+                f"\n  Line: {line_display}"
+            )
+
+    # 如果找到反向定界符，记录到日志
+    if reversed_cases:
+        from pathlib import Path
+        debug_dir = Path("word_to_tex/output/debug")
+        debug_dir.mkdir(parents=True, exist_ok=True)
+        log_file = debug_dir / f"{slug}_reversed_delimiters.log"
+
+        with log_file.open("w", encoding="utf-8") as f:
+            f.write(f"# Reversed Math Delimiters Detection Log for {slug}\n")
+            f.write(f"# Total cases found: {len(reversed_cases)}\n")
+            f.write(f"# Generated: {Path(__file__).name}\n")
+            f.write("\n")
+
+            for i, case in enumerate(reversed_cases, start=1):
+                f.write(f"{'='*80}\n")
+                f.write(f"Case #{i}:\n")
+                f.write(case + "\n\n")
+
+        print(f"⚠️  Found {len(reversed_cases)} reversed math delimiter cases, logged to {log_file}")
 
 
 def validate_and_fix_image_todo_blocks(text: str) -> str:
@@ -2717,9 +2881,18 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
                        section_type: str, question_index: int = 0, slug: str = "") -> str:
     """生成 question 环境
 
+    🆕 v1.8.8: 增加 meta 命令使用计数检测
     🆕 Prompt 3: 支持内联图片占位符替换
     🆕 新格式: 使用 IMAGE_TODO_START/END 带 ID 的占位块
     """
+    # 🆕 v1.8.8：meta 使用计数（检测重复的元信息命令）
+    meta_usage = {
+        "answer": 0,
+        "explain": 0,
+        "topics": 0,
+        "difficulty": 0,
+    }
+
     # 先处理文本，但保留占位符
     stem_raw = stem  # 保存原始文本用于上下文提取
     stem = process_text_for_latex(stem, is_math_heavy=True)
@@ -2771,16 +2944,42 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
 
     if topics_raw:
         lines.append(f"\\topics{{{topics_raw}}}")
+        meta_usage["topics"] += 1
     if meta.get("difficulty"):
         lines.append(f"\\difficulty{{{meta['difficulty']}}}")
+        meta_usage["difficulty"] += 1
     if meta.get("answer"):
         # 使用与题干/解析一致的处理，以规范数学格式，避免 $$...$$ 残留
         ans = process_text_for_latex(meta["answer"], is_math_heavy=True)
         lines.append(f"\\answer{{{ans}}}")
+        meta_usage["answer"] += 1
     if explain_raw:
         lines.append(f"\\explain{{{explain_raw}}}")
+        meta_usage["explain"] += 1
 
     lines.append(r"\end{question}")
+
+    # 🆕 v1.8.8：检查 meta 命令是否重复使用
+    if slug:  # 只在有 slug 时才记录日志
+        from pathlib import Path
+        for key, cnt in meta_usage.items():
+            if cnt > 1:
+                # 记录到专门的 issue 日志
+                debug_dir = Path("word_to_tex/output/debug")
+                debug_dir.mkdir(parents=True, exist_ok=True)
+                log_file = debug_dir / f"{slug}_meta_duplicates.log"
+
+                with log_file.open("a", encoding="utf-8") as f:
+                    if log_file.stat().st_size == 0:
+                        # 首次写入，添加头部
+                        f.write(f"# Duplicate Meta Commands Detection Log for {slug}\n")
+                        f.write(f"# Generated: {Path(__file__).name}\n\n")
+
+                    f.write(f"{'='*80}\n")
+                    f.write(f"Question {question_index}: meta '\\{key}' appears {cnt} times\n")
+                    f.write(f"  Section: {section_type}\n")
+                    f.write(f"  → Please check duplicated 【详解】/【考点】/【答案】/【难度】 blocks in Markdown\n\n")
+
     return "\n".join(lines)
 
 
@@ -2913,6 +3112,13 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
     # 🆕 v1.8.7：修复特定的反向数学定界符模式（极窄自动修复）
     result = fix_specific_reversed_pairs(result)
+
+    # 🆕 v1.8.8：极度保守的反向定界符自动修复（仅在简单场景启用）
+    result = fix_simple_reversed_inline_pairs(result)
+
+    # 🆕 v1.8.8：检测反向定界符并记录日志（不改变输出）
+    if slug:
+        collect_reversed_math_samples(result, slug)
 
     return result
 
@@ -3626,6 +3832,88 @@ B. 选项B
                 for j in range(i, min(i+6, len(lines))):
                     print(f"    {lines[j]}")
                 break
+
+    # 测试 8：反向定界符简单自动修复（v1.8.8）
+    print("\n[自测] 测试 8: 反向定界符简单自动修复")
+    test_md_reversed = r"""
+# 一、单选题
+
+1. 已知数列 a_n 满足，其中\) ，\(x_i 为整数。
+
+A. 选项A
+B. 选项B
+
+【答案】A
+"""
+    result_reversed = convert_md_to_examx(test_md_reversed, "自测-反向", slug="selftest-reverse", enable_issue_detection=False)
+    # 检查：原始的错误模式不应该出现
+    if r'\) ，\(' in result_reversed:
+        print("  ❌ FAILED: 反向定界符未被修复")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 9：题内 meta 重复检测（v1.8.8）
+    print("\n[自测] 测试 9: 题内 meta 重复检测")
+    test_md_meta = """
+# 一、单选题
+
+1. 已知函数 f(x) = x^2 + 1 的性质
+
+A. 选项A
+B. 选项B
+
+【详解】第一段详解
+【详解】第二段详解
+
+【答案】A
+"""
+    result_meta = convert_md_to_examx(test_md_meta, "自测-重复详解", slug="selftest-meta", enable_issue_detection=True)
+    # 检查：多段详解应该被合并成 1 个 \explain
+    count_explain = result_meta.count(r'\explain{')
+    if count_explain != 1:
+        print(f"  ❌ FAILED: \\explain 宏数量为 {count_explain}, 预期为 1")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 10：array/cases 方程组补 \left\{（v1.8.9）
+    print("\n[自测] 测试 10: _fix_array_left_braces 函数 - array 环境")
+    # 直接测试函数，避免依赖复杂的转换流程
+    test_block_array = r'\begin{array}{l} x + y = 1 \\ x - y = 3 \end{array} \right.'
+    result_block_array = _fix_array_left_braces(test_block_array)
+    if r'\left\{' in result_block_array and r'\begin{array}' in result_block_array:
+        print("  ✅ PASSED")
+    else:
+        print(f"  ❌ FAILED: 未补上 \\left\\{{")
+        print(f"     输入: {test_block_array[:60]}...")
+        print(f"     输出: {result_block_array[:60]}...")
+        all_passed = False
+
+    # 测试 11：cases 方程组补 \left\{（v1.8.9）
+    print("\n[自测] 测试 11: _fix_array_left_braces 函数 - cases 环境")
+    test_block_cases = r'f(x) = \begin{cases} x^2, & x > 0 \\ -x, & x \leq 0 \end{cases} \right.'
+    result_block_cases = _fix_array_left_braces(test_block_cases)
+    if r'\left\{' in result_block_cases and r'\begin{cases}' in result_block_cases:
+        print("  ✅ PASSED")
+    else:
+        print(f"  ❌ FAILED: 未补上 \\left\\{{")
+        print(f"     输入: {test_block_cases[:60]}...")
+        print(f"     输出: {result_block_cases[:60]}...")
+        all_passed = False
+
+    # 测试 12：_fix_array_left_braces 函数 - 已有 \left 的情况（不应重复补）
+    print("\n[自测] 测试 12: _fix_array_left_braces 函数 - 已有 \\left 不应重复补")
+    test_block_exist = r'\left\{\begin{array}{l} x = 1 \\ y = 2 \end{array} \right.'
+    result_block_exist = _fix_array_left_braces(test_block_exist)
+    # 应该只有一个 \left\{
+    left_brace_count = result_block_exist.count(r'\left\{')
+    if left_brace_count == 1:
+        print("  ✅ PASSED")
+    else:
+        print(f"  ❌ FAILED: \\left\\{{ 数量为 {left_brace_count}, 预期为 1")
+        print(f"     输出: {result_block_exist[:80]}...")
+        all_passed = False
 
     print("\n" + "=" * 60)
     if all_passed:

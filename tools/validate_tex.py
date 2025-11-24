@@ -84,9 +84,10 @@ class TeXValidator:
             self.errors.append(f"Line {line_no}: Unmatched opening brace '{{'")
 
     def check_math_delimiters(self) -> None:
-        """检查数学环境定界符配对（粗略计数）"""
+        """检查数学环境定界符配对（总数 + 顺序合理性）"""
         content = self._read_content()
 
+        # 原有逻辑：检查总数
         inline_open = len(re.findall(r"\\\(", content))
         inline_close = len(re.findall(r"\\\)", content))
         if inline_open != inline_close:
@@ -100,6 +101,40 @@ class TeXValidator:
             self.warnings.append(
                 f"Display math delimiters mismatch: {display_open} '\\[' vs {display_close} '\\]'"
             )
+
+        # 新增：顺序合理性检查（行内数学）
+        pattern_inline = re.compile(r"\\\(|\\\)")
+        balance = 0
+        for m in pattern_inline.finditer(content):
+            token = m.group(0)
+            line_no = content[: m.start()].count("\n") + 1
+            if token == r"\(":
+                balance += 1
+            else:
+                balance -= 1
+                if balance < 0:
+                    self.errors.append(
+                        f"Line {line_no}: Found '\\)' before any opening '\\(' "
+                        f"(inline math delimiters out of order)."
+                    )
+                    balance = 0
+
+        # 新增：顺序合理性检查（行间数学）
+        pattern_display = re.compile(r"\\\[|\\\]")
+        balance_display = 0
+        for m in pattern_display.finditer(content):
+            token = m.group(0)
+            line_no = content[: m.start()].count("\n") + 1
+            if token == r"\[":
+                balance_display += 1
+            else:
+                balance_display -= 1
+                if balance_display < 0:
+                    self.errors.append(
+                        f"Line {line_no}: Found '\\]' before any opening '\\[' "
+                        f"(display math delimiters out of order)."
+                    )
+                    balance_display = 0
 
     def check_environment_balance(self) -> None:
         """检查 \\begin{env} / \\end{env} 数量是否一致（按 env 名计数）"""
@@ -140,6 +175,142 @@ class TeXValidator:
                 f"题目缺少题干，直接从小问开始"
             )
 
+    def check_reversed_math_delimiters(self) -> None:
+        """检查反向数学定界符（\\)...\\( 或 \\]...\\[）"""
+        content = self._read_content()
+        lines = content.splitlines()
+
+        for i, line in enumerate(lines, 1):
+            # 去掉注释部分
+            line_content = line.split('%', 1)[0]
+
+            # 检查反向行内数学定界符
+            if re.search(r'\\\).*?\\\(', line_content):
+                self.errors.append(
+                    f"Line {i}: Found reversed inline math delimiters '\\)...\\(' - "
+                    f"please check math delimiters order."
+                )
+
+            # 检查反向行间数学定界符
+            if re.search(r'\\\].*?\\\[', line_content):
+                self.errors.append(
+                    f"Line {i}: Found reversed display math delimiters '\\]...\\[' - "
+                    f"please check math delimiters order."
+                )
+
+    def check_duplicate_meta_commands(self) -> None:
+        """检查同一题目中是否有重复的元信息命令"""
+        content = self._read_content()
+
+        # 切分所有 question 环境
+        question_pattern = re.compile(
+            r"\\begin\{question\}(.*?)\\end\{question\}",
+            re.DOTALL
+        )
+
+        meta_commands = ["explain", "topics", "answer", "difficulty"]
+
+        for q_index, match in enumerate(question_pattern.finditer(content), 1):
+            q_content = match.group(1)
+            base_line = content[:match.start()].count("\n") + 1
+
+            for cmd in meta_commands:
+                # 查找所有该命令出现的位置
+                cmd_pattern = re.compile(rf"\\{cmd}\s*\{{")
+                matches = list(cmd_pattern.finditer(q_content))
+
+                if len(matches) > 1:
+                    # 第二次出现就是重复
+                    first_dup_pos = matches[1].start()
+                    dup_line = base_line + q_content[:first_dup_pos].count("\n")
+                    self.errors.append(
+                        f"Line {dup_line}: Question {q_index} has duplicated '\\{cmd}' "
+                        f"({len(matches)} times) inside one question environment."
+                    )
+
+    def check_left_right_balance(self) -> None:
+        """检查 \\left 和 \\right 配对"""
+        content = self._read_content()
+
+        pattern = re.compile(r"\\(left|right)")
+        stack = []
+
+        for match in pattern.finditer(content):
+            token = match.group(1)
+            line_no = content[:match.start()].count("\n") + 1
+
+            if token == "left":
+                stack.append((line_no, "\\left"))
+            else:  # token == "right"
+                if stack:
+                    stack.pop()
+                else:
+                    self.errors.append(
+                        f"Line {line_no}: '\\right' appears without matching '\\left' "
+                        f"in previous lines."
+                    )
+
+        # 报告未闭合的 \left（只取最后10个）
+        for line_no, _ in stack[-10:]:
+            self.errors.append(
+                f"Line {line_no}: '\\left' does not have a matching '\\right'."
+            )
+
+    def check_enumerate_structure(self) -> None:
+        """检查 enumerate 环境中是否有非 \\item 开头的实质内容"""
+        content = self._read_content()
+
+        enum_pattern = re.compile(
+            r"\\begin\{enumerate\}(.*?)\\end\{enumerate\}",
+            re.DOTALL
+        )
+
+        for block_index, match in enumerate(enum_pattern.finditer(content), 1):
+            block = match.group(1)
+            base_line = content[:match.start()].count("\n") + 1
+            lines = block.splitlines()
+
+            for offset, raw_line in enumerate(lines):
+                line = raw_line.strip()
+
+                # 跳过空行、注释、\item 开头的行
+                if not line or line.startswith('%') or line.startswith(r'\item'):
+                    continue
+
+                # 跳过纯 LaTeX 环境标记（如 \begin, \end）
+                if line.startswith(r'\begin') or line.startswith(r'\end'):
+                    continue
+
+                # 其他实质内容视为可能的问题
+                line_no = base_line + offset
+                self.warnings.append(
+                    f"Line {line_no}: Non-\\item content inside enumerate environment "
+                    f"(block {block_index}) - please check if this should be '\\item ...'."
+                )
+
+    def check_image_todo_trailing_text(self) -> None:
+        """检查 IMAGE_TODO_END 注释行是否有尾随文本"""
+        content = self._read_content()
+        lines = content.splitlines()
+
+        pattern = re.compile(r"^%.*IMAGE_TODO_END(?P<tail>.*)$")
+
+        for i, line in enumerate(lines, 1):
+            match = pattern.match(line)
+            if match:
+                tail = match.group("tail")
+                # 检查 tail 是否只包含 id=xxx 格式（这是正常的）
+                # 如果有其他非空白内容，则报错
+                tail_stripped = tail.strip()
+                if tail_stripped and not tail_stripped.startswith('id='):
+                    # 进一步检查：去掉 id=xxx 后是否还有其他内容
+                    tail_after_id = re.sub(r'id=\S+', '', tail_stripped).strip()
+                    if tail_after_id:
+                        self.errors.append(
+                            f"Line {i}: IMAGE_TODO_END comment line has trailing text "
+                            f"('{tail_after_id}') which should probably be moved to the next line."
+                        )
+
     # ---------- 主入口 ----------
 
     def validate(self) -> bool:
@@ -154,6 +325,13 @@ class TeXValidator:
         self.check_math_delimiters()
         self.check_environment_balance()
         self.check_question_missing_stem()
+
+        # 新增检查
+        self.check_reversed_math_delimiters()
+        self.check_duplicate_meta_commands()
+        self.check_left_right_balance()
+        self.check_enumerate_structure()
+        self.check_image_todo_trailing_text()
 
         if self.errors:
             print(f"\n❌ Found {len(self.errors)} error(s):")

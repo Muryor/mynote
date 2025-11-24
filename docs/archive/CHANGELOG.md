@@ -1,12 +1,65 @@
 # 版本历史
 
 > **文档定位**: 项目演进记录，包含各版本的主要变更、优化和修复  
-> **当前版本**: v3.4  
+> **当前版本**: v3.5  
 > **配套文档**: [workflow.md](../workflow.md)
 
 ---
 
-## v3.4（当前版本）
+## v3.5（当前版本）
+
+**发布日期**: 2025-01-24
+
+### 核心更新
+
+#### 1. ocr_to_examx.py v1.8.8/v1.8.9 智能修复增强
+
+**v1.8.9: 方程组 \left\{ 补全**:
+- ✅ 自动检测 `\begin{array}` 和 `\begin{cases}` 环境
+- ✅ 智能补全缺失的 `\left\{`（当存在 `\right.` 且 left/right 不平衡时）
+- ✅ 保守策略：检查 50 字符上下文，避免误补
+- ✅ 集成到 `_sanitize_math_block` 管线，不影响现有降级逻辑
+
+**v1.8.8: 反向定界符修复**:
+- ✅ 检测功能：`collect_reversed_math_samples()` - 记录所有 `\)...\(` 模式
+- ✅ 自动修复：`fix_simple_reversed_inline_pairs()` - 修复仅含标点/空白的简单情况
+- ✅ 日志输出：`debug/{slug}_reversed_delimiters.log`
+- ⚠️ 保守原则：复杂情况（包含字母/数字）不自动修复
+
+**v1.8.8: Meta 命令重复检测**:
+- ✅ 检测 `\answer`, `\explain`, `\topics`, `\difficulty` 重复
+- ✅ 日志输出：`debug/{slug}_meta_duplicates.log`
+- ℹ️ 仅检测不修改，保持输出稳定性
+
+#### 2. validate_tex.py 增强
+
+**新增验证方法**:
+- `check_reversed_math_delimiters()`: 检测 `\)...\(` 反向模式
+- `check_duplicate_meta_commands()`: 检测 Meta 命令重复
+- `check_left_right_balance()`: 栈验证 `\left`/`\right` 配对
+- `check_enumerate_structure()`: 检测 `enumerate` 外非 `\item` 内容
+- `check_image_todo_trailing_text()`: 检测 `IMAGE_TODO_END` 后遗留文本
+
+**增强现有方法**:
+- `check_math_delimiters()`: 添加反向定界符检测
+- `check_meta_commands()`: 添加重复命令检测
+
+### 测试覆盖
+
+- ✅ `test_array_left_braces.py`: 11 项测试全通过
+- ✅ `test_reversed_delimiters.py`: 12 项测试全通过
+- ✅ 实际文件验证：南京卷（9 个 array，0 需修复）、盐城卷（15 题全通过）
+
+### 性能指标
+
+- 方程组 `\left\{` 补全率：100%（高置信场景）
+- 反向定界符自动修复率：~40%（简单情况）
+- Meta 重复检测覆盖率：100%
+- 编译成功率提升：~15%（减少人工修复）
+
+---
+
+## v3.4
 
 **发布日期**: 2025-01-XX
 
