@@ -1,6 +1,7 @@
 % ========================= Exam main ============================
 % File: main-exam.tex
 % Entry for printable exams (exam-zh)
+\PassOptionsToClass{fontset=fandol}{ctexbook}
 \documentclass{exam-zh}
 \makeatletter
 \def\input@path{{./styles/}{./settings/}}
@@ -8,6 +9,16 @@
 % Page layout
 \usepackage{geometry}
 \geometry{a4paper, left=2cm, right=2cm, top=2.5cm, bottom=2.5cm}
+
+% 🆕 v1.9: 平台字体自动检测
+% 自动字体选择：避开 ifplatform 对 shell-escape 的依赖，使用字体存在检测
+\ifxetex
+  \usepackage{xeCJK}
+  % 优先顺序：Songti SC (macOS) -> PingFang SC (macOS 备用) -> FandolSong (TeX Live)
+  \IfFontExistsTF{Songti SC}{\setCJKmainfont{Songti SC}}{%
+    \IfFontExistsTF{PingFang SC}{\setCJKmainfont{PingFang SC}}{\setCJKmainfont{FandolSong}}%
+  }
+\fi
 
 % Common preamble (fonts, math, colors, hyperref, etc.)
 \usepackage{preamble}

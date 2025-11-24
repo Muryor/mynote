@@ -327,7 +327,7 @@ math_sm = MathStateMachine()
 
 # ==================== 配置 ====================
 
-VERSION = "v1.8.7"
+VERSION = "v1.9.0"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -386,16 +386,93 @@ ANALYSIS_START_MARKERS = [
 
 # ==================== 文件夹处理函数 ====================
 
+def infer_figures_dir(input_md: str) -> str:
+    """根据 Markdown 文件名推断图片目录
+
+    推断规则：
+    1. 提取 md_path.stem 作为 prefix
+    2. 去除常见后缀（_local, _preprocessed, _raw）
+    3. 按顺序尝试以下候选目录：
+       - word_to_tex/output/figures/{prefix}
+       - word_to_tex/output/figures/{prefix}/media
+    4. 返回第一个存在的目录，都不存在则返回空字符串
+
+    Args:
+        input_md: Markdown 文件路径
+
+    Returns:
+        推断出的图片目录路径，或空字符串
+    """
+    md_path = Path(input_md)
+
+    # 提取文件名前缀（去除后缀）
+    prefix = md_path.stem
+
+    # 去除常见的 Markdown 文件后缀
+    for suffix in ['_local', '_preprocessed', '_raw']:
+        if prefix.endswith(suffix):
+            prefix = prefix[:-len(suffix)]
+            break
+
+    # 候选目录列表（按优先级排序）
+    candidates = [
+        Path("word_to_tex/output/figures") / prefix,
+        Path("word_to_tex/output/figures") / prefix / "media",
+    ]
+
+    # 返回第一个存在的目录
+    for candidate in candidates:
+        if candidate.exists() and candidate.is_dir():
+            return str(candidate)
+
+    # 都不存在则返回空字符串
+    return ""
+
+
+def detect_images_for_markdown(md_file: Path) -> Optional[Path]:
+    """根据 markdown 文件推断图片目录"""
+    parent = md_file.parent
+    candidates: List[Path] = []
+
+    # 常规：同级 images 目录
+    candidates.append(parent / 'images')
+
+    slug = None
+    slug_match = re.match(r'(.+?)_(?:preprocessed|raw|local)\.md$', md_file.name)
+    if slug_match:
+        slug = slug_match.group(1)
+    elif md_file.suffix == '.md':
+        slug = md_file.stem
+
+    figures_root = parent / 'figures'
+    if slug:
+        candidates.append(figures_root / slug / 'media')
+        candidates.append(figures_root / slug)
+    candidates.append(figures_root / 'media')
+    candidates.append(figures_root)
+
+    for cand in candidates:
+        if cand.exists():
+            return cand
+
+    if slug and figures_root.exists():
+        for cand in figures_root.glob(f"**/{slug}*"):
+            media_dir = cand / 'media'
+            if media_dir.exists():
+                return media_dir
+            if cand.is_dir():
+                return cand
+
+    return None
+
+
 def find_markdown_and_images(input_path: Path) -> Tuple[Path, Optional[Path]]:
     """智能识别输入路径"""
     input_path = Path(input_path).resolve()
     
     if input_path.is_file() and input_path.suffix == '.md':
         md_file = input_path
-        images_dir = input_path.parent / 'images'
-        if not images_dir.exists():
-            images_dir = None
-        return md_file, images_dir
+        return md_file, detect_images_for_markdown(md_file)
     
     if input_path.is_dir():
         md_files = list(input_path.glob('*_local.md'))
@@ -409,10 +486,7 @@ def find_markdown_and_images(input_path: Path) -> Tuple[Path, Optional[Path]]:
             print(f"⚠️  找到多个 .md 文件，使用：{md_files[0].name}")
         
         md_file = md_files[0]
-        images_dir = input_path / 'images'
-        if not images_dir.exists():
-            images_dir = None
-        
+        images_dir = detect_images_for_markdown(md_file)
         return md_file, images_dir
     
     raise ValueError(f"无效的输入：{input_path}")
@@ -891,15 +965,15 @@ def clean_question_environments(text: str) -> str:
 def split_long_lines_in_explain(text: str, max_length: int = 800) -> str:
     """在 explain{} 中自动分割超长行"""
     pattern = r'(\\explain\{)([^{}]*(?:\{[^{}]*\}[^{}]*)*?)(\})'
-    
+
     def split_content(match):
         prefix = match.group(1)
         content = match.group(2)
         suffix = match.group(3)
-        
+
         lines = content.split('\n')
         new_lines = []
-        
+
         for line in lines:
             if len(line) <= max_length:
                 new_lines.append(line)
@@ -915,10 +989,197 @@ def split_long_lines_in_explain(text: str, max_length: int = 800) -> str:
                         current += seg
                 if current:
                     new_lines.append(current.rstrip())
-        
+
         return prefix + '\n'.join(new_lines) + suffix
-    
+
     return re.sub(pattern, split_content, text, flags=re.DOTALL)
+
+
+def fix_missing_items_in_enumerate(tex: str) -> str:
+    """🆕 任务1：在 enumerate 环境中自动补充缺失的 \\item
+
+    功能：扫描 TeX 文本，检测 \\begin{enumerate} 到 \\end{enumerate} 之间的内容，
+    在枚举环境内自动为非空行（非注释行、非 \\item 行）添加 \\item 前缀。
+
+    逻辑：
+    - 空行：保留
+    - 注释行（以 % 开头）：保留
+    - 以 \\item 开头的行：保留
+    - 其他非空行：在行首自动添加 \\item（保持原有缩进）
+
+    Args:
+        tex: 完整的 TeX 文本
+
+    Returns:
+        修复后的 TeX 文本
+    """
+    if not tex:
+        return tex
+
+    result = []
+    i = 0
+    lines = tex.split('\n')
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+
+        # 检测 enumerate 环境开始
+        if r'\begin{enumerate}' in line:
+            result.append(line)
+            i += 1
+
+            # 处理 enumerate 环境内的内容
+            depth = 1
+            while i < n and depth > 0:
+                current_line = lines[i]
+
+                # 检测嵌套的 enumerate 环境
+                if r'\begin{enumerate}' in current_line:
+                    depth += 1
+                    result.append(current_line)
+                    i += 1
+                    continue
+                elif r'\end{enumerate}' in current_line:
+                    depth -= 1
+                    result.append(current_line)
+                    i += 1
+                    if depth == 0:
+                        break
+                    continue
+
+                stripped = current_line.strip()
+
+                # 规则1：空行 - 保留
+                if not stripped:
+                    result.append(current_line)
+                    i += 1
+                    continue
+
+                # 规则2：注释行（以 % 开头）- 保留
+                if stripped.startswith('%'):
+                    result.append(current_line)
+                    i += 1
+                    continue
+
+                # 规则3：已有 \item 的行 - 保留
+                if stripped.startswith(r'\item'):
+                    result.append(current_line)
+                    i += 1
+                    continue
+
+                # 规则4：其他非空行 - 添加 \item
+                # 保持原有缩进
+                leading_spaces = len(current_line) - len(current_line.lstrip())
+                indent = current_line[:leading_spaces]
+                content = current_line[leading_spaces:]
+                result.append(f"{indent}\\item {content}")
+                i += 1
+        else:
+            result.append(line)
+            i += 1
+
+    return '\n'.join(result)
+
+
+def soft_wrap_paragraph(s: str, limit: int = 80) -> str:
+    """🆕 任务2：为长段落在标点处添加软换行，便于 LaTeX 报错定位
+
+    功能：对于超过指定长度的字符串，在合适的标点位置插入换行符，
+    使得每行长度不超过 limit，便于 LaTeX 编译时快速定位错误行。
+
+    逻辑：
+    - 如果字符串长度 < limit，直接返回
+    - 如果较长：
+      - 从头扫描，记录最近的"可拆分标点"位置（。；？！，）
+      - 当当前行长度超过 limit/2 时，在最近标点后插入换行
+      - 避免在 LaTeX 命令内部拆行（遇到 \\ 开头的 token 时不拆）
+
+    Args:
+        s: 输入字符串
+        limit: 每行最大长度限制（默认 80）
+
+    Returns:
+        添加软换行后的字符串
+    """
+    if not s or len(s) < limit:
+        return s
+
+    # 可拆分的中文标点
+    breakable_puncts = set('。；？！，')
+
+    result = []
+    current_line = []
+    current_length = 0
+    last_punct_pos = -1  # 记录当前行中最近的标点位置
+
+    i = 0
+    while i < len(s):
+        char = s[i]
+
+        # 检测 LaTeX 命令（以 \ 开头）
+        if char == '\\' and i + 1 < len(s):
+            # 收集完整的 LaTeX 命令
+            cmd_start = i
+            i += 1
+            # 跳过命令名（字母）
+            while i < len(s) and s[i].isalpha():
+                i += 1
+            # 跳过可能的参数（花括号）
+            if i < len(s) and s[i] == '{':
+                brace_depth = 1
+                i += 1
+                while i < len(s) and brace_depth > 0:
+                    if s[i] == '{':
+                        brace_depth += 1
+                    elif s[i] == '}':
+                        brace_depth -= 1
+                    i += 1
+
+            # 将整个命令作为一个单元添加
+            cmd = s[cmd_start:i]
+            current_line.append(cmd)
+            current_length += len(cmd)
+            continue
+
+        # 检测换行符 - 保留原有换行
+        if char == '\n':
+            result.append(''.join(current_line))
+            result.append('\n')
+            current_line = []
+            current_length = 0
+            last_punct_pos = -1
+            i += 1
+            continue
+
+        # 普通字符
+        current_line.append(char)
+        current_length += 1
+
+        # 记录可拆分标点的位置
+        if char in breakable_puncts:
+            last_punct_pos = len(current_line) - 1
+
+        # 检查是否需要换行
+        if current_length > limit // 2 and last_punct_pos >= 0:
+            # 在最近的标点后换行
+            before_break = ''.join(current_line[:last_punct_pos + 1])
+            after_break = current_line[last_punct_pos + 1:]
+
+            result.append(before_break)
+            result.append('\n')
+
+            current_line = after_break
+            current_length = len(after_break)
+            last_punct_pos = -1
+
+        i += 1
+
+    # 添加剩余内容
+    if current_line:
+        result.append(''.join(current_line))
+
+    return ''.join(result)
 
 
 def remove_par_breaks_in_explain(text: str) -> str:
@@ -1406,12 +1667,22 @@ def fix_simple_reversed_inline_pairs(text: str) -> str:
 
     # 核心模式：\) <中间若干字符> \(
     pattern = re.compile(r'(\\\))([^\n]*?)(\\\()')
+    math_token_pattern = re.compile(
+        r'(=|\\frac|\\sqrt|\\sum|\\prod|\\int|\\lim|\\sin|\\cos|\\tan|\\log|'
+        r'\\ln|\\times|\\cdot|\\pm|\\mp|\\leq|\\geq|\\approx|\\sim|\\because|'
+        r'\\therefore|[+\-*/])'
+    )
 
     def _replace(m: re.Match) -> str:
         middle = m.group(2)
         # 只允许空白和常见标点（中英文）
         if re.fullmatch(r'[\s.,，。；;:：、!?！？"""\'\'《》（）()…—\-]*', middle or ''):
             # 安全：直接反转顺序，保持中间内容不变
+            return r'\(' + middle + r'\)'
+        # 如果中间包含常见数学符号/命令，也视为误反转，进行修复
+        if middle and len(middle) <= 160 and math_token_pattern.search(middle):
+            if '\\(' in middle or '\\)' in middle:
+                return m.group(0)
             return r'\(' + middle + r'\)'
         else:
             # 保守：不碰
@@ -1526,6 +1797,19 @@ def validate_and_fix_image_todo_blocks(text: str) -> str:
     text = re.sub(
         r'(% IMAGE_TODO_START[^\n]+)\s*\{[^}]*\}',
         r'\1',
+        text
+    )
+
+    # 修复4：IMAGE_TODO_END 与正文同处一行，自动拆分
+    def _split_image_end(match: re.Match) -> str:
+        trailing = match.group(2)
+        if not trailing.strip():
+            return match.group(1)
+        return f"{match.group(1)}\n{trailing.lstrip()}"
+
+    text = re.sub(
+        r'(% IMAGE_TODO_END id=[^\n]+)([^\n]+)',
+        _split_image_end,
         text
     )
 
@@ -1920,9 +2204,10 @@ def extract_context_around_image(text: str, img_match_start: int, img_match_end:
     return context_before, context_after
 
 
-def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "") -> Tuple[str, Dict, List]:
-    r"""提取元信息与图片（状态机重构：防止跨题累积）
+def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "") -> Tuple[str, Dict, List, List]:
+    r"""提取元信息、图片与附件（状态机重构：防止跨题累积）
 
+    🆕 v1.9: 新增附件识别与提取
     🆕 新增参数：question_index 和 slug 用于生成图片 ID
 
     目标：避免上一题的多行【详解】/【分析】错误吞并下一题题干。
@@ -1932,6 +2217,11 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
       - 章节标题：^#{1,6}\s*(第?[一二三四五六七八九十]+[、．.].*)$
       - 空行 + lookahead 为题号时，作为安全边界（若上一行像环境续行则跳过该空行边界）
       - 引述空行 ^>\s*$ 忽略
+      - 🆕 附件标记：^附[:：]、^附表、^参考数据表
+
+    Returns:
+        (content, meta, images, attachments) 四元组
+        attachments: List[Dict] 包含 kind, lines 字段
     """
     # 规范化并切分行
     lines = block.splitlines()
@@ -1949,12 +2239,18 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
 
     content_lines: List[str] = []
     images: List[Dict] = []
+    attachments: List[Dict] = []  # 🆕 附件列表
 
     # 编译边界正则（增强版：支持更多题号格式和章节标题）
     question_start_perm = re.compile(r"^\s*>?\s*(?:\d{1,3}[\.．、]\s+|（\d{1,3}）\s+|\d{1,3}\)\s+)")
     section_header = re.compile(r"^#{1,6}\s*(第?[一二三四五六七八九十]+[、．.].*)$")
     quote_blank = re.compile(r"^>\s*$")
     env_cont_hint = re.compile(r"(\\\\\s*$)|\\begin\{|\\left|\\right")
+
+    # 🆕 v1.9: 附件标记正则
+    attachment_start = re.compile(r"^(附[:：]|附表|参考数据表)")
+    markdown_table_line = re.compile(r"^\s*\|.*\|.*$")  # Markdown 表格行
+    box_drawing_chars = re.compile(r"[│─┌┐└┘┼├┤┬┴]")  # Box-drawing 字符
 
     # 🆕 修复：将 META_PATTERNS 编译，分离 analysis 和 explain
     meta_starts = [
@@ -1966,9 +2262,13 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
     ]
 
     # 状态
-    state = "NORMAL"  # or "IN_META"
+    state = "NORMAL"  # or "IN_META" or "IN_ATTACHMENT"
     current_meta_key: Optional[str] = None
     current_meta_lines: List[str] = []
+
+    # 🆕 v1.9: 附件状态
+    current_attachment_lines: List[str] = []
+    current_attachment_kind: Optional[str] = None  # "table", "text", "figure"
 
     def flush_meta():
         nonlocal current_meta_key, current_meta_lines
@@ -1998,6 +2298,24 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
         # 重置
         current_meta_key = None
         current_meta_lines = []
+
+    def flush_attachment():
+        """🆕 v1.9: 刷新附件缓冲区"""
+        nonlocal current_attachment_lines, current_attachment_kind
+        if not current_attachment_lines or current_attachment_kind is None:
+            current_attachment_lines = []
+            current_attachment_kind = None
+            return
+
+        # 添加到附件列表
+        attachments.append({
+            "kind": current_attachment_kind,
+            "lines": current_attachment_lines.copy()
+        })
+
+        # 重置
+        current_attachment_lines = []
+        current_attachment_kind = None
 
     def is_question_start(s: str) -> bool:
         return bool(question_start_perm.match(s))
@@ -2160,6 +2478,21 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
             continue
 
         if state == "NORMAL":
+            # 🆕 v1.9: 检测附件开始
+            if attachment_start.match(stripped):
+                # 进入附件状态
+                state = "IN_ATTACHMENT"
+                current_attachment_lines = [line]
+                # 判断附件类型（初步）
+                if "表" in stripped or markdown_table_line.match(stripped):
+                    current_attachment_kind = "table"
+                elif box_drawing_chars.search(stripped):
+                    current_attachment_kind = "table"
+                else:
+                    current_attachment_kind = "text"
+                i += 1
+                continue
+
             # 新的 meta 开始？
             started = False
             for key, pat in meta_starts:
@@ -2226,12 +2559,66 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
         current_meta_lines.append(line)
         i += 1
 
-    # 循环结束，若还在 meta 状态则刷新
+        # 🆕 v1.9: state == IN_ATTACHMENT
+        # 附件状态处理
+        # 1) 新 meta 开始 -> 刷新附件并切换到 meta
+        started = False
+        for key, pat in meta_starts:
+            m = pat.match(stripped)
+            if m:
+                flush_attachment()
+                state = "IN_META"
+                current_meta_key = key
+                seed = m.group(m.lastindex or 1) if m.groups() else ""
+                current_meta_lines = [seed.strip()] if seed.strip() else []
+                started = True
+                break
+        if started:
+            i += 1
+            continue
+
+        # 2) 确认题号或章节边界 -> 结束附件，保留该行给题干
+        if is_question_start(stripped) or is_section_header(stripped):
+            flush_attachment()
+            state = "NORMAL"
+            content_lines.append(line)
+            i += 1
+            continue
+
+        # 3) 空行 - 可能结束附件
+        if stripped == "":
+            next_ne = find_next_nonempty(i)
+            # 如果下一行是题号、meta标记或章节标题，则结束附件
+            if next_ne and (is_question_start(next_ne.strip()) or
+                           is_section_header(next_ne.strip()) or
+                           any(pat.match(next_ne.strip()) for _, pat in meta_starts)):
+                flush_attachment()
+                state = "NORMAL"
+                i += 1
+                continue
+            # 否则继续累积（可能是附件内的空行）
+            current_attachment_lines.append(line)
+            i += 1
+            continue
+
+        # 4) 继续累积附件内容
+        # 动态更新附件类型
+        if markdown_table_line.match(stripped):
+            current_attachment_kind = "table"
+        elif box_drawing_chars.search(stripped):
+            current_attachment_kind = "table"
+
+        current_attachment_lines.append(line)
+        i += 1
+
+    # 循环结束，若还在 meta 或 attachment 状态则刷新
     if state == "IN_META":
         flush_meta()
+    elif state == "IN_ATTACHMENT":
+        flush_attachment()
 
     content = "\n".join(content_lines).strip()
-    return content, meta, images
+    return content, meta, images, attachments
 
 
 def parse_question_structure(content: str) -> Dict:
@@ -2394,22 +2781,63 @@ def handle_subquestions(content: str) -> str:
     r"""处理解答题的小题编号
 
     🆕 v1.7：统一小问编号格式，不添加 \mathrm
+    🆕 v1.9：保留题干前导文本并自动包裹 enumerate
     """
     if not re.search(r'\(\d+\)', content):
         return content
 
-    subquestions = re.findall(r'\((\d+)\)(.*?)(?=\(\d+\)|$)', content, re.DOTALL)
+    parts = re.split(r'\((\d+)\)', content)
+    if len(parts) < 3:
+        return content
+
+    prefix = parts[0].strip()
+    subquestions = []
+    for i in range(1, len(parts), 2):
+        if i + 1 >= len(parts):
+            break
+        num = parts[i]
+        body = parts[i + 1].strip()
+        if body:
+            subquestions.append((num, body))
 
     if len(subquestions) < 2:
         return content
 
-    result_lines = []
-    for num, content_text in subquestions:
-        # 🆕 v1.7：使用普通文本格式，不添加 \mathrm
-        # 格式：(1) 或 (i) 等，保持原样
-        result_lines.append(f"\\item {content_text.strip()}")
+    result_lines: List[str] = []
+    if prefix:
+        result_lines.append(prefix)
+
+    result_lines.append(r"\begin{enumerate}[label=(\arabic*)]")
+    for _, content_text in subquestions:
+        result_lines.append(f"  \\item {content_text}")
+    result_lines.append(r"\end{enumerate}")
 
     return '\n'.join(result_lines)
+
+
+def ensure_choices_environment(lines: List[str], has_options: bool) -> List[str]:
+    r"""如果存在 \item 但缺少 choices 环境，则自动补充"""
+    if not has_options:
+        return lines
+
+    has_begin = any(r"\begin{choices}" in line for line in lines)
+    has_end = any(r"\end{choices}" in line for line in lines)
+    item_indices = [
+        idx for idx, line in enumerate(lines)
+        if re.match(r'\s*\\item\b', line)
+    ]
+
+    if item_indices and not has_begin:
+        insert_at = item_indices[0]
+        lines.insert(insert_at, r"\begin{choices}")
+        item_indices = [idx + 1 if idx >= insert_at else idx for idx in item_indices]
+        has_begin = True
+
+    if item_indices and has_begin and not has_end:
+        insert_at = item_indices[-1] + 1
+        lines.insert(insert_at, r"\end{choices}")
+
+    return lines
 
 
 # DEPRECATED: 状态机已避免这些行内异常，保留兜底测试使用
@@ -2552,6 +2980,81 @@ def fix_common_issues_v2(text: str) -> str:
     
     return text
 
+
+INLINE_MATH_PATTERN = re.compile(r'\\\((.+?)\\\)')
+TRAILING_MATH_PUNCT = set('，。！？；：,.!?、;:')
+CJK_CHAR_RE = re.compile(
+    r'['
+    r'\u3400-\u4dbf'
+    r'\u4e00-\u9fff'
+    r'\uf900-\ufaff'
+    r']'
+)
+CJK_PUNCT_CHARS = set('，。！？；：、“”‘’（）《》【】—……·、')
+MATH_BLACKLIST_TOKENS = [
+    '=', '+', '-', '^', '_',
+    '\\frac', '\\sum', '\\int', '\\times', '\\div',
+    '\\sqrt', '\\log', '\\sin', '\\cos', '\\tan',
+]
+
+
+def _is_cjk_char(ch: str) -> bool:
+    return bool(CJK_CHAR_RE.match(ch)) or ch in CJK_PUNCT_CHARS
+
+
+def _split_trailing_punct(segment: str) -> Tuple[str, str]:
+    idx = len(segment)
+    while idx > 0 and segment[idx - 1].isspace():
+        idx -= 1
+    punct_end = idx
+    while idx > 0 and segment[idx - 1] in TRAILING_MATH_PUNCT:
+        idx -= 1
+    core = segment[:idx].rstrip()
+    trailing = segment[idx:punct_end]
+    return core, trailing
+
+
+def _should_unwrap_inline_math(content: str) -> bool:
+    tokenized = content.strip()
+    if not tokenized:
+        return True
+
+    filtered = ''.join(ch for ch in tokenized if not ch.isspace())
+    if not filtered:
+        return True
+
+    cjk_chars = sum(1 for ch in filtered if _is_cjk_char(ch))
+    ratio = cjk_chars / len(filtered)
+    if ratio <= 0.7:
+        return False
+
+    lowered = filtered.lower()
+    for token in MATH_BLACKLIST_TOKENS:
+        if token in lowered:
+            return False
+
+    return True
+
+
+def postprocess_inline_math(line: str) -> str:
+    """清洗内联数学环境，移除标点并拆掉纯中文"""
+    if r'\(' not in line:
+        return line
+
+    def _replace(match: re.Match) -> str:
+        inner = match.group(1)
+        core, trailing = _split_trailing_punct(inner)
+        normalized = core.strip()
+
+        if not normalized:
+            return trailing
+
+        if _should_unwrap_inline_math(normalized):
+            return normalized + trailing
+
+        return f"\\({normalized}\\){trailing}"
+
+    return INLINE_MATH_PATTERN.sub(_replace, line)
 
 
 def validate_brace_balance(tex: str) -> List[str]:
@@ -2853,7 +3356,7 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
             "\\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]\n"
             f"  % TODO: AI_AGENT_REPLACE_ME (id={img_id})\n"
             "\\end{tikzpicture}\n"
-            f"% IMAGE_TODO_END id={img_id}"  # 🆕 v1.7：不添加尾随 \n
+            f"% IMAGE_TODO_END id={img_id}\n"
         )
     else:
         # 独立图片：使用 center 环境
@@ -2871,16 +3374,17 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
             f"  % TODO: AI_AGENT_REPLACE_ME (id={img_id})\n"
             "\\end{tikzpicture}\n"
             f"% IMAGE_TODO_END id={img_id}\n"
-            "\\end{center}"  # 🆕 v1.7：不添加尾随 \n
+            "\\end{center}\n"  # 🆕 v1.7：不添加尾随空白行
         )
 
     return block
 
 
-def build_question_tex(stem: str, options: List, meta: Dict, images: List,
+def build_question_tex(stem: str, options: List, meta: Dict, images: List, attachments: List,
                        section_type: str, question_index: int = 0, slug: str = "") -> str:
     """生成 question 环境
 
+    🆕 v1.9: 支持附件渲染（表格、文本、图表）
     🆕 v1.8.8: 增加 meta 命令使用计数检测
     🆕 Prompt 3: 支持内联图片占位符替换
     🆕 新格式: 使用 IMAGE_TODO_START/END 带 ID 的占位块
@@ -2896,6 +3400,8 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
     # 先处理文本，但保留占位符
     stem_raw = stem  # 保存原始文本用于上下文提取
     stem = process_text_for_latex(stem, is_math_heavy=True)
+    # 🆕 任务2：对题干应用软换行
+    stem = soft_wrap_paragraph(stem)
 
     if section_type == "解答题" and re.search(r'\(\d+\)', stem):
         stem = handle_subquestions(stem)
@@ -2904,6 +3410,8 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
     if explain_raw:
         explain_raw = re.sub(r'^【?详解】?[:：]?\s*', '', explain_raw)
         explain_raw = process_text_for_latex(explain_raw, is_math_heavy=True)
+        # 🆕 任务2：对解析应用软换行
+        explain_raw = soft_wrap_paragraph(explain_raw)
 
     topics_raw = meta.get("topics", "").strip()
     if topics_raw:
@@ -2957,7 +3465,56 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
         lines.append(f"\\explain{{{explain_raw}}}")
         meta_usage["explain"] += 1
 
+    # 🆕 v1.9: 渲染附件
+    if attachments:
+        lines.append("")
+        lines.append("\\vspace{1em}")
+        lines.append("\\textbf{附：}")
+        lines.append("")
+
+        for att in attachments:
+            kind = att.get("kind", "text")
+            att_lines = att.get("lines", [])
+
+            if not att_lines:
+                continue
+
+            if kind == "table":
+                # 尝试转换 Markdown 表格为 LaTeX
+                att_text = "\n".join(att_lines)
+                # 检查是否为 Markdown 表格
+                if "|" in att_text and any(re.match(r'^\s*\|[-:\s|]+\|$', line) for line in att_lines):
+                    # 使用已有的 convert_markdown_table_to_latex 函数
+                    latex_table = convert_markdown_table_to_latex(att_text)
+                    lines.append(latex_table)
+                else:
+                    # Box-drawing 字符表格或其他格式，使用 verbatim
+                    lines.append("\\begin{verbatim}")
+                    for line in att_lines:
+                        lines.append(line)
+                    lines.append("\\end{verbatim}")
+            elif kind == "text":
+                # 文本附件，使用 process_text_for_latex 处理
+                att_text = "\n".join(att_lines)
+                processed_att = process_text_for_latex(att_text, is_math_heavy=False)
+                lines.append(processed_att)
+            elif kind == "figure":
+                # 图表附件（暂时使用 verbatim）
+                lines.append("\\begin{verbatim}")
+                for line in att_lines:
+                    lines.append(line)
+                lines.append("\\end{verbatim}")
+
+            lines.append("")
+
+    lines = ensure_choices_environment(lines, bool(options))
     lines.append(r"\end{question}")
+    raw_question = "\n".join(lines)
+    processed_lines = [
+        postprocess_inline_math(line)
+        for line in raw_question.splitlines()
+    ]
+    question_tex = "\n".join(processed_lines)
 
     # 🆕 v1.8.8：检查 meta 命令是否重复使用
     if slug:  # 只在有 slug 时才记录日志
@@ -2980,7 +3537,7 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List,
                     f.write(f"  Section: {section_type}\n")
                     f.write(f"  → Please check duplicated 【详解】/【考点】/【答案】/【难度】 blocks in Markdown\n\n")
 
-    return "\n".join(lines)
+    return question_tex
 
 
 def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_detection: bool = True) -> str:
@@ -3019,7 +3576,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
             try:
                 # 🆕 传递 question_index 和 slug 用于生成图片 ID
-                content, meta, images = extract_meta_and_images(block, question_index=q_index, slug=slug)
+                content, meta, images, attachments = extract_meta_and_images(block, question_index=q_index, slug=slug)
 
                 # 使用增强的转换函数（返回3个值）
                 stem, options, extracted_analysis = convert_choices(content)
@@ -3031,7 +3588,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
                     meta['explain'] = meta['explain'] + '\n' + extracted_analysis
 
                 # 🆕 传递 question_index 和 slug 到 build_question_tex
-                q_tex = build_question_tex(stem, options, meta, images, sec_label,
+                q_tex = build_question_tex(stem, options, meta, images, attachments, sec_label,
                                           question_index=q_index, slug=slug)
 
                 # 🆕 v1.6.4：检测问题并记录日志（传入 meta & section_label）
@@ -3119,6 +3676,9 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     # 🆕 v1.8.8：检测反向定界符并记录日志（不改变输出）
     if slug:
         collect_reversed_math_samples(result, slug)
+
+    # 🆕 任务1：enumerate 环境兜底 - 自动补充缺失的 \item
+    result = fix_missing_items_in_enumerate(result)
 
     return result
 
@@ -3469,6 +4029,7 @@ def main():
     parser.add_argument("input", help="输入路径（.md 文件或 OCR 文件夹）")
     parser.add_argument("output", help="输出路径（目录或 .tex 文件）")
     parser.add_argument("--title", help="试卷标题", default=None)
+    parser.add_argument("--figures-dir", help="指定图片资源所在目录（优先于自动检测）", default=None)
     parser.add_argument("--legacy-math", action="store_true", help="使用旧数学正则管线 (smart_inline_math 等) 进行数学处理，仅测试比较用")
     parser.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
     
@@ -3506,7 +4067,21 @@ def main():
             process_text_for_latex = _legacy_wrapper  # type: ignore
 
         md_file, images_dir = find_markdown_and_images(args.input)
-        
+
+        # 处理图片目录：优先使用命令行参数，否则尝试智能推断
+        if args.figures_dir:
+            manual_dir = Path(args.figures_dir).expanduser().resolve()
+            if manual_dir.exists():
+                images_dir = manual_dir
+            else:
+                print(f"⚠️  指定的图片目录 {manual_dir} 不存在，将尝试自动检测结果")
+        elif not images_dir:
+            # 如果 find_markdown_and_images 没有找到图片目录，尝试智能推断
+            inferred_dir = infer_figures_dir(str(md_file))
+            if inferred_dir:
+                images_dir = Path(inferred_dir)
+                print(f"🔍 自动推断图片目录: {images_dir}")
+
         print(f"📄 Markdown: {md_file.name}")
         if images_dir:
             img_count = len(list(images_dir.glob('*')))
@@ -3931,4 +4506,3 @@ if __name__ == "__main__":
         exit(0 if success else 1)
     else:
         exit(main())
-

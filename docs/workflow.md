@@ -1,6 +1,12 @@
-# LaTeX 试卷流水线测试与开发指南 (v3.5)
+# LaTeX 试卷流水线测试与开发指南 (v3.6)
 
-> **文档版本**：v3.5（2025-11-24）  
+> **文档版本**：v3.6（2025-11-24）  
+> **新增特性（v1.9）**：
+> - 🆕 附件结构化（“附：/附表/参考数据表”支持表格/文本/Box 绘制）
+> - 🆕 enumerate 兜底：自动补齐缺失的 \item（嵌套安全）
+> - 🆕 软换行：题干与解析长段落按中文标点智能换行（定位报错更快）
+> - 🆕 图片目录智能推断（无需传参即可找到 figures 目录）
+> - 🆕 平台字体自动兼容（macOS=Songti SC，其它=FandolSong）
 > **核心特性**：
 > - 🔥 MathStateMachine 状态机数学处理（v1.8）
 > - 🆕 反向定界符检测与自动修复（v1.8.8）
@@ -150,6 +156,10 @@
 - 数学公式处理问题（双重包裹、转义错误）
 - 环境未闭合（`\begin{question}` 没有对应 `\end{question}`）
 - 图片标记识别失败或格式不统一
+- IMAGE_TODO_END 行吞掉正文（END 行尾仍有内容，编译缺题干）
+- choices 环境缺失或数量不匹配（`\item` 前没有 `\begin{choices}`）
+- 多小问题干丢失 / 缺少 `enumerate`（validate 输出 `Question starts with \item`）
+- 反向定界符 `\)...\(` 未自动修复（参考 `word_to_tex/output/debug/<slug>_reversed_delimiters.log`）
 
 ---
 
@@ -387,6 +397,30 @@ python3 tools/run_pipeline.py input.md --slug exam-2025 --title "2025年期末�
 
 **成功标准**：所有步骤✅、PDF可打开、文件大小合理（>50KB）
 
+### 3.9 字体与平台兼容
+
+**编译引擎**：
+- 推荐使用 XeLaTeX 编译
+- LuaLaTeX 也支持（通过 `USE_LUALATEX=1` 环境变量）
+
+**字体配置**：
+- **macOS**: 自动使用 `Songti SC`（系统自带）
+- **其他平台**: 自动使用 `FandolSong`（TeX Live 常见）
+- 字体检测逻辑在 `main-exam.tex` 中自动执行
+
+**validate_tex 检查点**：
+- `tools/validate_tex.py` 是 **必需的检查点**
+- 特别针对混排数学/中文时，必须先通过 `validate_tex` 再认为转换成功
+- 使用方法：
+  ```bash
+  python3 tools/validate_tex.py content/exams/auto/<slug>/converted_exam.tex
+  ```
+
+**常见问题**：
+- 如果遇到字体缺失错误，检查系统是否安装了对应字体
+- macOS 用户：确保系统字体库完整
+- Linux 用户：可能需要安装 `fonts-fandol` 包
+
 ---
 
 ## 四、操作步骤（推荐流程）
@@ -439,12 +473,15 @@ pandoc "word_to_tex/input/<文件名>.docx" \
 - 修正元信息标记的空格
 - **不要**大规模重写内容
 
+> ℹ️ `preprocess_docx.sh` 会将所有图片解压到 `word_to_tex/output/figures/<输出前缀>/media/`，后续 `ocr_to_examx.py` 默认会读取该目录；若手动跑 Step 2，记得通过 `--figures-dir` 显式指定。
+
 #### Step 2：Markdown → examx TeX
 ```bash
 python3 tools/core/ocr_to_examx.py \
     "word_to_tex/output/<前缀>_raw.md" \
     "content/exams/auto/<前缀>/converted_exam.tex" \
-    --title "<试卷标题>"
+    --title "<试卷标题>" \
+    --figures-dir "word_to_tex/output/figures/<前缀>"
 ```
 
 **检查点**：
@@ -453,6 +490,11 @@ python3 tools/core/ocr_to_examx.py \
 - ⚠️ **关键检查**：搜索"分析"二字，确保`【分析】`内容未出现在 TeX 中
 - ✅ 数学公式：`\(...\)` 或 `\[...\]`，无双重包裹
 - ✅ 选项格式：`\begin{choices}` → `\item` （每个选项单独一行）
+- ✅ **新增必做**：命令结束后立即运行
+  ```bash
+  python3 tools/validate_tex.py content/exams/auto/<前缀>/converted_exam.tex
+  ```
+  若出现 `反向定界符`、`Question starts with \item`、`choices 环境不匹配` 等错误，**禁止直接改 TeX**，先回到 Markdown 或脚本定位问题，并记录到问题清单。
 
 **如发现【分析】内容混入**：
 1. 检查 `ocr_to_examx.py` 中的元信息解析逻辑

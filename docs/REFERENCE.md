@@ -1,7 +1,7 @@
-# LaTeX 试卷流水线参考手册
+# LaTeX 试卷流水线参考手册 (v3.6)
 
 > **用途**: 所有格式规范的统一速查手册  
-> **更新**: 2025-11-21
+> **更新**: 2025-11-24 （新增：附件模板与图片路径推断章节，版本与 workflow 同步）
 
 ---
 
@@ -279,4 +279,74 @@ TikZ片段: content/exams/auto/<slug>/tikz_snippets/
 
 ---
 
-**最后更新**: v3.4（2025-11-21）
+## 附件 Markdown 模板
+
+### 基本格式
+
+```markdown
+20. 某题题干……
+
+附：某地区历年数据表
+
+| 年份 | A省 | B省 |
+| ---- | --- | --- |
+| 2020 |  10 |  12 |
+| 2021 |  11 |  13 |
+```
+
+### 转换结果
+
+附件会在 question 环境内部末尾渲染为：
+
+```latex
+\vspace{1em}
+\textbf{附：}
+
+\begin{center}
+\begin{tabular}{ccc}
+\hline
+年份 & A省 & B省 \\
+\hline
+2020 & 10 & 12 \\
+2021 & 11 & 13 \\
+\hline
+\end{tabular}
+\end{center}
+```
+
+### 支持的附件类型
+
+1. **表格附件**：Markdown 表格或 Box-drawing 字符表格
+2. **文本附件**：以"附："、"附表"、"参考数据表"开头的文本
+3. **图表附件**：包含特殊字符的图表（预留）
+
+---
+
+## 图片路径推断规则
+
+### 自动推断逻辑
+
+当未通过 `--figures-dir` 显式指定图片目录时，系统会自动推断：
+
+**输入示例**：`word_to_tex/input/js-suxichang-2025-q2.md`
+
+**推断顺序**：
+1. `word_to_tex/output/figures/js-suxichang-2025-q2`
+2. `word_to_tex/output/figures/js-suxichang-2025-q2/media`
+
+**使用方法**：
+```bash
+# 自动推断（推荐）
+python3 tools/core/ocr_to_examx.py input.md output/
+
+# 手动指定（可选）
+python3 tools/core/ocr_to_examx.py input.md output/ --figures-dir path/to/figures
+```
+
+**注意事项**：
+- 系统会自动去除文件名后缀（`_local`、`_preprocessed`、`_raw`）
+- 推断失败时不影响程序运行，仅提示警告
+
+---
+
+**最后更新**: v3.6（2025-11-24）
