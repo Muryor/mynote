@@ -21,15 +21,25 @@ class TeXValidator:
         self.filepath = Path(filepath)
         self.errors: List[str] = []
         self.warnings: List[str] = []
+        self._content: str = None
+        self._content_no_comments: str = None
 
     # ---------- 工具方法 ----------
 
     def _read_content(self) -> str:
-        try:
-            return self.filepath.read_text(encoding="utf-8")
-        except UnicodeDecodeError:
-            # 兜底：有些文件可能是 gbk 或其它编码
-            return self.filepath.read_text(errors="ignore")
+        if self._content is None:
+            try:
+                self._content = self.filepath.read_text(encoding="utf-8")
+            except UnicodeDecodeError:
+                self._content = self.filepath.read_text(errors="ignore")
+        return self._content
+
+    def _get_content_no_comments(self) -> str:
+        """获取去除注释的内容（带缓存）"""
+        if self._content_no_comments is None:
+            content = self._read_content()
+            self._content_no_comments = re.sub(r'(?<!\\)%[^\n]*', '', content)
+        return self._content_no_comments
 
     # ---------- 具体检查 ----------
 
@@ -37,26 +47,48 @@ class TeXValidator:
         """检查 \\explain{...} 中是否出现段落分隔（空行）"""
         content = self._read_content()
 
-        # 尽量只匹配单层 explain {...}，避免贪心
-        pattern = re.compile(
-            r"\\explain\{((?:[^{}]|(?:\{[^{}]*\}))*)\}",
-            re.DOTALL,
-        )
-        for match in pattern.finditer(content):
-            explain_content = match.group(1)
-            if "\n\n" in explain_content:
-                line_no = content[: match.start()].count("\n") + 1
-                self.errors.append(
-                    f"Line {line_no}: \\explain macro contains paragraph breaks "
-                    f"(double newlines) - this is very likely to cause 'Runaway argument' errors."
-                )
+        # 使用栈算法提取 \explain{...} 内容，支持任意嵌套深度
+        i = 0
+        while i < len(content):
+            idx = content.find(r'\explain{', i)
+            if idx == -1:
+                break
+
+            line_no = content[:idx].count('\n') + 1
+            start = idx + len(r'\explain{')
+            depth = 1
+            j = start
+
+            while j < len(content) and depth > 0:
+                backslash_count = 0
+                k = j - 1
+                while k >= 0 and content[k] == '\\':
+                    backslash_count += 1
+                    k -= 1
+
+                is_escaped = (backslash_count % 2 == 1)
+
+                if content[j] == '{' and not is_escaped:
+                    depth += 1
+                elif content[j] == '}' and not is_escaped:
+                    depth -= 1
+                j += 1
+
+            if depth == 0:
+                explain_content = content[start:j-1]
+                if "\n\n" in explain_content:
+                    self.errors.append(
+                        f"Line {line_no}: \\explain macro contains paragraph breaks "
+                        f"(double newlines) - this is very likely to cause 'Runaway argument' errors."
+                    )
+
+            i = j
 
     def check_brace_balance(self) -> None:
         """检查全局花括号配对情况（移除数学定界符后再检查，避免误报）"""
-        content = self._read_content()
+        content_cleaned = self._get_content_no_comments()
 
         # 移除数学定界符，避免误报 \left\{ 和 \right\} 等
-        content_cleaned = content
         content_cleaned = re.sub(r'\\left\\{', '', content_cleaned)
         content_cleaned = re.sub(r'\\right\\}', '', content_cleaned)
         content_cleaned = re.sub(r'\\left\\\[', '', content_cleaned)
@@ -65,6 +97,10 @@ class TeXValidator:
         content_cleaned = re.sub(r'\\right\\\)', '', content_cleaned)
         content_cleaned = re.sub(r'\\right\\\\.', '', content_cleaned)
         content_cleaned = re.sub(r'\\left\\\\.', '', content_cleaned)
+
+        # 移除转义的花括号
+        content_cleaned = content_cleaned.replace(r'\{', '@@ESC_OPEN@@')
+        content_cleaned = content_cleaned.replace(r'\}', '@@ESC_CLOSE@@')
 
         stack: List[int] = []
 
@@ -85,18 +121,18 @@ class TeXValidator:
 
     def check_math_delimiters(self) -> None:
         """检查数学环境定界符配对（总数 + 顺序合理性）"""
-        content = self._read_content()
+        content_no_comments = self._get_content_no_comments()
 
         # 原有逻辑：检查总数
-        inline_open = len(re.findall(r"\\\(", content))
-        inline_close = len(re.findall(r"\\\)", content))
+        inline_open = len(re.findall(r"\\\(", content_no_comments))
+        inline_close = len(re.findall(r"\\\)", content_no_comments))
         if inline_open != inline_close:
             self.warnings.append(
                 f"Inline math delimiters mismatch: {inline_open} '\\(' vs {inline_close} '\\)'"
             )
 
-        display_open = len(re.findall(r"\\\[", content))
-        display_close = len(re.findall(r"\\\]", content))
+        display_open = len(re.findall(r"\\\[", content_no_comments))
+        display_close = len(re.findall(r"\\\]", content_no_comments))
         if display_open != display_close:
             self.warnings.append(
                 f"Display math delimiters mismatch: {display_open} '\\[' vs {display_close} '\\]'"
@@ -105,9 +141,9 @@ class TeXValidator:
         # 新增：顺序合理性检查（行内数学）
         pattern_inline = re.compile(r"\\\(|\\\)")
         balance = 0
-        for m in pattern_inline.finditer(content):
+        for m in pattern_inline.finditer(content_no_comments):
             token = m.group(0)
-            line_no = content[: m.start()].count("\n") + 1
+            line_no = content_no_comments[: m.start()].count("\n") + 1
             if token == r"\(":
                 balance += 1
             else:
@@ -122,9 +158,9 @@ class TeXValidator:
         # 新增：顺序合理性检查（行间数学）
         pattern_display = re.compile(r"\\\[|\\\]")
         balance_display = 0
-        for m in pattern_display.finditer(content):
+        for m in pattern_display.finditer(content_no_comments):
             token = m.group(0)
-            line_no = content[: m.start()].count("\n") + 1
+            line_no = content_no_comments[: m.start()].count("\n") + 1
             if token == r"\[":
                 balance_display += 1
             else:
@@ -182,21 +218,21 @@ class TeXValidator:
         新逻辑：全局扫描 token 流，维护深度；仅当出现 depth < 0 时报告真正的逆序错误。
         另外检测大段中文被放入单个行内公式中，给出警告以提示排版改进。
         """
-        content = self._read_content()
+        content_no_comments = self._get_content_no_comments()
 
-        tokens = list(re.finditer(r"\\\(|\\\)|\\\[|\\\]", content))
+        tokens = list(re.finditer(r"\\\(|\\\)|\\\[|\\\]", content_no_comments))
         inline_depth = 0
         display_depth = 0
         for m in tokens:
             tok = m.group(0)
-            line_no = content[: m.start()].count("\n") + 1
+            line_no = content_no_comments[: m.start()].count("\n") + 1
             if tok == r"\(":
                 inline_depth += 1
             elif tok == r"\)":
                 inline_depth -= 1
                 if inline_depth < 0:
                     self.errors.append(
-                        f"Line {line_no}: '\)' without preceding '\(' (inline math order error)."
+                        rf"Line {line_no}: '\)' without preceding '\(' (inline math order error)."
                     )
                     inline_depth = 0
             elif tok == r"\[":
@@ -205,12 +241,12 @@ class TeXValidator:
                 display_depth -= 1
                 if display_depth < 0:
                     self.errors.append(
-                        f"Line {line_no}: '\]' without preceding '\[' (display math order error)."
+                        rf"Line {line_no}: '\]' without preceding '\[' (display math order error)."
                     )
                     display_depth = 0
 
         # 检测大段中文包裹在单个 \( ... \) 中
-        for blk in re.finditer(r"\\\((.+?)\\\)", content, flags=re.DOTALL):
+        for blk in re.finditer(r"\\\((.+?)\\\)", content_no_comments, flags=re.DOTALL):
             inner = blk.group(1)
             if len(inner) < 20:
                 continue
@@ -218,14 +254,14 @@ class TeXValidator:
             if cjk_chars:
                 ratio = len(cjk_chars) / max(1, len(inner))
                 if ratio > 0.4:
-                    line_no = content[: blk.start()].count("\n") + 1
+                    line_no = content_no_comments[: blk.start()].count("\n") + 1
                     self.warnings.append(
                         f"Line {line_no}: Large inline math with {len(cjk_chars)} CJK chars (~{ratio:.0%}). Consider moving text outside math or using \text{{}}."
                     )
 
     def check_duplicate_meta_commands(self) -> None:
         """检查同一题目中是否有重复的元信息命令"""
-        content = self._read_content()
+        content_no_comments = self._get_content_no_comments()
 
         # 切分所有 question 环境
         question_pattern = re.compile(
@@ -235,9 +271,9 @@ class TeXValidator:
 
         meta_commands = ["explain", "topics", "answer", "difficulty"]
 
-        for q_index, match in enumerate(question_pattern.finditer(content), 1):
+        for q_index, match in enumerate(question_pattern.finditer(content_no_comments), 1):
             q_content = match.group(1)
-            base_line = content[:match.start()].count("\n") + 1
+            base_line = content_no_comments[:match.start()].count("\n") + 1
 
             for cmd in meta_commands:
                 # 查找所有该命令出现的位置

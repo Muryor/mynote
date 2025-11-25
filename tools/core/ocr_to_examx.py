@@ -525,6 +525,30 @@ def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
         
         for i, comment in enumerate(protected):
             text = text.replace(f"@@COMMENT_{i}@@", comment)
+    text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
+
+    # 统一常见数学符号的排版
+    text = standardize_math_symbols(text)
+    
+    return text
+
+
+def standardize_math_symbols(text: str) -> str:
+    """标准化数学符号（虚数单位/圆周率/自然底数等）"""
+    if not text:
+        return text
+
+    # 虚数单位
+    text = re.sub(r'\\text\{\s*i\s*\}', r'\\mathrm{i}', text)
+    text = re.sub(r'\\text\{\s*-\s*i\s*\}', r'-\\mathrm{i}', text)
+
+    # 圆周率
+    text = re.sub(r'\\text\{\s*π\s*\}', r'\\pi', text)
+    text = re.sub(r'π', r'\\pi', text)
+
+    # 自然对数底 e：仅在作为指数底数时替换
+    text = re.sub(r'\\text\{\s*e\s*\}(?=\s*[\^_])', r'\\mathrm{e}', text)
+
     return text
 
 
@@ -661,12 +685,43 @@ def fix_array_boundaries(text: str) -> str:
     return text
 
 
+def clean_image_attributes(text: str) -> str:
+    """统一清理 Markdown 图片标记中的属性块"""
+    if not text:
+        return text
+
+    # 清理带 width/height 的属性块（支持跨行）
+    attr_pattern = re.compile(r'\{[^{}]*(?:width|height)[^{}]*\}', re.IGNORECASE | re.DOTALL)
+    text = attr_pattern.sub('', text)
+
+    # 清理孤立的 width="..." / height="..." 行
+    text = re.sub(r'^\s*(width|height)="[^"]*"\s*$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+    return text
+
+
+def remove_decorative_images(text: str) -> str:
+    """移除极小的装饰性图片（通常是 OCR 噪声）"""
+    if not text:
+        return text
+
+    tiny_pattern = re.compile(
+        r'!\[[^\]]*\]\([^)]+\)\{[^}]*?(?:e-2|e-3)in[^}]*\}',
+        re.IGNORECASE,
+    )
+    return tiny_pattern.sub('', text)
+
+
 def clean_residual_image_attrs(text: str) -> str:
     r"""清理残留的图片属性块
 
     🆕 v1.7 增强：清理更多 Markdown 图片属性残留
     🆕 v1.6 P0 修复：清理 Pandoc 生成的图片属性
     """
+    if not text:
+        return text
+
+    text = clean_image_attributes(text)
+
     # 清理单独成行的属性块开始
     text = re.sub(r'^\s*\{width="[^"]*"\s*$', '', text, flags=re.MULTILINE)
     # 清理单独成行的属性块结束
@@ -1821,6 +1876,47 @@ def validate_and_fix_image_todo_blocks(text: str) -> str:
     return text
 
 
+def balance_left_right_delimiters(text: str) -> str:
+    r"""平衡 \left/\right 定界符，孤立项降级为普通括号"""
+    if not text or ('\\left' not in text and '\\right' not in text):
+        return text
+
+    pattern = re.compile(r'\\left\s*(?:\\[a-zA-Z]+|\\.|.)|\\right\s*(?:\\[a-zA-Z]+|\\.|.)')
+    parts: List[str] = []
+    stack: List[int] = []
+    last = 0
+
+    def _downgrade_left(token: str) -> str:
+        remainder = token[len('\\left'):].lstrip()
+        return '' if remainder.startswith('.') else remainder
+
+    def _downgrade_right(token: str) -> str:
+        remainder = token[len('\\right'):].lstrip()
+        return '' if remainder.startswith('.') else remainder
+
+    for match in pattern.finditer(text):
+        parts.append(text[last:match.start()])
+        token = match.group(0)
+
+        if token.startswith('\\left'):
+            parts.append(token)
+            stack.append(len(parts) - 1)
+        else:
+            if stack:
+                stack.pop()
+                parts.append(token)
+            else:
+                parts.append(_downgrade_right(token))
+        last = match.end()
+
+    parts.append(text[last:])
+
+    for idx in stack:
+        parts[idx] = _downgrade_left(parts[idx])
+
+    return ''.join(parts)
+
+
 def cleanup_remaining_image_markers(text: str) -> str:
     """🆕 后备占位符转换：清理任何残留的 Markdown 图片标记
     
@@ -2020,6 +2116,71 @@ def convert_markdown_table_to_latex(text: str) -> str:
     return re.sub(table_pattern, convert_one_table, text)
 
 
+def convert_ascii_table_blocks(text: str) -> str:
+    """将由横线 + 空格对齐组成的 ASCII 表格转换为 tabular"""
+    if not text:
+        return text
+
+    lines = text.splitlines()
+    result: List[str] = []
+    i = 0
+
+    def _is_rule(line: str) -> bool:
+        stripped = line.strip()
+        if not stripped:
+            return False
+        return all(ch in {'-', ' '} for ch in stripped) and stripped.count('-') >= 6
+
+    def _convert_block(block: List[str]) -> Optional[str]:
+        inner = [ln.rstrip() for ln in block[1:-1]]
+        rows = [ln.strip() for ln in inner if ln.strip() and not _is_rule(ln)]
+        if len(rows) < 2:
+            return None
+
+        split_rows = [re.split(r'\s{2,}', row) for row in rows]
+        col_count = max(len(r) for r in split_rows)
+        if col_count < 2:
+            return None
+
+        def _pad(row: List[str]) -> List[str]:
+            padded = [cell.strip() for cell in row]
+            while len(padded) < col_count:
+                padded.append('')
+            return padded[:col_count]
+
+        latex_lines = ["\\begin{center}", f"\\begin{{tabular}}{{{'c' * col_count}}}", "\\hline"]
+
+        header = _pad(split_rows[0])
+        latex_lines.append(" & ".join(escape_latex_special(cell, False) for cell in header) + r" \\")
+        latex_lines.append("\\hline")
+
+        for row in split_rows[1:]:
+            cells = _pad(row)
+            latex_lines.append(" & ".join(escape_latex_special(cell, False) for cell in cells) + r" \\")
+
+        latex_lines.append("\\hline")
+        latex_lines.append("\\end{tabular}")
+        latex_lines.append("\\end{center}")
+        return "\n".join(latex_lines)
+
+    while i < len(lines):
+        if _is_rule(lines[i]):
+            j = i + 1
+            while j < len(lines) and not _is_rule(lines[j]):
+                j += 1
+            if j < len(lines):
+                block = lines[i:j + 1]
+                converted = _convert_block(block)
+                if converted:
+                    result.append(converted)
+                    i = j + 1
+                    continue
+        result.append(lines[i])
+        i += 1
+
+    return "\n".join(result)
+
+
 def normalize_fullwidth_brackets(text: str) -> str:
     """🆕 v1.6.3：统一全角括号为半角
 
@@ -2058,6 +2219,10 @@ def clean_markdown(text: str) -> str:
     text = text.replace("\r\n", "\n").replace("\r", "\n")
     text = re.sub(r"\n{3,}", "\n\n", text)
 
+    # 预清理装饰性图片及其属性
+    text = remove_decorative_images(text)
+    text = clean_image_attributes(text)
+
     # 🆕 v1.3 改进：统一中英文标点
     # 保护已有的LaTeX命令
     protected = []
@@ -2081,6 +2246,7 @@ def clean_markdown(text: str) -> str:
     text = re.sub(r'```', '', text)
 
     # 转换表格
+    text = convert_ascii_table_blocks(text)
     if '|' in text and '---' in text:
         text = convert_markdown_table_to_latex(text)
 
@@ -2638,41 +2804,45 @@ def parse_question_structure(content: str) -> Dict:
         'in_choice': False,
         'in_analysis': False,
         'current_choice': '',
+        'skip_analysis_block': False,
     }
     
     choice_pattern = re.compile(r'^([A-D])[\.．、]\s*(.*)$')
+    analysis_marker = re.compile(r'^【?\s*分析\s*】[:：]?')
+    explain_marker = re.compile(r'^【?\s*详解\s*】[:：]?\s*(.*)$')
     
     for line in lines:
         stripped = line.strip()
+        normalized = re.sub(r'^>+\s*', '', stripped)
+
+        if structure['skip_analysis_block']:
+            if normalized.startswith('【'):
+                structure['skip_analysis_block'] = False
+            else:
+                continue
 
         # 🆕 修复：只在遇到【详解】时进入解析模式，遇到【分析】时跳过
-        # 检查是否为【分析】标记 - 直接跳过
-        if re.match(r'^【?\s*分析\s*】[:：]?', stripped):
+        if analysis_marker.match(normalized):
             structure['in_choice'] = False
             structure['in_analysis'] = False
-            # 不把这一行塞进任何地方，完全舍弃
+            structure['skip_analysis_block'] = True
             continue
 
-        # 检查是否为【详解】标记 - 进入解析模式
-        if re.match(r'^【?\s*详解\s*】[:：]?', stripped):
+        explain_match = explain_marker.match(normalized)
+        if explain_match:
             if structure['current_choice']:
                 structure['choices'].append(structure['current_choice'].strip())
                 structure['current_choice'] = ''
             structure['in_choice'] = False
             structure['in_analysis'] = True
-            structure['analysis_lines'].append(stripped)
+            remainder = explain_match.group(1).strip()
+            if remainder:
+                structure['analysis_lines'].append(remainder)
             continue
 
-        # 保守处理：只在明确的解析起始词开头时进入解析（避免误判题干）
-        # 注意：不再使用 ANALYSIS_START_MARKERS 自动触发，避免"则"等词在题干中误判
-        if structure['in_analysis']:
-            # 已经在解析模式中，继续收集
-            pass
-        
         # 匹配选项标记 (A. B. C. D.)
-        m = choice_pattern.match(stripped)
+        m = choice_pattern.match(normalized)
         if m:
-            # 保存上一个选项
             if structure['current_choice']:
                 structure['choices'].append(structure['current_choice'].strip())
             
@@ -2685,80 +2855,116 @@ def parse_question_structure(content: str) -> Dict:
         if structure['in_analysis']:
             structure['analysis_lines'].append(line)
         elif structure['in_choice']:
-            # 选项续行（多行选项内容）
-            structure['current_choice'] += ' ' + stripped
+            structure['current_choice'] += ' ' + normalized
         else:
-            # 题干部分
             structure['stem_lines'].append(line)
     
-    # 保存末尾累积的选项
     if structure['current_choice']:
         structure['choices'].append(structure['current_choice'].strip())
     
     return structure
 
 
+def split_inline_choice_line(line: str) -> List[str]:
+    """将单行多选项（含 $$ 数学公式）拆成独立字符串"""
+    text = re.sub(r'^>+\s*', '', line.strip())
+    if not text:
+        return []
+
+    segments: List[str] = []
+    current_letter: Optional[str] = None
+    current_punct: str = '．'
+    current_buf: List[str] = []
+    inline_depth = 0
+    display_depth = 0
+    i = 0
+
+    while i < len(text):
+        if text[i:i+2] == '$$':
+            current_buf.append('$$')
+            display_depth = 1 - display_depth
+            i += 2
+            continue
+        if text[i:i+2] == r'\(':
+            inline_depth += 1
+            current_buf.append(r'\(')
+            i += 2
+            continue
+        if text[i:i+2] == r'\)' and inline_depth > 0:
+            inline_depth -= 1
+            current_buf.append(r'\)')
+            i += 2
+            continue
+        if text[i:i+2] == r'\[':
+            display_depth += 1
+            current_buf.append(r'\[')
+            i += 2
+            continue
+        if text[i:i+2] == r'\]' and display_depth > 0:
+            display_depth -= 1
+            current_buf.append(r'\]')
+            i += 2
+            continue
+
+        if inline_depth == 0 and display_depth == 0:
+            marker = re.match(r'([A-D])([．\.\、])\s*', text[i:])
+            if marker:
+                if current_letter is not None:
+                    segments.append(f"{current_letter}{current_punct}{''.join(current_buf).strip()}")
+                current_letter = marker.group(1)
+                current_punct = marker.group(2)
+                current_buf = []
+                i += len(marker.group(0))
+                continue
+
+        current_buf.append(text[i])
+        i += 1
+
+    if current_letter is not None:
+        segments.append(f"{current_letter}{current_punct}{''.join(current_buf).strip()}")
+
+    return [seg for seg in segments if seg.strip()]
+
+
 def expand_inline_choices(content: str) -> str:
-    """展开单行/多行引述选项并去除'>'前缀
-    - 单行：> A... B... C... D... → 多行独立选项
-    - 多行：> A... B... / > C... D... → 合并后展开为独立选项
-    - 空行：> (空) → 跳过
-    """
-    lines = []
-    accumulated_choice_text = ""
-    
+    """展开单行/多行引述选项并去除'>'前缀"""
+    output_lines: List[str] = []
+    pending_block: List[str] = []
+
+    def flush_pending():
+        nonlocal pending_block
+        if not pending_block:
+            return
+
+        normalized = " ".join(re.sub(r'^>+\s*', '', ln).strip() for ln in pending_block if ln.strip())
+        marker_count = len(re.findall(r'[A-D][．\.\、]', normalized))
+        if marker_count >= 2:
+            expanded = split_inline_choice_line(normalized)
+            if expanded:
+                output_lines.extend(expanded)
+            else:
+                output_lines.extend(pending_block)
+        elif marker_count == 1:
+            expanded = split_inline_choice_line(normalized)
+            if expanded:
+                output_lines.extend(expanded)
+            else:
+                output_lines.extend(pending_block)
+        else:
+            output_lines.extend(pending_block)
+        pending_block = []
+
     for line in content.splitlines():
         stripped = line.strip()
-        
-        # 处理以'>'开头的行（引述块）
         if stripped.startswith('>'):
-            choice_text = stripped[1:].strip()
-            
-            # 跳过空的引述行
-            if not choice_text:
-                continue
-            
-            # 如果这一行有选项标记，累积到缓冲区
-            if re.search(r'[A-D][．\.\、]', choice_text):
-                accumulated_choice_text += " " + choice_text if accumulated_choice_text else choice_text
-                continue
-            
-            # 非选项引述（如图片说明等），保留原样
-            lines.append(line)
-        else:
-            # 非引述行：如果有累积的选项文本，先处理
-            if accumulated_choice_text:
-                # 检查累积文本中有多少个选项标记
-                choice_markers = re.findall(r'[A-D][．\.\、]', accumulated_choice_text)
-                if len(choice_markers) >= 2:
-                    # 分割为独立选项
-                    parts = re.split(r'(?=[A-D][．\.\、])', accumulated_choice_text)
-                    for part in parts:
-                        part = part.strip()
-                        if part and re.match(r'^[A-D][．\.\、]', part):
-                            lines.append(part)
-                elif len(choice_markers) == 1:
-                    # 单个选项，直接添加
-                    lines.append(accumulated_choice_text.strip())
-                
-                accumulated_choice_text = ""
-            
-            # 添加当前行
-            lines.append(line)
-    
-    # 处理末尾残留的累积文本
-    if accumulated_choice_text:
-        choice_markers = re.findall(r'[A-D][．\.\、]', accumulated_choice_text)
-        if len(choice_markers) >= 2:
-            parts = re.split(r'(?=[A-D][．\.\、])', accumulated_choice_text)
-            for part in parts:
-                part = part.strip()
-                if part and re.match(r'^[A-D][．\.\、]', part):
-                    lines.append(part)
-        elif len(choice_markers) == 1:
-            lines.append(accumulated_choice_text.strip())
-    
-    return '\n'.join(lines)
+            pending_block.append(line)
+            continue
+
+        flush_pending()
+        output_lines.append(line)
+
+    flush_pending()
+    return '\n'.join(output_lines)
 
 
 def convert_choices(content: str) -> Tuple[str, List[str], str]:
@@ -3105,28 +3311,41 @@ def validate_math_integrity(tex: str) -> List[str]:
     - 🆕 v1.8.7：检测 \) 在 \( 前面的反向模式
     """
     issues: List[str] = []
+    tex_no_comments_lines: List[str] = []
+    for raw_line in tex.splitlines():
+        tex_no_comments_lines.append(raw_line.split('%', 1)[0])
+    tex_no_comments = "\n".join(tex_no_comments_lines)
 
     # 🆕 v1.8.7：统计时忽略注释中的定界符
     opens = 0
     closes = 0
+    left_total = 0
+    right_total = 0
+    left_right_samples: List[str] = []
     reversed_pairs: List[Tuple[int, str]] = []  # (line_num, line_content)
 
-    for lineno, raw_line in enumerate(tex.splitlines(), start=1):
-        # 去掉注释部分
-        code_part = raw_line.split('%', 1)[0]
-
-        # 统计该行的定界符
+    for lineno, code_part in enumerate(tex_no_comments_lines, start=1):
         line_opens = code_part.count('\\(')
         line_closes = code_part.count('\\)')
+        line_left = code_part.count('\\left')
+        line_right = code_part.count('\\right')
         opens += line_opens
         closes += line_closes
+        left_total += line_left
+        right_total += line_right
 
-        # 🆕 v1.8.7：检测反向模式（\) 在 \( 前面）
+        if line_left != line_right and (line_left or line_right):
+            snippet = code_part.strip()
+            if len(snippet) > 80:
+                snippet = snippet[:77] + '...'
+            left_right_samples.append(
+                f"Line {lineno}: \\left={line_left}, \\right={line_right} → {snippet}"
+            )
+
         if line_opens >= 1 and line_closes >= 1:
             idx_open = code_part.find(r'\(')
             idx_close = code_part.find(r'\)')
             if idx_close < idx_open:
-                # 截断行内容用于显示
                 display_line = code_part.strip()
                 if len(display_line) > 80:
                     display_line = display_line[:77] + '...'
@@ -3134,59 +3353,59 @@ def validate_math_integrity(tex: str) -> List[str]:
 
     if opens != closes:
         issues.append(f"Math delimiter imbalance: opens={opens} closes={closes} diff={opens - closes}")
+    if left_total != right_total:
+        issues.append(f"\\left/\\right imbalance: left={left_total}, right={right_total}")
+        if left_right_samples:
+            issues.extend(left_right_samples[:5])
 
-    stray = len(re.findall(r'(?<!\\)\$', tex))
+    stray = len(re.findall(r'(?<!\\)\$', tex_no_comments))
     if stray:
         issues.append(f"Stray dollar signs detected: {stray}")
 
     double_wrapped = (
-        len(re.findall(r'\$\s*\\\(.*?\\\)\s*\$', tex, flags=re.DOTALL)) +
-        len(re.findall(r'\$\$\s*\\\(.*?\\\)\s*\$\$', tex, flags=re.DOTALL))
+        len(re.findall(r'\$\s*\\\(.*?\\\)\s*\$', tex_no_comments, flags=re.DOTALL)) +
+        len(re.findall(r'\$\$\s*\\\(.*?\\\)\s*\$\$', tex_no_comments, flags=re.DOTALL))
     )
     if double_wrapped:
         issues.append(f"Double-wrapped math segments: {double_wrapped}")
 
     right_glitch = (
-        len(re.findall(r'\\right\.\s*\$\$', tex)) +
-        len(re.findall(r'\\right\.\\\\\)', tex))
+        len(re.findall(r'\\right\.\s*\$\$', tex_no_comments)) +
+        len(re.findall(r'\\right\.\\\\\)', tex_no_comments))
     )
     if right_glitch:
         issues.append(f"Right boundary glitches: {right_glitch}")
 
     empty_math = (
-        len(re.findall(r'\\\(\s*\\\)', tex)) +
-        len(re.findall(r'\\\[\s*\\\]', tex))
+        len(re.findall(r'\\\(\s*\\\)', tex_no_comments)) +
+        len(re.findall(r'\\\[\s*\\\]', tex_no_comments))
     )
     if empty_math:
         issues.append(f"Empty math blocks: {empty_math}")
 
-    # 🆕 截断检测：使用顺序扫描匹配未配对的 \\( 和 \\)
     unmatched_open_positions: List[int] = []
     unmatched_close_positions: List[int] = []
 
-    token_iter = list(re.finditer(r'(\\\(|\\\))', tex))
+    token_iter = list(re.finditer(r'(\\\(|\\\))', tex_no_comments))
     stack: List[int] = []
     for m in token_iter:
         tok = m.group(0)
         pos = m.start()
-        if tok == '\\(':  # open
+        if tok == '\\(':
             stack.append(pos)
-        else:  # ')'
+        else:
             if stack:
                 stack.pop()
             else:
                 unmatched_close_positions.append(pos)
-    # 剩余 stack 中的是未闭合 open
     unmatched_open_positions.extend(stack)
 
     def _sample_at(pos: int, direction: str = 'forward', span: int = 140) -> str:
-        """获取从 pos 起的上下文样本，去除换行与多余空格"""
         if direction == 'forward':
-            raw = tex[pos:pos+span]
+            raw = tex_no_comments[pos:pos+span]
         else:
             start = max(0, pos-span)
-            raw = tex[start:pos+10]
-        # 截断到第一个 '\\)' （若存在）
+            raw = tex_no_comments[start:pos+10]
         end_delim = raw.find('\\)')
         if end_delim != -1:
             raw = raw[:end_delim+2]
@@ -3194,8 +3413,7 @@ def validate_math_integrity(tex: str) -> List[str]:
         return raw
 
     def _get_line_number(pos: int) -> int:
-        """获取位置对应的行号"""
-        return tex[:pos].count('\n') + 1
+        return tex_no_comments[:pos].count('\n') + 1
 
     def _has_priority_keywords(sample: str) -> bool:
         """检查样本是否包含优先关键词（\\right.、array、cases、题号标记等）"""
@@ -3215,7 +3433,7 @@ def validate_math_integrity(tex: str) -> List[str]:
     priority_open_samples: List[str] = []
 
     for p in unmatched_open_positions:
-        segment = tex[p:p+300]
+        segment = tex_no_comments[p:p+300]
         if '\\)' not in segment:  # 明显没有闭合
             sample = _sample_at(p, 'forward')
             line_num = _get_line_number(p)
@@ -3272,7 +3490,7 @@ def validate_math_integrity(tex: str) -> List[str]:
         )
 
     # 针对图片占位符附近的截断：\( ... IMAGE_TODO_START 未闭合
-    image_trunc = re.findall(r'\\\([^\\)]{0,200}?% IMAGE_TODO_START', tex)
+    image_trunc = re.findall(r'\\\([^\\)]{0,200}?% IMAGE_TODO_START', tex_no_comments)
     if image_trunc:
         issues.append(f"Potential image-adjacent truncated math segments: {len(image_trunc)}")
 
@@ -3383,6 +3601,17 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
     return block
 
 
+def clean_explain_content(explain_text: str) -> str:
+    """清理 explain 内容中的空行与残留的【分析】标记"""
+    if not explain_text:
+        return ""
+
+    text = explain_text.replace("\r\n", "\n")
+    text = re.sub(r'【\s*分析\s*】.*?(?=【|$)', '', text, flags=re.DOTALL)
+    text = re.sub(r'\n\s*\n+', r'\\par\n', text)
+    return text.strip()
+
+
 def build_question_tex(stem: str, options: List, meta: Dict, images: List, attachments: List,
                        section_type: str, question_index: int = 0, slug: str = "") -> str:
     """生成 question 环境
@@ -3410,11 +3639,14 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List, attac
         stem = handle_subquestions(stem)
 
     explain_raw = meta.get("explain", "").strip()
+    if explain_raw and re.search(r'【\s*分析\s*】', explain_raw):
+        print(f"⚠️  Q{question_index}: explain 段落包含【分析】标记，已自动移除")
+        explain_raw = re.sub(r'【\s*分析\s*】.*?(?=【|$)', '', explain_raw, flags=re.DOTALL)
     if explain_raw:
         explain_raw = re.sub(r'^【?详解】?[:：]?\s*', '', explain_raw)
         explain_raw = process_text_for_latex(explain_raw, is_math_heavy=True)
-        # 🆕 任务2：对解析应用软换行
         explain_raw = soft_wrap_paragraph(explain_raw)
+        explain_raw = clean_explain_content(explain_raw)
 
     topics_raw = meta.get("topics", "").strip()
     if topics_raw:
@@ -3483,15 +3715,17 @@ def build_question_tex(stem: str, options: List, meta: Dict, images: List, attac
                 continue
 
             if kind == "table":
-                # 尝试转换 Markdown 表格为 LaTeX
                 att_text = "\n".join(att_lines)
-                # 检查是否为 Markdown 表格
+                converted_md = None
                 if "|" in att_text and any(re.match(r'^\s*\|[-:\s|]+\|$', line) for line in att_lines):
-                    # 使用已有的 convert_markdown_table_to_latex 函数
-                    latex_table = convert_markdown_table_to_latex(att_text)
-                    lines.append(latex_table)
+                    converted_md = convert_markdown_table_to_latex(att_text)
+                ascii_table = convert_ascii_table_blocks(att_text)
+
+                if converted_md:
+                    lines.append(converted_md)
+                elif ascii_table != att_text:
+                    lines.append(ascii_table)
                 else:
-                    # Box-drawing 字符表格或其他格式，使用 verbatim
                     lines.append("\\begin{verbatim}")
                     for line in att_lines:
                         lines.append(line)
@@ -3675,6 +3909,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
     # 🆕 v1.8.8：极度保守的反向定界符自动修复（仅在简单场景启用）
     result = fix_simple_reversed_inline_pairs(result)
+    result = balance_left_right_delimiters(result)
 
     # 🆕 v1.8.8：检测反向定界符并记录日志（不改变输出）
     if slug:
@@ -3711,6 +3946,10 @@ def detect_question_issues(
         问题列表
     """
     issues: List[str] = []
+    tex_no_comments_lines: List[str] = []
+    for _line in tex_block.splitlines():
+        tex_no_comments_lines.append(_line.split('%', 1)[0])
+    tex_no_comments = "\n".join(tex_no_comments_lines)
 
     # ---------- 🆕 v1.8.6：检测缺少题干的题目（增强版 - 带上下文） ----------
     # 检查题目是否直接从 \item 开始（缺少题干）
@@ -3748,33 +3987,33 @@ def detect_question_issues(
     # ---------- 1) 原有检查逻辑（保留 & 复刻） ----------
 
     # 1.1 检测 meta 形式的【分析】（不应该出现）
-    if "【分析】" in raw_block and "【分析】" in tex_block:
+    if "【分析】" in raw_block and "【分析】" in tex_no_comments:
         issues.append("Contains meta 【分析】 in both raw and tex (should be discarded)")
-    elif "【分析】" in tex_block:
+    elif "【分析】" in tex_no_comments:
         issues.append("Contains meta 【分析】 in tex (should be discarded)")
 
     # 1.2 检测 *$x$* 或其他 star + math 模式
-    if re.search(r'\*\s*\$', tex_block) or re.search(r'\$\s*\*', tex_block):
+    if re.search(r'\*\s*\$', tex_no_comments) or re.search(r'\$\s*\*', tex_no_comments):
         issues.append("Star-emphasis around inline math, e.g. *$x$*")
 
     # 1.3 检测空 $$ 或形如 $$\(
-    if re.search(r'\$\s*\$', tex_block):
+    if re.search(r'\$\s*\$', tex_no_comments):
         issues.append("Empty inline/ display math $$")
-    if re.search(r'\$\s*\$\s*\\\(', tex_block):
+    if re.search(r'\$\s*\$\s*\\\(', tex_no_comments):
         issues.append("Suspicious pattern $$\\(")
 
     # 1.4 检测行内 math 分隔符数量明显不匹配
-    open_count = tex_block.count(r'\(')
-    close_count = tex_block.count(r'\)')
+    open_count = tex_no_comments.count(r'\(')
+    close_count = tex_no_comments.count(r'\)')
     if open_count != close_count:
         issues.append(f"Unbalanced inline math delimiters: ${open_count} vs$ {close_count}")
 
     # 1.5 检测全角括号残留
-    if '（' in tex_block or '）' in tex_block:
+    if '（' in tex_no_comments or '）' in tex_no_comments:
         issues.append("Fullwidth brackets （）found in tex")
 
     # 1.6 检测"故选"残留
-    if re.search(r'故选[:：][ABCD]+', tex_block):
+    if re.search(r'故选[:：][ABCD]+', tex_no_comments):
         issues.append("'故选' pattern found in tex")
 
     # ---------- 2) 新增：基于 meta 的一致性检查 ----------
@@ -3950,25 +4189,31 @@ def validate_latex_output(tex_content: str) -> List[str]:
     """
     warnings = []
 
+    # 去除注释内容，避免 IMAGE_TODO 的 CONTEXT 注释触发误报
+    tex_no_comments_lines: List[str] = []
+    for line in tex_content.splitlines():
+        tex_no_comments_lines.append(line.split('%', 1)[0])
+    tex_no_comments = "\n".join(tex_no_comments_lines)
+
     # 🆕 检查0：【分析】meta 段残留
-    analysis_meta = re.findall(r'【\s*分析\s*】', tex_content)
+    analysis_meta = re.findall(r'【\s*分析\s*】', tex_no_comments)
     if analysis_meta:
         warnings.append(f"❌ 发现 {len(analysis_meta)} 处【分析】meta 段残留（应已被丢弃）")
 
     # 检查1：残留的 $ 符号
-    dollar_matches = re.findall(r'(?<!\\)\$[^\$]+\$', tex_content)
+    dollar_matches = re.findall(r'(?<!\\)\$[^\$]+\$', tex_no_comments)
     if dollar_matches:
         warnings.append(f"⚠️  发现 {len(dollar_matches)} 处残留的 $ 格式")
         for i, match in enumerate(dollar_matches[:3], 1):  # 只显示前3个
             warnings.append(f"     示例{i}: {match}")
 
     # 检查2：残留的"故选"
-    guxuan_matches = re.findall(r'故选[:：][ABCD]+', tex_content)
+    guxuan_matches = re.findall(r'故选[:：][ABCD]+', tex_no_comments)
     if guxuan_matches:
         warnings.append(f"⚠️  发现 {len(guxuan_matches)} 处残留的'故选'")
 
     # 检查3：中文括号
-    chinese_paren = re.findall(r'[（）]', tex_content)
+    chinese_paren = re.findall(r'[（）]', tex_no_comments)
     if chinese_paren:
         warnings.append(f"⚠️  发现 {len(chinese_paren)} 处中文括号")
 
@@ -4491,6 +4736,70 @@ B. 选项B
     else:
         print(f"  ❌ FAILED: \\left\\{{ 数量为 {left_brace_count}, 预期为 1")
         print(f"     输出: {result_block_exist[:80]}...")
+        all_passed = False
+
+    # 测试 13：单行多选项展开（含 $$）
+    print("\n测试 13: 单行多选项展开（含 $$）")
+    inline_choices = """> A．$$\\left\\{2,3\\right\\}$$ B．$$\\left\\{1,2\\right\\}$$
+> C．文字说明 D．纯文本"""
+    expanded = expand_inline_choices(inline_choices)
+    expanded_lines = [ln for ln in expanded.splitlines() if re.match(r'^[A-D]', ln)]
+    if len(expanded_lines) == 4 and all(ln.startswith(letter) for ln, letter in zip(expanded_lines, ['A', 'B', 'C', 'D'])):
+        print("  ✅ PASSED")
+    else:
+        print(f"  ❌ FAILED: 单行选项展开结果异常: {expanded_lines}")
+        all_passed = False
+
+    # 测试 14：图片属性/装饰图片清理
+    print("\n测试 14: 图片属性清理与装饰图片移除")
+    attr_sample = '![](img.png){width="120px" height="60px"}'
+    cleaned_attr = clean_image_attributes(attr_sample)
+    tiny_sample = '![](tiny.png){width="1.0e-2in" height="1.0e-2in"}'
+    removed_tiny = remove_decorative_images(tiny_sample)
+    if '{' in cleaned_attr or 'width' in cleaned_attr:
+        print("  ❌ FAILED: 图片属性未被清理")
+        all_passed = False
+    elif removed_tiny.strip():
+        print("  ❌ FAILED: 极小装饰图片未被移除")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 15：clean_explain_content 空行处理
+    print("\n测试 15: clean_explain_content 空行处理")
+    explain_text = "第一段内容\n\n第二段\n\n\n第三段"
+    cleaned_explain = clean_explain_content(explain_text)
+    if "\\par" not in cleaned_explain or "\n\n" in cleaned_explain:
+        print(f"  ❌ FAILED: clean_explain_content 未正确替换空行: {cleaned_explain}")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 16：\\left/\\right 平衡
+    print("\n测试 16: balance_left_right_delimiters 修复孤立定界符")
+    lr_sample = "\\left( x + y"
+    lr_fixed = balance_left_right_delimiters(lr_sample)
+    if "\\left" in lr_fixed:
+        print(f"  ❌ FAILED: 未降级孤立 \\left: {lr_fixed}")
+        all_passed = False
+    else:
+        print("  ✅ PASSED")
+
+    # 测试 17：ASCII 表格转换
+    print("\n测试 17: convert_ascii_table_blocks 转换破折号表格")
+    ascii_table = """
+  ---------------------- ----------------------
+           级数                   名称
+
+            2                     轻风
+
+  ---------------------- ----------------------
+"""
+    converted = convert_ascii_table_blocks(ascii_table)
+    if "\\begin{tabular}" in converted:
+        print("  ✅ PASSED")
+    else:
+        print("  ❌ FAILED: ASCII 表格未被转换")
         all_passed = False
 
     print("\n" + "=" * 60)
