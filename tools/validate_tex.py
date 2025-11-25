@@ -176,27 +176,52 @@ class TeXValidator:
             )
 
     def check_reversed_math_delimiters(self) -> None:
-        """检查反向数学定界符（\\)...\\( 或 \\]...\\[）"""
+        """语义化检测真正次序错误的数学定界符。
+
+        旧版本基于单行正则 \\)...\\( 导致大量误报：句子结束后紧跟下一公式属正常。
+        新逻辑：全局扫描 token 流，维护深度；仅当出现 depth < 0 时报告真正的逆序错误。
+        另外检测大段中文被放入单个行内公式中，给出警告以提示排版改进。
+        """
         content = self._read_content()
-        lines = content.splitlines()
 
-        for i, line in enumerate(lines, 1):
-            # 去掉注释部分
-            line_content = line.split('%', 1)[0]
+        tokens = list(re.finditer(r"\\\(|\\\)|\\\[|\\\]", content))
+        inline_depth = 0
+        display_depth = 0
+        for m in tokens:
+            tok = m.group(0)
+            line_no = content[: m.start()].count("\n") + 1
+            if tok == r"\(":
+                inline_depth += 1
+            elif tok == r"\)":
+                inline_depth -= 1
+                if inline_depth < 0:
+                    self.errors.append(
+                        f"Line {line_no}: '\)' without preceding '\(' (inline math order error)."
+                    )
+                    inline_depth = 0
+            elif tok == r"\[":
+                display_depth += 1
+            else:  # tok == \]
+                display_depth -= 1
+                if display_depth < 0:
+                    self.errors.append(
+                        f"Line {line_no}: '\]' without preceding '\[' (display math order error)."
+                    )
+                    display_depth = 0
 
-            # 检查反向行内数学定界符
-            if re.search(r'\\\).*?\\\(', line_content):
-                self.errors.append(
-                    f"Line {i}: Found reversed inline math delimiters '\\)...\\(' - "
-                    f"please check math delimiters order."
-                )
-
-            # 检查反向行间数学定界符
-            if re.search(r'\\\].*?\\\[', line_content):
-                self.errors.append(
-                    f"Line {i}: Found reversed display math delimiters '\\]...\\[' - "
-                    f"please check math delimiters order."
-                )
+        # 检测大段中文包裹在单个 \( ... \) 中
+        for blk in re.finditer(r"\\\((.+?)\\\)", content, flags=re.DOTALL):
+            inner = blk.group(1)
+            if len(inner) < 20:
+                continue
+            cjk_chars = re.findall(r"[\u4e00-\u9fff]", inner)
+            if cjk_chars:
+                ratio = len(cjk_chars) / max(1, len(inner))
+                if ratio > 0.4:
+                    line_no = content[: blk.start()].count("\n") + 1
+                    self.warnings.append(
+                        f"Line {line_no}: Large inline math with {len(cjk_chars)} CJK chars (~{ratio:.0%}). Consider moving text outside math or using \text{{}}."
+                    )
 
     def check_duplicate_meta_commands(self) -> None:
         """检查同一题目中是否有重复的元信息命令"""
@@ -275,6 +300,10 @@ class TeXValidator:
 
                 # 跳过空行、注释、\item 开头的行
                 if not line or line.startswith('%') or line.startswith(r'\item'):
+                    continue
+
+                # 跳过 enumerate 可选参数行 (例如 [label=(\arabic*)])
+                if line.startswith('[') and line.endswith(']'):
                     continue
 
                 # 跳过纯 LaTeX 环境标记（如 \begin, \end）

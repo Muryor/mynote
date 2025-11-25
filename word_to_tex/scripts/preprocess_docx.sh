@@ -53,7 +53,11 @@ echo "✅ 生成: $PREPROCESSED_MD"
 # Step 3: Run ocr_to_examx converter
 echo "步骤 3/5: 转换为 examx 格式"
 EXAMX_TEX="$OUTPUT_DIR/${OUTPUT_NAME}_examx.tex"
-python3 "$TOOLS_DIR/core/ocr_to_examx.py" "$PREPROCESSED_MD" "$EXAMX_TEX" --title "$TITLE"
+python3 "$TOOLS_DIR/core/ocr_to_examx.py" \
+  "$PREPROCESSED_MD" \
+  "$EXAMX_TEX" \
+  --title "$TITLE" \
+  --figures-dir "$FIGURES_DIR"
 echo "✅ 生成: $EXAMX_TEX"
 
 # Step 4: Run agent_refine

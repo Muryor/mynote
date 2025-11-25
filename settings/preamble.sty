@@ -105,6 +105,46 @@
 }
 
 % =========================
+% CJK in Math Mode Support
+% =========================
+% Configure CJK font for Unicode ranges in math mode to avoid missing character boxes
+\IfFontExistsTF{Songti SC}{%
+  \setmathfont{Songti SC}[
+    range={
+      "3000-"303F,      % CJK Symbols and Punctuation
+      "4E00-"9FFF,      % CJK Unified Ideographs (most common Chinese characters)
+      "3400-"4DBF,      % CJK Extension A
+      "FF00-"FFEF       % Halfwidth and Fullwidth Forms (including ，。、)
+    },
+    Scale=MatchUppercase
+  ]
+}{%
+  \IfFontExistsTF{FandolSong}{%
+    \setmathfont{FandolSong}[
+      range={
+        "3000-"303F,
+        "4E00-"9FFF,
+        "3400-"4DBF,
+        "FF00-"FFEF
+      },
+      Scale=MatchUppercase
+    ]
+  }{%
+    \IfFontExistsTF{Noto Serif CJK SC}{%
+      \setmathfont{Noto Serif CJK SC}[
+        range={
+          "3000-"303F,
+          "4E00-"9FFF,
+          "3400-"4DBF,
+          "FF00-"FFEF
+        },
+        Scale=MatchUppercase
+      ]
+    }{}%
+  }%
+}
+
+% =========================
 % CJK fonts (xeCJK/ctex)
 % =========================
 \IfFontExistsTF{PingFang SC}{%

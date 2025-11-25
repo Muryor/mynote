@@ -2513,103 +2513,106 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
             i += 1
             continue
 
-        # state == IN_META
-        # 1) 新 meta 开始 -> 刷新并切换
-        started = False
-        for key, pat in meta_starts:
-            m = pat.match(stripped)
-            if m:
-                flush_meta()
-                state = "IN_META"
-                current_meta_key = key
-                seed = m.group(m.lastindex or 1) if m.groups() else ""
-                current_meta_lines = [seed.strip()] if seed.strip() else []
-                started = True
-                break
-        if started:
-            i += 1
-            continue
-
-        # 2) 确认题号或章节边界 -> 结束 meta，保留该行给题干
-        if is_question_start(stripped) or is_section_header(stripped):
-            flush_meta()
-            state = "NORMAL"
-            content_lines.append(line)
-            i += 1
-            continue
-
-        # 3) 空行 + lookahead 为题号 -> 安全地结束 meta
-        if stripped == "":
-            next_ne = find_next_nonempty(i)
-            if next_ne and is_question_start(next_ne.strip()):
-                prev_ne = find_prev_nonempty(i)
-                # 若上一非空行看起来是环境续行，则不要在此空行切断
-                if prev_ne and env_cont_hint.search(prev_ne):
-                    # 继续把空行也并入 meta（保持原样）
-                    current_meta_lines.append(line)
-                    i += 1
-                    continue
-                # 否则切断 meta（不消费空行）
-                flush_meta()
-                state = "NORMAL"
-                i += 1  # 跳过该空行，下一轮看到题号行会进入 NORMAL 流程
-                continue
-
-        # 4) 继续累积 meta 内容
-        current_meta_lines.append(line)
-        i += 1
-
-        # 🆕 v1.9: state == IN_ATTACHMENT
-        # 附件状态处理
-        # 1) 新 meta 开始 -> 刷新附件并切换到 meta
-        started = False
-        for key, pat in meta_starts:
-            m = pat.match(stripped)
-            if m:
-                flush_attachment()
-                state = "IN_META"
-                current_meta_key = key
-                seed = m.group(m.lastindex or 1) if m.groups() else ""
-                current_meta_lines = [seed.strip()] if seed.strip() else []
-                started = True
-                break
-        if started:
-            i += 1
-            continue
-
-        # 2) 确认题号或章节边界 -> 结束附件，保留该行给题干
-        if is_question_start(stripped) or is_section_header(stripped):
-            flush_attachment()
-            state = "NORMAL"
-            content_lines.append(line)
-            i += 1
-            continue
-
-        # 3) 空行 - 可能结束附件
-        if stripped == "":
-            next_ne = find_next_nonempty(i)
-            # 如果下一行是题号、meta标记或章节标题，则结束附件
-            if next_ne and (is_question_start(next_ne.strip()) or
-                           is_section_header(next_ne.strip()) or
-                           any(pat.match(next_ne.strip()) for _, pat in meta_starts)):
-                flush_attachment()
-                state = "NORMAL"
+        elif state == "IN_META":
+            # state == IN_META
+            # 1) 新 meta 开始 -> 刷新并切换
+            started = False
+            for key, pat in meta_starts:
+                m = pat.match(stripped)
+                if m:
+                    flush_meta()
+                    state = "IN_META"
+                    current_meta_key = key
+                    seed = m.group(m.lastindex or 1) if m.groups() else ""
+                    current_meta_lines = [seed.strip()] if seed.strip() else []
+                    started = True
+                    break
+            if started:
                 i += 1
                 continue
-            # 否则继续累积（可能是附件内的空行）
+
+            # 2) 确认题号或章节边界 -> 结束 meta，保留该行给题干
+            if is_question_start(stripped) or is_section_header(stripped):
+                flush_meta()
+                state = "NORMAL"
+                content_lines.append(line)
+                i += 1
+                continue
+
+            # 3) 空行 + lookahead 为题号 -> 安全地结束 meta
+            if stripped == "":
+                next_ne = find_next_nonempty(i)
+                if next_ne and is_question_start(next_ne.strip()):
+                    prev_ne = find_prev_nonempty(i)
+                    # 若上一非空行看起来是环境续行，则不要在此空行切断
+                    if prev_ne and env_cont_hint.search(prev_ne):
+                        # 继续把空行也并入 meta（保持原样）
+                        current_meta_lines.append(line)
+                        i += 1
+                        continue
+                    # 否则切断 meta（不消费空行）
+                    flush_meta()
+                    state = "NORMAL"
+                    i += 1  # 跳过该空行，下一轮看到题号行会进入 NORMAL 流程
+                    continue
+
+            # 4) 继续累积 meta 内容
+            current_meta_lines.append(line)
+            i += 1
+            continue
+
+        elif state == "IN_ATTACHMENT":
+            # 附件状态处理
+            # 1) 新 meta 开始 -> 刷新附件并切换到 meta
+            started = False
+            for key, pat in meta_starts:
+                m = pat.match(stripped)
+                if m:
+                    flush_attachment()
+                    state = "IN_META"
+                    current_meta_key = key
+                    seed = m.group(m.lastindex or 1) if m.groups() else ""
+                    current_meta_lines = [seed.strip()] if seed.strip() else []
+                    started = True
+                    break
+            if started:
+                i += 1
+                continue
+
+            # 2) 确认题号或章节边界 -> 结束附件，保留该行给题干
+            if is_question_start(stripped) or is_section_header(stripped):
+                flush_attachment()
+                state = "NORMAL"
+                content_lines.append(line)
+                i += 1
+                continue
+
+            # 3) 空行 - 可能结束附件
+            if stripped == "":
+                next_ne = find_next_nonempty(i)
+                # 如果下一行是题号、meta标记或章节标题，则结束附件
+                if next_ne and (is_question_start(next_ne.strip()) or
+                               is_section_header(next_ne.strip()) or
+                               any(pat.match(next_ne.strip()) for _, pat in meta_starts)):
+                    flush_attachment()
+                    state = "NORMAL"
+                    i += 1
+                    continue
+                # 否则继续累积（可能是附件内的空行）
+                current_attachment_lines.append(line)
+                i += 1
+                continue
+
+            # 4) 继续累积附件内容
+            # 动态更新附件类型
+            if markdown_table_line.match(stripped):
+                current_attachment_kind = "table"
+            elif box_drawing_chars.search(stripped):
+                current_attachment_kind = "table"
+
             current_attachment_lines.append(line)
             i += 1
             continue
-
-        # 4) 继续累积附件内容
-        # 动态更新附件类型
-        if markdown_table_line.match(stripped):
-            current_attachment_kind = "table"
-        elif box_drawing_chars.search(stripped):
-            current_attachment_kind = "table"
-
-        current_attachment_lines.append(line)
-        i += 1
 
     # 循环结束，若还在 meta 或 attachment 状态则刷新
     if state == "IN_META":
