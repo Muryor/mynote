@@ -156,6 +156,29 @@ class MathStateMachine:
     4. 防止跨行单美元未闭合造成吞并后续文本
     """
 
+    def preprocess_multiline_math(self, text: str) -> str:
+        """预处理多行数学环境（修复 P0-001）
+
+        处理跨多行的 $$...array/cases...$$ 块，避免被逐行拆散
+        """
+        # 🆕 修复 P0-001a: 合并 $$...$$ 中文标点 $$...$$ 模式
+        # 例如: $$C$$：$$x^{2}$$ → $$C：x^{2}$$
+        # 修复: 原正则丢失第二个公式内容，现在捕获并保留两个公式
+        text = re.sub(r'\$\$([^$]+)\$\$([：，。；、])\$\$([^$]+)\$\$', r'$$\1\2\3$$', text)
+
+        # 匹配 $$...$$ 块，包括跨行的 array/cases/matrix 环境
+        pattern = re.compile(
+            r'\$\$\s*(\\left[\{\[\(]?\s*\\begin\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)\}.*?\\end\{\2\}\s*\\right[\}\]\)]?\.?)\s*\$\$',
+            re.DOTALL
+        )
+
+        def replace_multiline(match):
+            content = match.group(1).strip()
+            # 转换为 \(...\) 格式
+            return r'\(' + content + r'\)'
+
+        return pattern.sub(replace_multiline, text)
+
     def tokenize(self, text: str) -> List:
         tokens = []
         i = 0
@@ -199,9 +222,9 @@ class MathStateMachine:
                 # 情况4：\right. 后直接跟中文标点（，。；：等）
                 elif j < n and text[j] in '，。；：、！？':
                     # OCR 错误：缺少闭合符号
+                    # 插入 \right.\) 来闭合数学模式，标点保持在数学模式外
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                    # 不跳过标点，让后续处理
-                    i = j
+                    i = j  # 不跳过标点，让后续处理将其作为普通文本
                     found_boundary = True
 
                 if not found_boundary:
@@ -253,6 +276,9 @@ class MathStateMachine:
         return tokens
 
     def process(self, text: str) -> str:
+        # 先预处理多行数学块
+        text = self.preprocess_multiline_math(text)
+        # 然后处理剩余的单行公式
         tokens = self.tokenize(text)
         out = []
         i = 0
@@ -534,17 +560,32 @@ def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
 
 
 def standardize_math_symbols(text: str) -> str:
-    """标准化数学符号（虚数单位/圆周率/自然底数等）"""
+    """标准化数学符号（虚数单位/圆周率/自然底数等）
+
+    修复 P2-001: 处理 \text{数字}、\text{数字π} 等模式
+    """
     if not text:
         return text
 
-    # 虚数单位
-    text = re.sub(r'\\text\{\s*i\s*\}', r'\\mathrm{i}', text)
-    text = re.sub(r'\\text\{\s*-\s*i\s*\}', r'-\\mathrm{i}', text)
+    # 虚数单位 - 保持 \text{i} 格式与范本一致
+    # 注释掉以下转换，保留原始 \text{i} 格式
+    # text = re.sub(r'\\text\{\s*i\s*\}', r'\\mathrm{i}', text)
+    # text = re.sub(r'\\text\{\s*-\s*i\s*\}', r'-\\mathrm{i}', text)
+
+    # 🆕 P2-001: 处理 \text{数字π} 或 \text{数字\pi}（必须在 \text{数字} 之前）
+    text = re.sub(r'\\text\{(\d+)π\}', r'\1\\pi', text)
+    text = re.sub(r'\\text\{(\d+)\\pi\}', r'\1\\pi', text)
+
+    # 🆕 P2-001: 处理 \text{π数字} 或 \text{\pi数字}
+    text = re.sub(r'\\text\{π(\d+)\}', r'\\pi\1', text)
+    text = re.sub(r'\\text\{\\pi(\d+)\}', r'\\pi\1', text)
+
+    # 🆕 P2-001: 处理 \text{数字}
+    text = re.sub(r'\\text\{(\d+)\}', r'\1', text)
 
     # 圆周率
     text = re.sub(r'\\text\{\s*π\s*\}', r'\\pi', text)
-    text = re.sub(r'π', r'\\pi', text)
+    text = re.sub(r'(?<!\\)π', r'\\pi', text)
 
     # 自然对数底 e：仅在作为指数底数时替换
     text = re.sub(r'\\text\{\s*e\s*\}(?=\s*[\^_])', r'\\mathrm{e}', text)
@@ -690,8 +731,12 @@ def clean_image_attributes(text: str) -> str:
     if not text:
         return text
 
-    # 清理带 width/height 的属性块（支持跨行）
-    attr_pattern = re.compile(r'\{[^{}]*(?:width|height)[^{}]*\}', re.IGNORECASE | re.DOTALL)
+    # 清理带 width/height 的属性块（支持跨行和科学计数法）
+    # 匹配包含科学计数法的尺寸值，如 1.3888888888888888e-2in
+    attr_pattern = re.compile(
+        r'\{[^{}]*(?:width|height)\s*=\s*"[^"]*"[^{}]*\}',
+        re.IGNORECASE | re.DOTALL
+    )
     text = attr_pattern.sub('', text)
 
     # 清理孤立的 width="..." / height="..." 行
@@ -700,13 +745,19 @@ def clean_image_attributes(text: str) -> str:
 
 
 def remove_decorative_images(text: str) -> str:
-    """移除极小的装饰性图片（通常是 OCR 噪声）"""
+    """移除极小的装饰性图片（通常是 OCR 噪声）
+
+    检测尺寸小于 0.1in 的图片，包括科学计数法格式如:
+    - 1.3888888888888888e-2in (约 0.014in)
+    - 1e-3in (0.001in)
+    """
     if not text:
         return text
 
+    # 匹配科学计数法格式的极小尺寸（e-2, e-3 或更小）
     tiny_pattern = re.compile(
-        r'!\[[^\]]*\]\([^)]+\)\{[^}]*?(?:e-2|e-3)in[^}]*\}',
-        re.IGNORECASE,
+        r'!\[[^\]]*\]\([^)]+\)\{[^}]*?(?:\d+\.?\d*e-[2-9]|\d+\.?\d*e-\d{2,})in[^}]*\}',
+        re.IGNORECASE | re.DOTALL,
     )
     return tiny_pattern.sub('', text)
 
@@ -1629,6 +1680,23 @@ def fix_right_boundary_errors(text: str) -> str:
         i += 1
 
     return ''.join(result)
+
+
+def fix_reversed_delimiters(text: str) -> str:
+    """🆕 修复反向数学定界符模式（\\)...\\(）
+
+    修复模式：
+    1. 单词\\)中文标点\\( → 单词，中文标点\\(
+    2. \\)中文标点，\\( → \\)中文标点\\(
+    """
+    if not text:
+        return text
+
+    # 模式1: 非空白字符\\)中文标点\\( → 保留\\)，删除后面的\\(
+    # 例如: x < 4\\)，故\\(y > 0 → x < 4\\)，故y > 0（然后y > 0会被后续处理）
+    text = re.sub(r'(\S)\\\)([，。；：、！？]+)\\\(', r'\1\)\2', text)
+
+    return text
 
 
 def balance_array_and_cases_env(text: str) -> str:
@@ -2866,64 +2934,52 @@ def parse_question_structure(content: str) -> Dict:
 
 
 def split_inline_choice_line(line: str) -> List[str]:
-    """将单行多选项（含 $$ 数学公式）拆成独立字符串"""
+    """将单行多选项（含 $$ 数学公式）拆成独立字符串
+
+    修复 P0-002: 使用保护-分割-恢复策略，避免数学公式干扰选项分割
+    """
     text = re.sub(r'^>+\s*', '', line.strip())
     if not text:
         return []
 
+    # 步骤1: 保护数学公式
+    math_blocks = []
+    def save_math(match):
+        math_blocks.append(match.group(0))
+        return f'@@MATH{len(math_blocks)-1}@@'
+
+    # 保护所有数学模式：$$...$$, $...$, \(...\), \[...\]
+    protected = re.sub(r'\$\$[^$]+\$\$|\$[^$]+\$|\\[()\[].*?\\[)\]]', save_math, text, flags=re.DOTALL)
+
+    # 步骤2: 使用 finditer 找到所有选项标记及其位置
+    option_pattern = re.compile(r'([A-D][．.])\s*')
+    matches = list(option_pattern.finditer(protected))
+
+    if not matches:
+        return []
+
+    # 步骤3: 提取每个选项的内容
     segments: List[str] = []
-    current_letter: Optional[str] = None
-    current_punct: str = '．'
-    current_buf: List[str] = []
-    inline_depth = 0
-    display_depth = 0
-    i = 0
+    for i, match in enumerate(matches):
+        option_marker = match.group(1)
+        start = match.end()
 
-    while i < len(text):
-        if text[i:i+2] == '$$':
-            current_buf.append('$$')
-            display_depth = 1 - display_depth
-            i += 2
-            continue
-        if text[i:i+2] == r'\(':
-            inline_depth += 1
-            current_buf.append(r'\(')
-            i += 2
-            continue
-        if text[i:i+2] == r'\)' and inline_depth > 0:
-            inline_depth -= 1
-            current_buf.append(r'\)')
-            i += 2
-            continue
-        if text[i:i+2] == r'\[':
-            display_depth += 1
-            current_buf.append(r'\[')
-            i += 2
-            continue
-        if text[i:i+2] == r'\]' and display_depth > 0:
-            display_depth -= 1
-            current_buf.append(r'\]')
-            i += 2
-            continue
+        # 确定内容结束位置（下一个选项标记的开始，或字符串末尾）
+        if i + 1 < len(matches):
+            end = matches[i + 1].start()
+        else:
+            end = len(protected)
 
-        if inline_depth == 0 and display_depth == 0:
-            marker = re.match(r'([A-D])([．\.\、])\s*', text[i:])
-            if marker:
-                if current_letter is not None:
-                    segments.append(f"{current_letter}{current_punct}{''.join(current_buf).strip()}")
-                current_letter = marker.group(1)
-                current_punct = marker.group(2)
-                current_buf = []
-                i += len(marker.group(0))
-                continue
+        # 提取选项内容
+        content = protected[start:end].strip()
 
-        current_buf.append(text[i])
-        i += 1
+        # 恢复数学公式
+        for j, block in enumerate(math_blocks):
+            content = content.replace(f'@@MATH{j}@@', block)
 
-    if current_letter is not None:
-        segments.append(f"{current_letter}{current_punct}{''.join(current_buf).strip()}")
+        segments.append(f'{option_marker} {content}')
 
-    return [seg for seg in segments if seg.strip()]
+    return segments
 
 
 def expand_inline_choices(content: str) -> str:
@@ -3119,8 +3175,31 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     global math_sm
     text = math_sm.process(text)
 
+    # ---------- 2.5. 标准化数学符号（在状态机之后） ----------
+    text = standardize_math_symbols(text)
+
     # ---------- 3. 轻量后处理：常见空块/残留修复 ----------
     text = fix_common_issues_v2(text)
+
+    # ---------- 3.5. 修复未闭合的数学模式 ----------
+    text = fix_unclosed_math_mode(text)
+
+    return text
+
+
+def fix_unclosed_math_mode(text: str) -> str:
+    """修复未闭合的数学模式（如 \\(text\\)text}）
+
+    修复模式：
+    1. \\)text} → \\)text（删除多余的}）
+    2. \\(text未闭合 → \\(text\\)
+    """
+    if not text:
+        return text
+
+    # 模式1: \\)后面跟着文本和}，删除多余的}
+    # 例如: \\)相交但不过圆心} → \\)相交但不过圆心
+    text = re.sub(r'(\\\))([^}]*?)\}(\s*\\end\{)', r'\1\2\3', text)
 
     return text
 
@@ -3897,6 +3976,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
     # 🆕 v1.8.6：后处理修复 \right. 边界错误（收紧版 - P0 最高优先级）
     result = fix_right_boundary_errors(result)
+    result = fix_reversed_delimiters(result)
 
     # 🆕 v1.8.5：验证并修复 IMAGE_TODO 块格式错误（P0）
     result = validate_and_fix_image_todo_blocks(result)

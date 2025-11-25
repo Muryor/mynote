@@ -353,6 +353,165 @@ class TeXValidator:
                     f"(block {block_index}) - please check if this should be '\\item ...'."
                 )
 
+    def check_dollar_sign_residual(self) -> None:
+        """检查 $$ 残留"""
+        content = self._get_content_no_comments()
+        if '$$' in content:
+            count = content.count('$$')
+            self.errors.append(f'检测到 {count} 个残留的 $$ 定界符')
+
+    def check_choices_environment(self) -> None:
+        """检查选项是否有 choices 环境"""
+        content = self._get_content_no_comments()
+        question_pattern = re.compile(r'\\begin\{question\}(.*?)\\end\{question\}', re.DOTALL)
+        for match in question_pattern.finditer(content):
+            q_content = match.group(1)
+            if r'\item' in q_content:
+                if r'\begin{choices}' not in q_content and r'\begin{enumerate}' not in q_content:
+                    line_no = content[:match.start()].count('\n') + 1
+                    self.warnings.append(f'Line {line_no}: 选项缺少 choices 环境')
+
+    def check_markdown_residual(self) -> None:
+        """检查 Markdown 格式残留"""
+        content = self._get_content_no_comments()
+        if re.search(r'!\[.*?\]\(.*?\)', content):
+            self.errors.append('检测到 Markdown 图片格式残留')
+        if re.search(r'\*[A-Za-z]+\*', content):
+            self.warnings.append('检测到 Markdown 斜体格式残留')
+
+    def check_math_symbol_standardization(self, warn_text_i: bool = False) -> None:
+        """检查数学符号标准化
+
+        Args:
+            warn_text_i: 是否对 \\text{i} 发出警告（默认 False，因为范本使用 \\text{i}）
+        """
+        content = self._read_content()
+
+        # \text{i} 检查 - 可选，因为范本中使用的就是 \text{i}
+        if warn_text_i and r'\text{i}' in content:
+            self.warnings.append('检测到 \\text{i}，建议检查是否应转为 \\mathrm{i}')
+
+        if r'\text{π}' in content:
+            self.warnings.append('检测到未转换的 \\text{π}')
+        if re.search(r'(?<!\\)π', self._get_content_no_comments()):
+            self.warnings.append('检测到未转换的 π')
+
+    def check_answer_format(self) -> None:
+        """检查答案格式是否正确"""
+        content = self._get_content_no_comments()
+
+        # 检测当前所在的 section
+        current_section = ""
+
+        for match in re.finditer(r'\\answer\{([^}]*)\}', content):
+            answer = match.group(1).strip()
+            line_no = content[:match.start()].count('\n') + 1
+
+            # 查找这个答案之前最近的 section
+            text_before = content[:match.start()]
+            section_matches = list(re.finditer(r'\\section\{([^}]+)\}', text_before))
+            if section_matches:
+                current_section = section_matches[-1].group(1)
+
+            # 根据 section 类型检查答案格式
+            if '单选' in current_section:
+                if not re.match(r'^[A-D]$', answer):
+                    self.warnings.append(
+                        f"Line {line_no}: 单选题答案格式可能不正确: '{answer}'（应为 A/B/C/D）"
+                    )
+            elif '多选' in current_section:
+                if not re.match(r'^[A-D]{2,4}$', answer):
+                    self.warnings.append(
+                        f"Line {line_no}: 多选题答案格式可能不正确: '{answer}'（应为 AB/ABC/ABCD 等）"
+                    )
+
+    def check_difficulty_range(self) -> None:
+        """检查难度值是否在有效范围内 [0, 1]"""
+        content = self._get_content_no_comments()
+
+        for match in re.finditer(r'\\difficulty\{([^}]*)\}', content):
+            value_str = match.group(1).strip()
+            line_no = content[:match.start()].count('\n') + 1
+
+            try:
+                value = float(value_str)
+                if not (0 <= value <= 1):
+                    self.warnings.append(
+                        f"Line {line_no}: 难度值 {value} 超出有效范围 [0, 1]"
+                    )
+            except ValueError:
+                self.errors.append(
+                    f"Line {line_no}: 难度值格式错误: '{value_str}'（应为 0-1 之间的小数）"
+                )
+
+    def check_choices_count(self) -> None:
+        """检查选择题选项数量"""
+        content = self._get_content_no_comments()
+
+        for q_match in re.finditer(r'\\begin\{question\}(.*?)\\end\{question\}', content, re.DOTALL):
+            q_content = q_match.group(1)
+            base_line = content[:q_match.start()].count('\n') + 1
+
+            # 查找 choices 环境
+            choices_match = re.search(r'\\begin\{choices\}(.*?)\\end\{choices\}', q_content, re.DOTALL)
+            if choices_match:
+                choices_content = choices_match.group(1)
+                item_count = len(re.findall(r'\\item\b', choices_content))
+
+                if item_count < 2:
+                    line_no = base_line + q_content[:choices_match.start()].count('\n')
+                    self.errors.append(
+                        f"Line {line_no}: choices 环境只有 {item_count} 个选项（至少需要 2 个）"
+                    )
+                elif item_count != 4:
+                    # 只是警告，因为有些题目可能确实不是4个选项
+                    line_no = base_line + q_content[:choices_match.start()].count('\n')
+                    self.warnings.append(
+                        f"Line {line_no}: choices 环境包含 {item_count} 个选项（通常为 4 个）"
+                    )
+
+    def check_chinese_punctuation_in_math(self) -> None:
+        """检查数学模式内的中文标点（使用栈算法正确处理嵌套括号）"""
+        content = self._get_content_no_comments()
+        issues = []
+
+        # 使用栈算法提取数学块
+        i = 0
+        while i < len(content):
+            # 查找 \(
+            idx = content.find(r'\(', i)
+            if idx == -1:
+                break
+
+            # 从 \( 开始，找到匹配的 \)
+            depth = 1
+            j = idx + 2
+            while j < len(content) - 1 and depth > 0:
+                if content[j:j+2] == r'\(':
+                    depth += 1
+                    j += 2
+                elif content[j:j+2] == r'\)':
+                    depth -= 1
+                    if depth == 0:
+                        break
+                    j += 2
+                else:
+                    j += 1
+
+            if depth == 0:
+                inner = content[idx+2:j]
+                chinese_punct = re.findall(r'[，。；：、！？]', inner)
+                if chinese_punct:
+                    line_no = content[:idx].count('\n') + 1
+                    issues.append(f'Line {line_no}: 数学模式内包含中文标点 {chinese_punct}')
+
+            i = j + 2 if depth == 0 else j
+
+        if issues:
+            self.warnings.append(f'发现 {len(issues)} 处数学模式内的中文标点')
+            for issue in issues[:5]:  # 只显示前5个
+                self.warnings.append(f'  {issue}')
+
     def check_image_todo_trailing_text(self) -> None:
         """检查 IMAGE_TODO_END 注释行是否有尾随文本"""
         content = self._read_content()
@@ -378,11 +537,13 @@ class TeXValidator:
 
     # ---------- 主入口 ----------
 
-    def validate(self) -> bool:
-        print(f"🔍 Validating {self.filepath} ...")
+    def validate(self, warn_text_i: bool = False, quiet: bool = False) -> bool:
+        if not quiet:
+            print(f"🔍 Validating {self.filepath} ...")
 
         if not self.filepath.is_file():
-            print(f"❌ File not found: {self.filepath}")
+            if not quiet:
+                print(f"❌ File not found: {self.filepath}")
             return False
 
         self.check_explain_macro()
@@ -398,28 +559,57 @@ class TeXValidator:
         self.check_enumerate_structure()
         self.check_image_todo_trailing_text()
 
+        # 🆕 改进的检查
+        self.check_dollar_sign_residual()
+        self.check_choices_environment()
+        self.check_markdown_residual()
+        self.check_math_symbol_standardization(warn_text_i=warn_text_i)
+        self.check_chinese_punctuation_in_math()
+
+        # 🆕 新增功能检查
+        self.check_answer_format()
+        self.check_difficulty_range()
+        self.check_choices_count()
+
         if self.errors:
             print(f"\n❌ Found {len(self.errors)} error(s):")
             for err in self.errors:
                 print("  •", err)
 
-        if self.warnings:
+        if self.warnings and not quiet:
             print(f"\n⚠️  Found {len(self.warnings)} warning(s):")
             for warn in self.warnings:
                 print("  •", warn)
 
-        if not self.errors and not self.warnings:
+        if not self.errors and not self.warnings and not quiet:
             print("✅ No obvious issues found")
 
         return len(self.errors) == 0
 
 
 def main(argv: list) -> int:
-    if len(argv) < 2:
-        print("Usage: python validate_tex.py <tex_file>")
+    import argparse
+
+    parser = argparse.ArgumentParser(description='LaTeX 文件验证工具')
+    parser.add_argument('tex_file', help='要验证的 TeX 文件路径')
+    parser.add_argument('--strict', action='store_true',
+                        help='严格模式：将警告也视为错误')
+    parser.add_argument('--warn-text-i', action='store_true',
+                        help='对 \\text{i} 发出警告')
+    parser.add_argument('--quiet', action='store_true',
+                        help='安静模式：只输出错误')
+
+    args = parser.parse_args(argv[1:])
+
+    validator = TeXValidator(args.tex_file)
+    ok = validator.validate(
+        warn_text_i=args.warn_text_i,
+        quiet=args.quiet
+    )
+
+    if args.strict and validator.warnings:
         return 1
-    validator = TeXValidator(argv[1])
-    ok = validator.validate()
+
     return 0 if ok else 1
 
 
