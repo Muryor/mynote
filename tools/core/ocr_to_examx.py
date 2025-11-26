@@ -157,7 +157,7 @@ class MathStateMachine:
     """
 
     def preprocess_multiline_math(self, text: str) -> str:
-        """预处理多行数学环境（修复 P0-001）
+        """预处理多行数学环境（修复 P0-001, P0-002）
 
         处理跨多行的 $$...array/cases...$$ 块，避免被逐行拆散
         """
@@ -166,16 +166,39 @@ class MathStateMachine:
         # 修复: 原正则丢失第二个公式内容，现在捕获并保留两个公式
         text = re.sub(r'\$\$([^$]+)\$\$([：，。；、])\$\$([^$]+)\$\$', r'$$\1\2\3$$', text)
 
-        # 匹配 $$...$$ 块，包括跨行的 array/cases/matrix 环境
+        # 🆕 修复 P0-002: 处理 \right.\ $$ 跨行边界模式
+        # 情况1: \right.\ $$ （反斜杠+空格+双美元）
+        # 注意：\ 是两个字符：反斜杠和空格，\left\{ 是backslash-left-backslash-brace
+        # (?:\\[\{\[\(])? 表示可选的 "\{" 或 "\[" 或 "\("
+        pattern_backslash_space = re.compile(
+            r'\$\$\s*\\left(?:\\[\{\[\(])?\s*\\begin\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)\}.*?\\end\{\1\}\s*\\right(?:\\[\}\]\)])?\.?\s*\\ \$\$',
+            re.DOTALL
+        )
+        
+        def extract_content(match_obj):
+            # Extract the \left...\right. part
+            content = re.search(r'\\left.*?\\right(?:\\[\}\]\)])?\.?', match_obj.group(0), re.DOTALL)
+            return r'\(' + content.group(0) + r'\)'
+        
+        text = pattern_backslash_space.sub(extract_content, text)
+
+        # 情况2: \right.\\ $$ （双反斜杠+空格+双美元）
+        pattern_double_backslash = re.compile(
+            r'\$\$\s*\\left(?:\\[\{\[\(])?\s*\\begin\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)\}.*?\\end\{\1\}\s*\\right(?:\\[\}\]\)])?\.?\s*\\\\ \$\$',
+            re.DOTALL
+        )
+        text = pattern_double_backslash.sub(extract_content, text)
+
+        # 匹配 $$...$$ 块，包括跨行的 array/cases/matrix 环境（原有逻辑）
         pattern = re.compile(
-            r'\$\$\s*(\\left[\{\[\(]?\s*\\begin\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)\}.*?\\end\{\2\}\s*\\right[\}\]\)]?\.?)\s*\$\$',
+            r'\$\$\s*\\left(?:\\[\{\[\(])?\s*\\begin\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)\}.*?\\end\{\1\}\s*\\right(?:\\[\}\]\)])?\.?\s*\$\$',
             re.DOTALL
         )
 
         def replace_multiline(match):
-            content = match.group(1).strip()
-            # 转换为 \(...\) 格式
-            return r'\(' + content + r'\)'
+            # Extract just the \left...\right. part
+            content = re.search(r'\\left.*?\\right(?:\\[\}\]\)])?\.?', match.group(0), re.DOTALL)
+            return r'\(' + content.group(0) + r'\)'
 
         return pattern.sub(replace_multiline, text)
 
@@ -184,42 +207,61 @@ class MathStateMachine:
         i = 0
         n = len(text)
         while i < n:
-            # 🔥 v1.8.5：增强 \right. 后的 OCR 边界检测（方案A）
+            # 🔥 v1.8.6：增强 \right. 后的 OCR 边界检测（修复 P0-001）
             # 处理 \right. 后可能跟随的各种畸形格式：
             # - \right. $$
             # - \right. $
-            # - \right.\ $$
-            # - \right. \ $$
-            # - \right.  $$
+            # - \right.\ $$  （反斜杠空格，P0-CRITICAL）
+            # - \right.\\ $$  （双反斜杠空格）
+            # - \right.  $$  （多个空格）
             # - \right.，（直接跟中文标点）
             if text[i:].startswith(r'\right.'):
                 j = i + 7  # 跳过 \right.
-                # 跳过所有空白、反斜杠、空格的组合
-                while j < n and text[j] in ' \t\n\\':
-                    j += 1
-
                 found_boundary = False
 
-                # 情况1：\right. $$（双美元）
-                if j < n - 1 and text[j:j+2] == '$$':
+                # 🆕 情况1：\right.\ $$（反斜杠+空格+双美元，P0-CRITICAL）
+                if j < n - 3 and text[j:j+4] == r'\ $$':
+                    tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
+                    i = j + 4  # 跳过 \ $$
+                    found_boundary = True
+
+                # 🆕 情况2：\right.\\ $$（双反斜杠+空格+双美元）
+                elif j < n - 4 and text[j:j+5] == r'\\ $$':
+                    tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
+                    i = j + 5  # 跳过 \\ $$
+                    found_boundary = True
+
+                # 情况3：\right. $$（空格+双美元）
+                elif j < n - 1 and text[j] == ' ':
+                    # 跳过多个空格
+                    k = j
+                    while k < n and text[k] == ' ':
+                        k += 1
+                    if k < n - 1 and text[k:k+2] == '$$':
+                        tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
+                        i = k + 2  # 跳过所有空格和 $$
+                        found_boundary = True
+
+                # 情况4：\right.$$（直接跟双美元，无空格）
+                elif j < n - 1 and text[j:j+2] == '$$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
                     i = j + 2  # 跳过 $$
                     found_boundary = True
 
-                # 情况2：\right. $（单美元）
+                # 情况5：\right. $（单美元）
                 elif j < n and text[j] == '$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
                     i = j + 1  # 跳过 $
                     found_boundary = True
 
-                # 情况3：\right.\)（已经正确闭合）
+                # 情况6：\right.\)（已经正确闭合）
                 elif j < n - 1 and text[j:j+2] == r'\)':
                     # 这是正确的格式，保持原样
                     tokens.append((TokenType.TEXT, r'\right.', i))
                     i += 7
                     found_boundary = True
 
-                # 情况4：\right. 后直接跟中文标点（，。；：等）
+                # 情况7：\right. 后直接跟中文标点（，。；：等）
                 elif j < n and text[j] in '，。；：、！？':
                     # OCR 错误：缺少闭合符号
                     # 插入 \right.\) 来闭合数学模式，标点保持在数学模式外
@@ -275,7 +317,54 @@ class MathStateMachine:
                 i += 1
         return tokens
 
+    def fix_reversed_delimiters(self, text: str) -> str:
+        """修复反向定界符模式"""
+        import re
+        lines = text.split('\n')
+        fixed_lines = []
+
+        for line in lines:
+            # 跳过注释行
+            if line.strip().startswith('%'):
+                fixed_lines.append(line)
+                continue
+
+            # 逐行检查定界符平衡
+            opens = [(m.start(), r'\(') for m in re.finditer(r'\\\(', line)]
+            closes = [(m.start(), r'\)') for m in re.finditer(r'\\\)', line)]
+
+            all_delims = sorted(opens + closes, key=lambda x: x[0])
+
+            depth = 0
+            needs_fix = False
+            for pos, delim in all_delims:
+                if delim == r'\(':
+                    depth += 1
+                else:
+                    depth -= 1
+                    if depth < 0:
+                        needs_fix = True
+                        break
+
+            if needs_fix:
+                # 修复策略: 移除行首的孤立 \)
+                line = re.sub(r'^([^\\\(]*?)\\\)', r'\1', line)
+
+            fixed_lines.append(line)
+
+        return '\n'.join(fixed_lines)
+
     def process(self, text: str) -> str:
+        # 预处理：保护中文括号，避免与数学括号混淆
+        chinese_paren_map = {
+            '（': '@@ZH_PAREN_OPEN@@',
+            '）': '@@ZH_PAREN_CLOSE@@',
+            '【': '@@ZH_BRACKET_OPEN@@',
+            '】': '@@ZH_BRACKET_CLOSE@@',
+        }
+        for char, placeholder in chinese_paren_map.items():
+            text = text.replace(char, placeholder)
+
         # 先预处理多行数学块
         text = self.preprocess_multiline_math(text)
         # 然后处理剩余的单行公式
@@ -344,7 +433,17 @@ class MathStateMachine:
                 continue
             out.append(val)
             i += 1
-        return ''.join(out)
+
+        result = ''.join(out)
+
+        # 修复反向定界符
+        result = self.fix_reversed_delimiters(result)
+
+        # 后处理：恢复中文括号
+        for char, placeholder in chinese_paren_map.items():
+            result = result.replace(placeholder, char)
+
+        return result
 
 
 # 单例实例供全局调用
@@ -369,6 +468,8 @@ META_PATTERNS = {
     "topics": r"^【知识点】(.*)$",
     "analysis": r"^【分析】(.*)$",
     "explain": r"^【详解】(.*)$",
+    "diangjing": r"^【点睛】(.*)$",
+    "dianjing_alt": r"^【点评】(.*)$",
 }
 
 # 🆕 扩展图片检测：支持绝对路径、相对路径、多行属性块
@@ -727,11 +828,17 @@ def fix_array_boundaries(text: str) -> str:
 
 
 def clean_image_attributes(text: str) -> str:
-    """统一清理 Markdown 图片标记中的属性块"""
+    """统一清理 Markdown 图片标记中的属性块（修复 P1-004）
+    
+    支持：
+    - 单行属性块：{width="3in" height="2in"}
+    - 跨行属性块：{width="3in"\nheight="2in"}
+    - 科学计数法尺寸：{width="1.38e-2in"}
+    """
     if not text:
         return text
 
-    # 清理带 width/height 的属性块（支持跨行和科学计数法）
+    # 🆕 P1-004 修复：支持跨行属性块（使用 DOTALL 标志）
     # 匹配包含科学计数法的尺寸值，如 1.3888888888888888e-2in
     attr_pattern = re.compile(
         r'\{[^{}]*(?:width|height)\s*=\s*"[^"]*"[^{}]*\}',
@@ -741,6 +848,7 @@ def clean_image_attributes(text: str) -> str:
 
     # 清理孤立的 width="..." / height="..." 行
     text = re.sub(r'^\s*(width|height)="[^"]*"\s*$', '', text, flags=re.MULTILINE | re.IGNORECASE)
+    
     return text
 
 
@@ -750,16 +858,27 @@ def remove_decorative_images(text: str) -> str:
     检测尺寸小于 0.1in 的图片，包括科学计数法格式如:
     - 1.3888888888888888e-2in (约 0.014in)
     - 1e-3in (0.001in)
+    - 0.01in, 0.001in (常规小数格式)
     """
     if not text:
         return text
 
-    # 匹配科学计数法格式的极小尺寸（e-2, e-3 或更小）
-    tiny_pattern = re.compile(
+    # 🆕 P1-003 修复：匹配科学计数法格式的极小尺寸（e-2, e-3 或更小）
+    # 支持文件首行、行中、行尾的图片标记
+    tiny_sci_pattern = re.compile(
         r'!\[[^\]]*\]\([^)]+\)\{[^}]*?(?:\d+\.?\d*e-[2-9]|\d+\.?\d*e-\d{2,})in[^}]*\}',
         re.IGNORECASE | re.DOTALL,
     )
-    return tiny_pattern.sub('', text)
+    text = tiny_sci_pattern.sub('', text)
+
+    # 🆕 P1-003 修复：匹配常规小数格式的极小尺寸（0.0开头）
+    tiny_decimal_pattern = re.compile(
+        r'!\[[^\]]*\]\([^)]+\)\{[^}]*?0\.0\d+in[^}]*\}',
+        re.IGNORECASE | re.DOTALL,
+    )
+    text = tiny_decimal_pattern.sub('', text)
+
+    return text
 
 
 def clean_residual_image_attrs(text: str) -> str:
@@ -2493,6 +2612,8 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
         ("topics", re.compile(r"^【\s*(知识点|考点)\s*】[:：]?\s*(.*)$")),
         ("analysis", re.compile(r"^【\s*分析\s*】[:：]?\s*(.*)$")),
         ("explain", re.compile(r"^【\s*详解\s*】[:：]?\s*(.*)$")),
+        ("diangjing", re.compile(r"^【\s*点睛\s*】[:：]?\s*(.*)$")),
+        ("dianjing_alt", re.compile(r"^【\s*点评\s*】[:：]?\s*(.*)$")),
     ]
 
     # 状态
@@ -2510,9 +2631,9 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
             return
         # 归一化到别名键
         key = meta_alias_map.get(current_meta_key, current_meta_key)
-        # 🆕 修复：遇到 analysis 时直接丢弃
-        if key == "analysis":
-            # 说明这是【分析】段，直接舍弃，不写入 meta 字典
+        # 🆕 修复：遇到 analysis/diangjing/dianjing_alt 时直接丢弃
+        if key in ("analysis", "diangjing", "dianjing_alt"):
+            # 说明这是【分析】/【点睛】/【点评】段，直接舍弃，不写入 meta 字典
             current_meta_key = None
             current_meta_lines = []
             return
@@ -3607,6 +3728,7 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
     def clean_context(text: str, max_len: int = 50) -> str:
         r"""清理 CONTEXT 注释内容
 
+        - 去除 LaTeX 环境命令（\begin{...}、\end{...}）
         - 去除 LaTeX 命令（\xxx{...}）
         - 去除数学定界符 \(...\) 和 \[...\]
         - 截断到最多 max_len 字符
@@ -3615,12 +3737,22 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
         if not text:
             return ""
 
+        # 🆕 去除 LaTeX 环境命令（\begin{...}、\end{...}）
+        text = re.sub(r'\\begin\{[^}]+\}.*', '', text, flags=re.DOTALL)
+        text = re.sub(r'\\end\{[^}]+\}.*', '', text, flags=re.DOTALL)
+
         # 去除 LaTeX 命令（\xxx{...}）
         text = re.sub(r'\\[a-zA-Z]+\{[^}]*\}', '', text)
+
         # 去除数学定界符
         text = re.sub(r'\\\(|\\\)|\\\[|\\\]', '', text)
+
         # 去除多余的空格
         text = re.sub(r'\s+', ' ', text).strip()
+
+        # 截断到第一个换行符
+        if '\n' in text:
+            text = text.split('\n')[0]
 
         # 截断到最多 max_len 字符
         if len(text) > max_len:
@@ -3678,6 +3810,29 @@ def generate_image_todo_block(img: Dict, stem_text: str = "", is_inline: bool = 
         )
 
     return block
+
+
+def merge_explanations(analysis: str, explain: str) -> str:
+    """智能合并解析和详解
+
+    Args:
+        analysis: 【分析】内容
+        explain: 【详解】内容
+
+    Returns:
+        合并后的内容
+    """
+    if not analysis:
+        return explain or ""
+    if not explain:
+        return analysis or ""
+
+    # 检查是否内容相似
+    if analysis in explain or explain in analysis:
+        return max(analysis, explain, key=len)  # 选择较长的
+
+    # 都有内容且不重复，合并
+    return f"{analysis}\n\n{explain}"
 
 
 def clean_explain_content(explain_text: str) -> str:
