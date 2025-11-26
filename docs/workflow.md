@@ -81,7 +81,8 @@
 | `【答案】A` | `\answer{A}` | 直接映射 |
 | `【难度】0.85` | `\difficulty{0.85}` | 直接映射 |
 | `【知识点】...` 或 `【考点】...` | `\topics{...}` | 合并为一个 |
-| `【详解】...` | `\explain{...}` | **唯一来源** |
+| `【详解】...` | `\explain{...}` | **主要来源** |
+| `【点睛】...` | `\explain{...}` | 可包含在详解中 |
 | `【分析】...` | **舍弃** | ⚠️ **严禁使用** |
 
 **⚠️ 强制规则（不可违反）**：
@@ -92,14 +93,15 @@
    - 不作为注释保留
    - 最终 TeX 中不能出现`【分析】`及其内容
 
-2. **【详解】是 `\explain{}` 的唯一来源**：
-   - 只有`【详解】`之后的内容才能进入 `\explain{}`
-   - 如果某题只有`【分析】`而无`【详解】`，该题视为"无详解"
+2. **【详解】是 `\explain{}` 的主要来源**：
+   - `【详解】`之后的内容进入 `\explain{}`
+   - `【点睛】`可以包含在 `\explain{}` 中作为补充说明
+   - 如果某题只有`【分析】`而无`【详解】`或`【点睛】`，该题视为"无详解"
    - 可以不输出 `\explain`，或输出空的 `\explain{}`
 
 3. **验证方法**：
-   - 在生成的 TeX 中搜索"分析"二字
-   - 检查 `\explain{}` 内容是否全部来自`【详解】`
+   - 在生成的 TeX 中搜索"分析"二字（应该不存在）
+   - 检查 `\explain{}` 内容来自`【详解】`或`【点睛】`
    - 对比原始 Markdown 确认`【分析】`内容未被使用
 
 ### 1.3 编译规范
@@ -517,24 +519,30 @@ python3 tools/core/ocr_to_examx.py \
 
 #### Step 3：图片处理
 ```bash
-# 方式1：简单替换为 \includegraphics（推荐用于快速验证）
-python tools/images/process_images_to_tikz.py \
+# 方式1：预览所有图片占位符（推荐先预览）
+python3 tools/images/process_images_to_tikz.py \
+    --mode preview \
+    --files "content/exams/auto/<前缀>/converted_exam.tex"
+
+# 方式2：简单替换为 \includegraphics（推荐用于快速验证）
+python3 tools/images/process_images_to_tikz.py \
     --mode include \
     --files "content/exams/auto/<前缀>/converted_exam.tex"
 
-# 方式2：生成 TikZ 模板（用于后续手工绘制）
-python tools/images/process_images_to_tikz.py \
+# 方式3：生成 TikZ 模板（用于后续手工绘制）
+python3 tools/images/process_images_to_tikz.py \
     --mode template \
     --files "content/exams/auto/<前缀>/converted_exam.tex"
 
-# 方式3：仅转换 WMF 为 PNG
-python tools/images/process_images_to_tikz.py \
+# 方式4：仅转换 WMF 为 PNG
+python3 tools/images/process_images_to_tikz.py \
     --mode convert \
     --files "content/exams/auto/<前缀>/converted_exam.tex"
 ```
 
 **检查点**：
-- 所有 `% IMAGE_TODO:` 标记已被处理
+- 运行 preview 模式查看所有图片 ID 和路径
+- 所有 `% IMAGE_TODO_START/END` 块已被正确识别
 - WMF 图片已转换为 PNG（位于 `word_to_tex/output/figures/png/`）
 - TikZ 占位符语法正确（至少不导致编译失败）
 

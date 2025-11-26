@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-图片转TikZ处理工具
+图片转TikZ处理工具（支持新旧IMAGE_TODO格式）
 
 功能：
 1. 扫描所有 converted_exam.tex 文件中的 IMAGE_TODO 标记
@@ -8,15 +8,37 @@
 3. 生成TikZ代码模板
 4. 替换占位符为实际TikZ代码或includegraphics
 
+支持格式：
+- 新格式（推荐）：% IMAGE_TODO_START id=xxx path=xxx width=60% ...
+- 旧格式（兼容）：% IMAGE_TODO: /path/to/image.png (width=60%)
+
 使用方法：
+    # 预览模式：查看所有图片TODO和模板示例（不修改文件）
+    python tools/images/process_images_to_tikz.py --mode preview --files content/exams/auto/*/converted_exam.tex
+    
     # 模式1：转换WMF为PNG并使用\includegraphics
-    python tools/process_images_to_tikz.py --mode include
+    python tools/images/process_images_to_tikz.py --mode include --files content/exams/auto/*/converted_exam.tex
     
     # 模式2：生成TikZ模板供手工填充
-    python tools/process_images_to_tikz.py --mode template
+    python tools/images/process_images_to_tikz.py --mode template --files content/exams/auto/*/converted_exam.tex
     
     # 模式3：仅转换WMF为PNG
-    python tools/process_images_to_tikz.py --mode convert
+    python tools/images/process_images_to_tikz.py --mode convert --files content/exams/auto/*/converted_exam.tex
+
+示例（新格式）：
+    输入TeX:
+        % IMAGE_TODO_START id=exam-Q1-img1 path=/path/to/image.png width=60% inline=false
+        % CONTEXT_BEFORE: 题目内容
+        % CONTEXT_AFTER: 选项内容
+        \\begin{tikzpicture}[scale=0.8]
+          % TODO: AI_AGENT_REPLACE_ME
+        \\end{tikzpicture}
+        % IMAGE_TODO_END id=exam-Q1-img1
+    
+    输出（include模式）：
+        \\begin{center}
+        \\includegraphics[width=0.6\\textwidth]{path/to/image.png}
+        \\end{center}
 """
 
 import re
@@ -27,22 +49,47 @@ from typing import List, Tuple, Dict
 import shutil
 
 
-def find_image_todos(tex_file: Path) -> List[Tuple[int, str, str]]:
-    """查找文件中的所有IMAGE_TODO标记
+def find_image_todos(tex_file: Path) -> List[Tuple[int, str, str, str]]:
+    """查找文件中的所有IMAGE_TODO标记（支持新旧格式）
+    
+    新格式（优先）：
+        % IMAGE_TODO_START id=exam-Q1-img1 path=/path/to/image.png width=60% inline=true question_index=1
+    
+    旧格式（兼容）：
+        % IMAGE_TODO: /path/to/image.png (width=60%)
     
     Returns:
-        List of (line_number, image_path, width)
+        List of (line_number, id, image_path, width)
+        - 新格式：(行号, id, path, width)
+        - 旧格式：(行号, "legacy-N", path, width)
     """
     todos = []
+    legacy_counter = 1
+    
     with open(tex_file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     
     for i, line in enumerate(lines, 1):
-        match = re.search(r'% IMAGE_TODO: (.+?) \(width=([^)]+)\)', line)
-        if match:
-            img_path = match.group(1).replace(r'\_', '_')
-            width = match.group(2)
-            todos.append((i, img_path, width))
+        # 优先匹配新格式
+        new_match = re.search(
+            r'% IMAGE_TODO_START\s+id=(\S+)\s+path=(\S+)\s+width=(\d+)%',
+            line
+        )
+        if new_match:
+            img_id = new_match.group(1)
+            img_path = new_match.group(2).replace(r'\_', '_')
+            width = new_match.group(3) + '%'
+            todos.append((i, img_id, img_path, width))
+            continue
+        
+        # 兼容旧格式
+        old_match = re.search(r'% IMAGE_TODO: (.+?) \(width=([^)]+)\)', line)
+        if old_match:
+            img_path = old_match.group(1).replace(r'\_', '_')
+            width = old_match.group(2)
+            img_id = f"legacy-{legacy_counter}"
+            legacy_counter += 1
+            todos.append((i, img_id, img_path, width))
     
     return todos
 
@@ -245,9 +292,10 @@ def print_tikz_snippets():
 
 
 def process_tex_file(tex_file: Path, mode: str, output_dir: Path, project_root: Path = None):
-    """处理单个TeX文件
+    """处理单个TeX文件（支持新旧格式）
 
-    🆕 Prompt 4: 支持 preview 模式（来自 generate_tikz_from_images.py）
+    🆕 支持 IMAGE_TODO_START/END 新格式
+    🆕 Prompt 4: 支持 preview 模式
     🆕 Prompt 5: 支持自定义项目根目录
     """
     if project_root is None:
@@ -263,11 +311,11 @@ def process_tex_file(tex_file: Path, mode: str, output_dir: Path, project_root: 
 
     print(f"  找到 {len(todos)} 个图片占位符")
 
-    # 🆕 Prompt 4: preview 模式 - 列出所有图片并显示模板示例
+    # preview 模式 - 列出所有图片并显示模板示例
     if mode == 'preview':
         print()
-        for line_num, img_path, width in todos:
-            print(f"  行 {line_num}: {Path(img_path).name} (width={width})")
+        for line_num, img_id, img_path, width in todos:
+            print(f"  行 {line_num}: ID={img_id}, {Path(img_path).name} (width={width})")
 
         print()
         print("=" * 60)
@@ -275,11 +323,11 @@ def process_tex_file(tex_file: Path, mode: str, output_dir: Path, project_root: 
         print("=" * 60)
 
         # 显示前3个模板示例
-        for i, (line_num, img_path, width) in enumerate(todos[:3], 1):
+        for i, (line_num, img_id, img_path, width) in enumerate(todos[:3], 1):
             print(f"\n{'=' * 60}")
             print(f"示例 {i} - 行 {line_num}: {Path(img_path).name}")
             print(f"{'=' * 60}\n")
-            print(generate_tikz_template(Path(img_path).name, width))
+            print(generate_tikz_template(Path(img_path).name, width.rstrip('%')))
 
         if len(todos) > 3:
             print(f"\n... (还有 {len(todos) - 3} 个图片)")
@@ -294,7 +342,7 @@ def process_tex_file(tex_file: Path, mode: str, output_dir: Path, project_root: 
     replacements = []
     converted_images = []
     
-    for line_num, img_path, width in todos:
+    for line_num, img_id, img_path, width in todos:
         img_path_obj = Path(img_path)
         
         if mode == 'convert':
@@ -311,21 +359,47 @@ def process_tex_file(tex_file: Path, mode: str, output_dir: Path, project_root: 
             else:
                 new_code = generate_includegraphics(img_path_obj, width.rstrip('%'), project_root)
             
-            # 查找并替换整个TikZ块
-            pattern = rf'\\begin{{center}}\n% IMAGE_TODO: {re.escape(img_path)}.*?\n\\begin{{tikzpicture}}.*?\\end{{tikzpicture}}\n\\end{{center}}'
+            # 匹配新格式（优先）
+            if img_id.startswith('legacy-'):
+                # 旧格式兼容
+                pattern = rf'\\begin{{center}}\n% IMAGE_TODO: {re.escape(img_path)}.*?\n\\begin{{tikzpicture}}.*?\\end{{tikzpicture}}\n\\end{{center}}'
+            else:
+                # 新格式：匹配完整的 IMAGE_TODO_START ... IMAGE_TODO_END 块
+                escaped_id = re.escape(img_id)
+                pattern = (
+                    rf'% IMAGE_TODO_START\s+id={escaped_id}\s+.*?\n'
+                    rf'(?:% CONTEXT_BEFORE:.*?\n)?'
+                    rf'(?:% CONTEXT_AFTER:.*?\n)?'
+                    rf'\\begin{{tikzpicture}}.*?\\end{{tikzpicture}}\s*\n'
+                    rf'% IMAGE_TODO_END\s+id={escaped_id}'
+                )
+            
             if re.search(pattern, content, re.DOTALL):
-                replacements.append((pattern, new_code))
+                replacements.append((pattern, new_code, img_id))
         
         elif mode == 'template':
             # 生成TikZ模板
             new_code = generate_tikz_template(img_path_obj.name, width.rstrip('%'))
-            pattern = rf'\\begin{{center}}\n% IMAGE_TODO: {re.escape(img_path)}.*?\n\\begin{{tikzpicture}}.*?\\end{{tikzpicture}}\n\\end{{center}}'
+            
+            # 匹配新格式（优先）
+            if img_id.startswith('legacy-'):
+                pattern = rf'\\begin{{center}}\n% IMAGE_TODO: {re.escape(img_path)}.*?\n\\begin{{tikzpicture}}.*?\\end{{tikzpicture}}\n\\end{{center}}'
+            else:
+                escaped_id = re.escape(img_id)
+                pattern = (
+                    rf'% IMAGE_TODO_START\s+id={escaped_id}\s+.*?\n'
+                    rf'(?:% CONTEXT_BEFORE:.*?\n)?'
+                    rf'(?:% CONTEXT_AFTER:.*?\n)?'
+                    rf'\\begin{{tikzpicture}}.*?\\end{{tikzpicture}}\s*\n'
+                    rf'% IMAGE_TODO_END\s+id={escaped_id}'
+                )
+            
             if re.search(pattern, content, re.DOTALL):
-                replacements.append((pattern, new_code))
+                replacements.append((pattern, new_code, img_id))
     
     # 应用替换
     if replacements and mode != 'convert':
-        for pattern, replacement in replacements:
+        for pattern, replacement, img_id in replacements:
             content = re.sub(pattern, replacement, content, flags=re.DOTALL, count=1)
         
         # 备份原文件
