@@ -50,9 +50,11 @@ word_to_tex/output/*_preprocessed.md
 word_to_tex/output/*_examx.tex
 word_to_tex/output/figures/
 word_to_tex/figures/raw/
+word_to_tex/input/
 
 # Temporary backups
 tmp/
+files (6)/
 # Testing outputs
 tools/testing/tools/testing/test_out/*.tex
 tools/testing/tools/testing/test_out/*.md
