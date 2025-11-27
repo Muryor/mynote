@@ -1,9 +1,9 @@
-\examxtitle{江苏省苏州市2025-2026学年高三上学期期中阳光调研数学试题}
+\examxtitle{江苏省苏州市2025-2026学年第一学期阳光指标调研卷}
 
 \section{单选题}
 
 \begin{question}
-若\((1 - i) + (2 + 3i) = a + bi\)(\(a,b \in R,i\)是虚数单位)，则\(a,b\)的值分别等于
+若\((1 - i) + (2 + 3i) = a + bi)(a,b \in R,i\)是虚数单位)，则\(a,b\)的值分别等于
 \begin{choices}
   \item \(3, - 2\)
   \item \(3,2\)
@@ -15,8 +15,7 @@
 \answer{B}
 \explain{解：由题可知，\((1 - i) + (2 + 3i) = a + bi\)，\par
 即\(3 + 2i = a + bi\)，所以\(a = 3,b = 2\)，\par
-即\(a,b\)的值分别等于\(3,2\).\par
-本题考查复数的加法运算和相等复数的定义，属于基础题.}
+即\(a,b\)的值分别等于\(3,2\)}
 \end{question}
 
 \begin{question}
@@ -34,8 +33,7 @@
 \((x - 1)(2x + 1) < 0\)，\par
 解得\(- \frac{1}{2} < x < 1\)，\par
 \(\therefore\)不等式的解集为\(\left( - \frac{1}{2},1 \right)\)．\par
-故选：\(B\)．\par
-本题考查了一元二次不等式的解法与应用问题，是基础题．}
+故选：\(B\)．}
 \end{question}
 
 \begin{question}
@@ -100,8 +98,7 @@
 \explain{解：令\(f(x) = 2^{x}\)，
 则\(- f( - x) = - 2^{- x}\because y = f(x)与y = - f( - x)\)的图象关于原点对称，\par
 \(\therefore y = - 2^{- x}与y = 2^{x}\)的图象关于原点对称.\par
-故选：\(C\)\par
-本题考查指数函数的性质，属于基础题.}
+故选：\(C\)}
 \end{question}
 
 \begin{question}
@@ -121,8 +118,7 @@
 \end{question}
 
 \begin{question}
-已知\(\alpha + \beta = \frac{\pi}{4}，
-\text{tan}\alpha + \text{tan}\beta = 3\)，
+已知\(\alpha + \beta = \frac{\pi}{4},\text{tan}\alpha + \text{tan}\beta = 3\)，
 则\(\text{cos}(\alpha - \beta)\)的值为(    )
 \begin{choices}
   \item \(- \frac{\sqrt{2}}{6}\)
@@ -133,8 +129,7 @@
 \topics{用和；差角的余弦公式化简；求值；用和；差角的正切公式化简；求值}
 \difficulty{0.65}
 \answer{A}
-\explain{\because \(\alpha + \beta = \frac{\pi}{4}，
-\text{tan}\alpha + \text{tan}\beta = 3\)，\par
+\explain{\because \(\alpha + \beta = \frac{\pi}{4},\text{tan}\alpha + \text{tan}\beta = 3\)，\par
 \therefore \(\tan(\alpha + \beta) = \frac{\tan\alpha + \tan\beta}{1 - \tan\alpha\tan\beta} = \frac{3}{1 - \tan\alpha\tan\beta} = 1\)，\par
 \therefore \(\text{tan}\alpha\text{tan}\beta = - 2\)，
 即\(\frac{\sin\alpha\sin\beta}{\cos\alpha\cos\beta} = - 2\)，
@@ -163,18 +158,16 @@ B\left( x_{2}，y_{2} \right)\)，
 \answer{D}
 \explain{因为\(y = \ln x(x > 0)\)，
 所以\(y' = \frac{1}{x}\)，
-则\(y'|_{x = x_{1}} = \frac{1}{x_{1}}，
-y'|_{x = x_{2}} = \frac{1}{x_{2}}\)，\par
+则\(y'|_{x = x_{1}} = \frac{1}{x_{1}},y'|_{x = x_{2}} = \frac{1}{x_{2}}\)，\par
 依题意可知两条切线的方程分别为\(y = \frac{1}{x_{1}}\left( x - x_{1} \right) + \ln x_{1}，
 y = \frac{1}{x_{2}}\left( x - x_{2} \right) + \ln x_{2}\)\par
-联立两条切线的方程\(\left\{ \begin{array}{r}
-y = \frac{1}{x_{1}}\left( x - x_{1} \right) + \ln x_{1} \\
+联立两条切线的方程\(\left\{ \begin{array}{r} y = \frac{1}{x_{1}}\left( x - x_{1} \right) + \ln x_{1} \\
 y = \frac{1}{x_{2}}\left( x - x_{2} \right) + \ln x_{2}
-\end{array} \right.\ 解得\(x_{0} = \frac{x_{1}x_{2}\left( \ln x_{2} - \ln x_{1} \right)}{x_{2} - x_{1}}，则y_{0} = \frac{x_{2}(\ln x_{2} - 1) - x_{1}(\ln x_{1} - 1)}{x_{2} - x_{1}}\)，\par
-因为两条切线的斜率之积为\)1，所以\frac{1}{x_{1}x_{2}} = 1，所以x_{1}x_{2} = 1，则x_{2} = \frac{1}{x_{1}}由x_{0} = \frac{x_{1}x_{2}\left( \ln x_{2} - \ln x_{1} \right)}{x_{2} - x_{1}}，y_{0} = \frac{x_{2}(\ln x_{2} - 1) - x_{1}(\ln x_{1} - 1)}{x_{2} - x_{1}}\(，\par
-可得\)y_{0} + 1 = \frac{x_{2}(\ln x_{2} - 1) - x_{1}(\ln x_{1} - 1)}{x_{2} - x_{1}} + 1 = \frac{x_{2}\ln x_{2} - x_{1}\ln x_{1}}{x_{2} - x_{1}}\frac{y_{0} + 1}{x_{0}} = \frac{\frac{x_{2}\ln x_{2} - x_{1}\ln x_{1}}{x_{2} - x_{1}}}{\frac{x_{1}x_{2}\left( \ln x_{2} - \ln x_{1} \right)}{x_{2} - x_{1}}} = \frac{x_{2}\ln x_{2} - x_{1}\ln x_{1}}{\ln x_{2} - \ln x_{1}} = \frac{\frac{1}{x_{1}}\ln\frac{1}{x_{1}} - x_{1}\ln x_{1}}{\ln\frac{1}{x_{1}} - \ln x_{1}} = \frac{1 + x_{1}^{2}}{2x_{1}}\left( x_{1} > 0 \right)所以\frac{y_{0} + 1}{x_{0}} = \frac{1 + x_{1}^{2}}{2x_{1}} = \frac{\frac{1}{x_{1}} + x_{1}}{2} \geq \frac{2\sqrt{\frac{1}{x_{1}} \cdot x_{1}}}{2} = 1\(，\par
-当且仅当\(\frac{1}{x_{1}} = x_{1}，即x_{1} = 1时取得最小值，由因为x_{1} \neq x_{2} = \frac{1}{x_{1}}，所以x_{1} \neq 1\)，\par
-则\)\frac{y_{0} + 1}{x_{0}} = \frac{1 + x_{1}^{2}}{2x_{1}} > 1}
+\end{array} \right. 解得\(x_{0} = \frac{x_{1}x_{2}\left( \ln x_{2} - \ln x_{1} \right)}{x_{2} - x_{1}},则y_{0} = \frac{x_{2}(\ln x_{2} - 1) - x_{1}(\ln x_{1} - 1)}{x_{2} - x_{1}}\),\par
+因为两条切线的斜率之积为1,所以\frac{1}{x_{1}x_{2}} = 1,所以x_{1}x_{2} = 1,则x_{2} = \frac{1}{x_{1}}由x_{0} = \frac{x_{1}x_{2}\left( \ln x_{2} - \ln x_{1} \right)}{x_{2} - x_{1}}，y_{0} = \frac{x_{2}(\ln x_{2} - 1) - x_{1}(\ln x_{1} - 1)}{x_{2} - x_{1}}\(,\par
+可得y_{0} + 1 = \frac{x_{2}(\ln x_{2} - 1) - x_{1}(\ln x_{1} - 1)}{x_{2} - x_{1}} + 1 = \frac{x_{2}\ln x_{2} - x_{1}\ln x_{1}}{x_{2} - x_{1}}\frac{y_{0} + 1}{x_{0}} = \frac{\frac{x_{2}\ln x_{2} - x_{1}\ln x_{1}}{x_{2} - x_{1}}}{\frac{x_{1}x_{2}\left( \ln x_{2} - \ln x_{1} \right)}{x_{2} - x_{1}}} = \frac{x_{2}\ln x_{2} - x_{1}\ln x_{1}}{\ln x_{2} - \ln x_{1}} = \frac{\frac{1}{x_{1}}\ln\frac{1}{x_{1}} - x_{1}\ln x_{1}}{\ln\frac{1}{x_{1}} - \ln x_{1}} = \frac{1 + x_{1}^{2}}{2x_{1}}\left( x_{1} > 0 \right)所以\frac{y_{0} + 1}{x_{0}} = \frac{1 + x_{1}^{2}}{2x_{1}} = \frac{\frac{1}{x_{1}} + x_{1}}{2} \geq \frac{2\sqrt{\frac{1}{x_{1}} \cdot x_{1}}}{2} = 1\(,\par
+当且仅当\frac{1}{x_{1}} = x_{1},即x_{1} = 1时取得最小值,由因为x_{1} \neq x_{2} = \frac{1}{x_{1}},所以x_{1} \neq 1\(,\par
+则\frac{y_{0} + 1}{x_{0}} = \frac{1 + x_{1}^{2}}{2x_{1}} > 1}
 \end{question}
 
 \section{多选题}
@@ -182,7 +175,7 @@ y = \frac{1}{x_{2}}\left( x - x_{2} \right) + \ln x_{2}
 \begin{question}
 《易经》是中华民族智慧的结晶，易有太极，太极生两仪，两仪生四象，
 四象生八卦．如图所示是八卦模型图以及根据该图抽象得到的正八边形\(ABCDEFGH\)，
-其中\(|AB| = 1，O\)为正八边形的中心，则(    )
+其中\(|AB| = 1,O\)为正八边形的中心，则(    )
 \begin{choices}
   \item \(\angle AOB = 45^{\circ}\)
   \item \(\overrightarrow{OB} + \overrightarrow{OE} = \sqrt{2}\overrightarrow{AB}\)
@@ -218,13 +211,11 @@ y = \frac{1}{x_{2}}\left( x - x_{2} \right) + \ln x_{2}
 \explain{由题可知\(\angle AOB = \frac{360^{\circ}}{8} = 45^{\circ}\)，
 选项A正确；\par
 在正八边形\(ABCDEFGH\)中，
-\(\overrightarrow{OB} = \overrightarrow{OA} + \overrightarrow{AB}，
-\overrightarrow{OE} = \overrightarrow{AO}\)；\par
+\(\overrightarrow{OB} = \overrightarrow{OA} + \overrightarrow{AB},\overrightarrow{OE} = \overrightarrow{AO}\)；\par
 所以\(\overrightarrow{OB} + \overrightarrow{OE} = \overrightarrow{OA} + \overrightarrow{AB} + \overrightarrow{AO} = \overrightarrow{AB}\)，
 所以选项B错误；\par
 由题可知在正八边形\(ABCDEFGH中有HD\text{//}AC\)，
-且\(\left| \overrightarrow{AC} \right| = \sqrt{|OA|^{2} + |OC|^{2}} = \sqrt{2}|OA|，
-\left| \overrightarrow{HD} \right| = 2|OA|\)，
+且\(\left| \overrightarrow{AC} \right| = \sqrt{|OA|^{2} + |OC|^{2}} = \sqrt{2}|OA|,\left| \overrightarrow{HD} \right| = 2|OA|\)，
 所以\(\left| \overrightarrow{HD} \right| = \sqrt{2}\overrightarrow{|AC|}\)，
 所以\(\overrightarrow{HD} = \sqrt{2}\overrightarrow{AC}\)，
 选项C正确；\par
@@ -234,7 +225,7 @@ y = \frac{1}{x_{2}}\left( x - x_{2} \right) + \ln x_{2}
 \end{question}
 
 \begin{question}
-数学中有许多形状优美、寓意美好的曲线，如星形线、心形线、卵形线等、已知卵形线\(C：x^{2} + y - 2\sqrt{y} = 0\)，则(    )
+数学中有许多形状优美、寓意美好的曲线，如星形线、心形线、卵形线等、已知卵形线\(C:x^{2} + y - 2\sqrt{y} = 0\)，则(    )
 \begin{choices}
   \item 曲线\(C关于y\)轴对称
   \item 曲线\(C\)上横、纵坐标均是整数的点恰有4个
@@ -264,8 +255,7 @@ y = \frac{1}{x_{2}}\left( x - x_{2} \right) + \ln x_{2}
 所以\(x^{2} = 1 - \left( \sqrt{y} - 1 \right)^{2} \leq 1\)，
 所以\(- 1 \leq x \leq 1\)，
 则\(0 \leq \sqrt{y} \leq 2\)，故\(0 \leq y \leq 4\)，\par
-\(y = 0时x = 0；y = 1时x = \pm 1；
-y = 4时x = 0\)，
+\(y = 0时x = 0;y = 1时x = \pm 1;y = 4时x = 0\)，
 故曲线过点\((0,0),( \pm 1,1),(0,4)\)，
 曲线C上恰好有4个整点，B对；\par
 对于曲线上任意一点\(P\left( x_{0},y_{0} \right)\)，
@@ -283,9 +273,9 @@ y = 4时x = 0\)，
 \therefore \(x_{0}^{2} + \left( y_{0} - 1 \right)^{2} \geq x_{0}^{2} + \left( \sqrt{y_{0}} - 1 \right)^{2} = 1\)，
 此时曲线上点在圆\(x^{2} + (y - 1)^{2} = 1\)外，\par
 所以曲线上的所有点均在圆\(x^{2} + (y - 1)^{2} = 1\)外，
-即曲线\(C\)上不存在点\(P\)，使得\(P\)到点\((0,1)\)的距离小于1，
+即曲线\(C\)上不存在点\(P\)，使得\(P到点(0,1)\)的距离小于1，
 C错；\par
-如图，\(A(1,1)，B(0,4)\)，\(D( - 1,1)\)，
+如图，\(A(1,1)，B(0,4)\)，D( - 1,1)\)，
 四边形\(OABD的面积S_{OABD} = \frac{1}{2} \times 2 \times 4 = 4\)，\par
 当\(1 > x > 0,y > 1\)时，
 直线\(AB:y = - 3x + 4\)，
@@ -369,21 +359,19 @@ D对}
 则\(\overrightarrow{G_{n}F_{n}} = \overrightarrow{G_{n}B} + \overrightarrow{BF_{n}} = \overrightarrow{G_{n}B} + \lambda\overrightarrow{BC} = \overrightarrow{G_{n}B} + \lambda\left( \overrightarrow{G_{n}C} - \overrightarrow{G_{n}B} \right) = (1 - \lambda)\overrightarrow{G_{n}B} + \lambda\overrightarrow{G_{n}C}\)，\par
 所以\(- a_{n + 1}a_{n} + a_{n + 1} - a_{n} = 1\)，
 令\(n = 1得- a_{2}a_{1} + a_{2} - a_{1} = 1,\because a_{1} = 2,\therefore a_{2} = - 3\)，\par
-同理可得\(a_{3} = - \frac{1}{2},a_{4} = \frac{1}{3},a_{5} = 2，
-\cdots\)，
+同理可得\(a_{3} = - \frac{1}{2},a_{4} = \frac{1}{3},a_{5} = 2,\cdots\)，\par
 所以数列\(\left\{ a_{n} \right\}\)是周期为\(4\)的周期数列.\par
 对于A，\(2025 \div 4 = 506\cdots 1\)，
 所以\(a_{2025} = a_{1} = 2\)，故A正确；\par
 对于B,
-\(a_{1} \cdot a_{2} \cdot a_{3} \cdot a_{4} = 1，
-\therefore T_{2025} = a_{1} \cdot a_{2} \cdot a_{3} \cdot a_{4}\cdots \cdot a_{2025} = 2\)，
+\(a_{1} \cdot a_{2} \cdot a_{3} \cdot a_{4} = 1,\therefore T_{2025} = a_{1} \cdot a_{2} \cdot a_{3} \cdot a_{4}\cdots \cdot a_{2025} = 2\)，
 故B错误；\par
 对于C,\(a_{1} + a_{2} + a_{3} + a_{4} = - \frac{7}{6}\)，\par
 \(S_{2025} = - \frac{7}{6} \times 506 + 2 = - \frac{1765}{3}\)，
 故C正确；\par
 对于D，
-因为\(\left\{ a_{n} \right\}\)是周期为\(4\)的周期数列且不为常数列，故任意实数\(k，
-k \neq a_{n}\)，
+因为\(\left\{ a_{n} \right\}\)是周期为\(4\)的周期数列且不为常数列，
+故任意实数\(k,k \neq a_{n}\)，
 数列\(\left\{ \frac{1}{a_{n} - k} \right\}\)为周期数列，\par
 不可能为等差数列，故D错误}
 \end{question}
@@ -398,7 +386,7 @@ k \neq a_{n}\)，
 \topics{等差数列通项公式的基本量计算；求等差数列前n项和；等比中项的应用}
 \difficulty{0.85}
 \answer{\(- 24\)}
-\explain{设\(\{ a_{n}\}\)的公差为\(d\((\)d \neq 0\))，\par
+\explain{设\(\{ a_{n}\}\)的公差为\(d)(d \neq 0\))，\par
 由\(a_{3}^{2} = a_{2}a_{6}\)，
 得\({(1 + 2d)}^{2} = (1 + d)(1 + 5d)\)，\par
 解得\(d = - 2\)，
@@ -408,11 +396,11 @@ k \neq a_{n}\)，
 \begin{question}
 已知函数\(y = f(x)\)最小正周期为\(\frac{\pi}{2}\)，
 当\(x \in \left\lbrack 0,\frac{\pi}{2} \right\rbrack\)时，
-\(f(x) = \left\{ \begin{array}{r}
+\(f(x) = \left\{ \begin{array}{r}\)
 \sqrt{2}\text{sin}x,\text{sin}x \leq \text{cos}x \\
 \sqrt{2}\text{cos}x,\text{sin}x > \text{cos}x
 \end{array} \right.则函数\(y = f(x) - \left| \text{ln}x \right|\)的零点个数为
-．\)
+．
 
 \begin{center}
 % IMAGE_TODO_START id=suzhou-2025-2026-yangguang-Q13-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/suzhou-2025-2026-yangguang/media/image6.png width=60% inline=false question_index=13 sub_index=1
@@ -432,12 +420,12 @@ k \neq a_{n}\)，
 所以函数\(y = f(x) - \left| \text{ln}x \right|\)的零点个数等价于\(y = f(x)与y = \left| \text{ln}x \right|\)图象的交点个数，\par
 因为函数\(y = f(x)\)最小正周期为\(\frac{\pi}{2}\)，
 当\(x \in \left\lbrack 0,\frac{\pi}{2} \right\rbrack\)时，
-\(f(x) = \left\{ \begin{array}{r}
+\(f(x) = \left\{ \begin{array}{r}\)
 \sqrt{2}\text{sin}x,\text{sin}x \leq \text{cos}x \\
 \sqrt{2}\text{cos}x,\text{sin}x > \text{cos}x
 \end{array} \right.，\par
-则\(f(x)_{\max} = 1，画出函数y = f(x)与y = \left| \text{ln}x \right|\)的图象，\par
-如图所示，由图象可得，函数\)y = f(x) - \left| \text{ln}x \right|的零点个数为4.4.}
+则f(x)_{\max} = 1\(,画出\(函数y = f(x)与y = \left| \text{ln}x \right|\)的图象,\par
+如图所示,由图象可得\(\(\),函数y = f(x) - \left| \text{ln}x \right|的零点个数为4.4.}
 \end{question}
 
 \begin{question}
@@ -463,20 +451,18 @@ k \neq a_{n}\)，
 即\(\sin x = - \frac{\sqrt{2}}{2}\)，
 可得\(x = \frac{5\pi}{4}或x = \frac{7\pi}{4}\)，
 符合题意；\par
-当\(0 < t_{1} < 1,t_{2} > 2\)时，则满足\(\left\{ \begin{array}{r}
-f(0) > 0 \\
+当\(0 < t_{1} < 1,t_{2} > 2\)时，则满足\(\left\{ \begin{array}{r} f(0) > 0 \\
 f(1) < 0
-\end{array} \right.，即\)\left\{ \begin{array}{r}
+\end{array} \right.，即\left\{ \begin{array}{r}
 1 > 0 \\
 2 - (\lambda + 1) + 1 < 0
-\end{array} \right.，解得\(\lambda > 2\)(舍去)；\par
-当\(- 1 < t_{1} < 0,t_{2} < - 2\)时，则满足\(\left\{ \begin{array}{r}
-f(0) > 0 \\
+\end{array} \right.，解得\lambda > 2\)(舍去)；\par
+当\(- 1 < t_{1} < 0,t_{2} < - 2\)时，则满足\(\left\{ \begin{array}{r} f(0) > 0 \\
 f( - 1) < 0
-\end{array} \right.，即\)\left\{ \begin{array}{r}
+\end{array} \right.，即\left\{ \begin{array}{r}
 1 > 0 \\
 2 + (\lambda + 1) + 1 < 0
-\end{array} \right.，解得\(\lambda < - 4\)，\par
+\end{array} \right.，解得\lambda < - 4\)，\par
 综上可得，实数\(\lambda\)的取值范围为\(( - \infty, - 4) \cup \left\{ - 2\sqrt{2} - 1 \right\}\(.\)( - \infty, - 4) \cup \left\{ - 2\sqrt{2} - 1 \right\}\).}
 \end{question}
 
@@ -514,8 +500,7 @@ f( - 1) < 0
 得\(b_{n} = \frac{1}{a_{n}a_{n + 1}} = \frac{1}{(2n - 1)(2n + 1)} = \frac{1}{2}\left( \frac{1}{2n - 1} - \frac{1}{2n + 1} \right)\)，\par
 所以前\(n\)项和：\(T_{n} = b_{1} + b_{2} + \cdots + b_{n} = \frac{1}{2}\left\lbrack \left( 1 - \frac{1}{3} \right) + \left( \frac{1}{3} - \frac{1}{5} \right) + \cdots + \left( \frac{1}{2n - 1} - \frac{1}{2n + 1} \right) \right\rbrack= \frac{1}{2}\left( 1 - \frac{1}{2n + 1} \right)\)．\par
 因为\(n \in N^{\text{*}}\)，
-所以\(\frac{1}{2n + 1} > 0，
-1 - \frac{1}{2n + 1} < 1\)，
+所以\(\frac{1}{2n + 1} > 0,1 - \frac{1}{2n + 1} < 1\)，
 所以\(T_{n} < \frac{1}{2}\)．}
 \end{question}
 
@@ -531,7 +516,7 @@ f( - 1) < 0
 \topics{求含sinx(型)函数的值域和最值；正弦定理边角互化的应用；三角形面积公式及其应用；余弦定理解三角形}
 \difficulty{0.65}
 \answer{(1)\(\frac{\pi}{2}\)
-(2)\(\frac{1}{6}，1 + \frac{\sqrt{2}}{3} + \frac{\sqrt{5}}{3}\)}
+(2)\(\frac{1}{6},1 + \frac{\sqrt{2}}{3} + \frac{\sqrt{5}}{3}\)}
 \explain{(1)\(\because \bigtriangleup ABC中有c\text{sin}B + \sqrt{3}c\text{cos}B = \sqrt{3}a + b\)，\par
 由正弦定理得，
 \(\text{sin}C\text{sin}B + \sqrt{3}\text{sin}C\text{cos}B = \sqrt{3}\text{sin}A + \text{sin}B\)，\par
@@ -550,16 +535,14 @@ f( - 1) < 0
 故\(C = \frac{\pi}{2}\)．\par
 (2)\(\because AD = DB,CE = 2EA,c = 2\)，\par
 \(\therefore AD = 1,AE = \frac{1}{3}b,S_{\bigtriangleup ADE} = \frac{1}{2}AD \cdot AE\text{sin}A = \frac{1}{6}b\text{sin}A\)，\par
-解法一：由(1)知\(C = \frac{\pi}{2}，
-\therefore b = c\text{cos}A = 2\text{cos}A\)，\par
+解法一：由(1)知\(C = \frac{\pi}{2},\therefore b = c\text{cos}A = 2\text{cos}A\)，\par
 故\(S_{\bigtriangleup ADE} = \frac{1}{6}b\text{sin}A = \frac{1}{6} \cdot 2\text{sin}A\text{cos}A = \frac{1}{6}\text{sin}2A \leq \frac{1}{6}\)，\par
 当且仅当\(A = \frac{\pi}{4}\)时取等号，
 即\(\bigtriangleup ADE\)面积的最大值为\(\frac{1}{6}\)．\par
 此时\(AD = 1,AE = \frac{\sqrt{2}}{3},A = \frac{\pi}{4}\)，\par
 由余弦定理得\(DE = \sqrt{AD^{2} + AE^{2} - 2AD \cdot AE \cdot \text{cos}A}= \sqrt{1 + \frac{2}{9} - 2 \cdot \frac{\sqrt{2}}{3} \cdot \frac{\sqrt{2}}{2}} = \frac{\sqrt{5}}{3}\)，\par
 \(\therefore \bigtriangleup ADE\)的周长为\(1 + \frac{\sqrt{2}}{3} + \frac{\sqrt{5}}{3}\).\par
-解法二：由(1)知\(C = \frac{\pi}{2}，
-\therefore\sin A = \frac{a}{c} = \frac{a}{2}\)，\par
+解法二：由(1)知\(C = \frac{\pi}{2},\therefore\sin A = \frac{a}{c} = \frac{a}{2}\)，\par
 \(S_{\bigtriangleup ADE} = \frac{1}{6}b\text{sin}A = \frac{1}{6} \cdot b \cdot \frac{a}{2} = \frac{1}{6} \cdot \frac{ab}{2} \leq \frac{1}{6} \cdot \frac{1}{2} \cdot \frac{a^{2} + b^{2}}{2} = \frac{1}{6}\)，\par
 当且仅当\(a = b = \sqrt{2}\)时取等号．\par
 此时\(AD = 1,AE = \frac{\sqrt{2}}{3},A = \frac{\pi}{4}\)，\par
@@ -569,10 +552,10 @@ f( - 1) < 0
 
 \begin{question}
 如图①，平面四边形\(ABCD\)由两个三角形拼接而成，
-其中\(AB\bot BD，BC\bot CD\)，
+其中\(AB\bot BD,BC\bot CD\)，
 \(\angle A = \angle DBC = 60^{\circ}\)，
 现以\(BD为轴将\bigtriangleup ABD\)向上折起至位置\(A'\)，
-连结\(A'C\)得到如图②的三棱锥\(A' - BCD，M是A'B\)的中点，
+连结\(A'C\)得到如图②的三棱锥\(A' - BCD,M是A'B\)的中点，
 \(P是DM\)的中点，\(Q在A'C\)上，且\(A'Q = 3QC\)．
 \begin{enumerate}[label=(\arabic*)]
   \item 求证：\(PQ//平面BCD\)；
@@ -586,12 +569,11 @@ f( - 1) < 0
 \begin{center}
 % IMAGE_TODO_START id=suzhou-2025-2026-yangguang-Q17-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/suzhou-2025-2026-yangguang/media/image7.png width=60% inline=false question_index=17 sub_index=1
 % CONTEXT_BEFORE: 点，\(P\)是\(DM\)的中点，\(Q\)在\(A'C\)上，且\(A'Q = 3QC\)．
-% CONTEXT_AFTER: (1)求证：\(PQ//\)平面\(BCD\)； (2)若平面\(A'BC\bot\)平面...
+% CONTEXT_AFTER: (1)求证：\(PQ//\)平面\(BCD\)； (2)若平面\(A'BC\bot\)平面
 \begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
   % TODO: AI_AGENT_REPLACE_ME (id=suzhou-2025-2026-yangguang-Q17-img1)
 \end{tikzpicture}
-% IMAGE_TODO_END id=suzhou-2025-2026-yangguang-Q17-img
-1
+% IMAGE_TODO_END id=suzhou-2025-2026-yangguang-Q17-img1
 \end{center}
 
 
@@ -602,8 +584,7 @@ f( - 1) < 0
 \begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
   % TODO: AI_AGENT_REPLACE_ME (id=suzhou-2025-2026-yangguang-Q17-img2)
 \end{tikzpicture}
-% IMAGE_TODO_END id=suzhou-2025-2026-yangguang-Q17-img
-2
+% IMAGE_TODO_END id=suzhou-2025-2026-yangguang-Q17-img2
 \end{center}
 
 
@@ -623,42 +604,36 @@ f( - 1) < 0
 \answer{(1)证明见解析
 (2)证明见解析
 (3)\(\frac{3\sqrt{3}}{16}\)}
-\explain{(1)如图②取\(BM的中点N\)，连结\(PN，
-QN\because P是DM\)中点，\(N是BM\)中点，\par
+\explain{(1)如图②取\(BM的中点N\)，
+连结\(PN,QN\because P是DM\)中点，\(N是BM\)中点，\par
 在\(\bigtriangleup DBM\)中，
 由中位线定理得\(PN \parallel BD\)，\par
-又\(PN ⊄平面BCD，BD \subset平面BCD，
-\therefore PN//平面BCD\).\par
+又\(PN ⊄平面BCD,BD \subset平面BCD,\therefore PN//平面BCD\).\par
 又\(\because M是A'B\)中点，\(N是BM\)中点，\par
 \(\therefore A'N = 3NB\)，又\(A'Q = 3QC\)，
 故在\(\bigtriangleup A'BC\)中，得\(QN//BC\)，\par
-又\(QN ⊄平面BCD，BC \subset平面BCD，
-\therefore QN//平面BCD\)\par
-由\(PN \subset平面PQN，QN \subset平面PQN，
-PN \cap QN = N\)，\par
+又\(QN ⊄平面BCD,BC \subset平面BCD,\therefore QN//平面BCD\)\par
+由\(PN \subset平面PQN,QN \subset平面PQN,PN \cap QN = N\)，\par
 \(\therefore平面PQN//平面BCD\)，
 又\(PQ \subset平面PQN\)，\par
 \(\therefore PQ//平面BCD\).\par
 (2)\par
-如图④，在平面\(A'BC\)中，过\(B作BH\bot A'C，H\)为垂足，\par
-\(\because平面A'BC\bot平面A'CD，
-BH \subset平面A'BC，BH\bot A'C\)，
+如图④，在平面\(A'BC\)中，过\(B作BH\bot A'C,H\)为垂足，\par
+\(\because平面A'BC\bot平面A'CD,BH \subset平面A'BC,BH\bot A'C\)，
 平面\(A'BC \cap平面A'CD = A'C\)，\par
 \(\therefore BH\bot平面A'CD\)，\par
-又\(CD \subset平面A'CD，
-\therefore BH\bot CD\)，已知\(CD\bot BC\)，\par
-又\(BH \subset平面A'BC，BC \subset平面A'BC，
-BH \cap BC = B\)，\par
+又\(CD \subset平面A'CD,\therefore BH\bot CD\)，
+已知\(CD\bot BC\)，\par
+又\(BH \subset平面A'BC,BC \subset平面A'BC,BH \cap BC = B\)，\par
 \(\therefore CD\bot平面A'BC\)，
 又由\(A'B \subset平面A'BC\)，\par
 \(\therefore CD\bot A'B\).\par
-(3)由(2)知\(A'B\bot DC\)，又已知\(A'B\bot DB\)，
-\(CD\)，\(DB\)是面\(BCD\)内两相交直线，\par
+(3)由(2)知\(A'B\bot DC\)，
+又已知\(A'B\bot DB,CD\)，DB是面BCD\)内两相交直线，\par
 \(\therefore A'B\bot面BCD\)，
 即\(A'B\)为三棱锥的\(A' - BCD\)的高，
 设点\(C到面A'BD的高为h\)，\par
-则由\(V_{A' - BCD} = V_{C - A'BD}，A'B = 2，
-BD = 2\sqrt{3}，BC = \sqrt{3}，CD = 3\)得\par
+则由\(V_{A' - BCD} = V_{C - A'BD},A'B = 2,BD = 2\sqrt{3},BC = \sqrt{3},CD = 3\)得\par
 \(\frac{1}{3} \times \frac{1}{2} \times 3 \times \sqrt{3} \times 2 = \frac{1}{3} \times \frac{1}{2} \times 2 \times 2\sqrt{3} \cdot h\)，
 解得\(h = \frac{3}{2}\)，\par
 又由\(A'Q = 3QC知点Q到面A'BD的高为\frac{3}{4}h = \frac{9}{8}\)，\par
@@ -744,9 +719,7 @@ BD = 2\sqrt{3}，BC = \sqrt{3}，CD = 3\)得\par
 \end{question}
 
 \begin{question}
-已知数列\(\left\{ a_{n} \right\} ，
-\left\{ b_{n} \right\} ，
-\left\{ c_{n} \right\}前n\)项和分别为\(A_{n},B_{n},C_{n}\)，
+已知数列\(\left\{ a_{n} \right\} ,\left\{ b_{n} \right\} ,\left\{ c_{n} \right\}前n\)项和分别为\(A_{n},B_{n},C_{n}\)，
 且有\(c_{n} = a_{n}B_{n} + b_{n}A_{n} - a_{n}b_{n}．\)
 \begin{enumerate}[label=(\arabic*)]
   \item 若\(a_{n} = 2n - 1,b_{n} = 3^{n}\)，
@@ -765,8 +738,7 @@ BD = 2\sqrt{3}，BC = \sqrt{3}，CD = 3\)得\par
 \answer{(1)45
 (2)1
 (3)\(A_{n}B_{n} > n^{2}\left( n \in \text{N}^{\text{*}} \right)\)，理由见解析}
-\explain{(1)\because \(a_{n} = 2n - 1,b_{n} = 3^{n}，
-\)\par
+\explain{(1)\because \(a_{n} = 2n - 1,b_{n} = 3^{n}\),\par
 \therefore \(a_{1} = 1,a_{2} = 3,b_{1} = 3,b_{2} = 9\)\par
 由\(c_{n} = a_{n}B_{n} + b_{n}A_{n} - a_{n}b_{n}得c_{2} = a_{2}B_{2} + b_{2}A_{2} - a_{2}b_{2}= a_{2}\left( b_{1} + b_{2} \right) + b_{2}\left( a_{1} + a_{2} \right) - a_{2}b_{2}\)，\par
 \therefore \(c_{2} = a_{2}b_{1} + b_{2}a_{1} + a_{2}b_{2} = 9 + 9 + 27 = 45\).\par
@@ -776,8 +748,7 @@ BD = 2\sqrt{3}，BC = \sqrt{3}，CD = 3\)得\par
 \(c_{n} = a_{n}B_{n} + b_{n}A_{n} - a_{n}b_{n}= \left( A_{n} - A_{n - 1} \right)B_{n} + \left( B_{n} - B_{n - 1} \right)A_{n} - \left( A_{n} - A_{n - 1} \right)\left( B_{n} - B_{n - 1} \right)= A_{n}B_{n} - A_{n - 1}B_{n} + B_{n}A_{n} - B_{n - 1}A_{n} - \left( A_{n}B_{n} - A_{n}B_{n - 1} - A_{n - 1}B_{n} + A_{n - 1}B_{n - 1} \right)= A_{n}B_{n} - A_{n - 1}B_{n - 1}，
 \)\par
 \therefore \(C_{2025} = c_{1} + c_{2} + \cdots c_{2025}= A_{1}B_{1} + \left( A_{2}B_{2} - A_{1}B_{1} \right) + \left( A_{3}B_{3} - A_{2}B_{2} \right) + \cdots + \left( A_{2025}B_{2025} - A_{2024}B_{2024} \right)= A_{2025}B_{2025} = 1\)\par
-(3)由\(\frac{c_{n + 1}}{c_{n}} = \frac{c_{n}^{2}}{c_{n - 1}^{2}} - 1 \Rightarrow \frac{c_{n + 1}}{c_{n}^{2}} = \frac{c_{n}}{c_{n - 1}^{2}} - \frac{1}{c_{n}},c_{1} = 3，
-c_{2} = 6，\)，\par
+(3)由\(\frac{c_{n + 1}}{c_{n}} = \frac{c_{n}^{2}}{c_{n - 1}^{2}} - 1 \Rightarrow \frac{c_{n + 1}}{c_{n}^{2}} = \frac{c_{n}}{c_{n - 1}^{2}} - \frac{1}{c_{n}},c_{1} = 3,c_{2} = 6\),，\par
 \therefore \(\frac{1}{c_{n}} = \frac{c_{n}}{c_{n - 1}^{2}} - \frac{c_{n + 1}}{c_{n}^{2}}\)，\par
 \therefore \(\frac{1}{c_{1}} + \frac{1}{c_{2}} + \frac{1}{c_{3}} + \cdots + \frac{1}{c_{n}}= \frac{1}{c_{1}} + \frac{c_{2}}{c_{1}^{2}} - \frac{c_{3}}{c_{2}^{2}} + \frac{c_{3}}{c_{2}^{2}} - \frac{c_{4}}{c_{3}^{2}} + \cdots + \frac{c_{n}}{c_{n - 1}^{2}} - \frac{c_{n + 1}}{c_{n}^{2}}= \frac{1}{3} + \frac{c_{2}}{c_{1}^{2}} - \frac{c_{n + 1}}{c_{n}^{2}} < \frac{1}{3} + \frac{6}{9} = 1\)\par
 \because \(c_{1} = A_{1}B_{1},n \geq 2\)时，

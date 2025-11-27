@@ -400,7 +400,8 @@ def process_tex_file(tex_file: Path, mode: str, output_dir: Path, project_root: 
     # 应用替换
     if replacements and mode != 'convert':
         for pattern, replacement, img_id in replacements:
-            content = re.sub(pattern, replacement, content, flags=re.DOTALL, count=1)
+            # 使用 lambda 函数避免反斜杠转义问题（Python 3.14+）
+            content = re.sub(pattern, lambda m: replacement, content, flags=re.DOTALL, count=1)
         
         # 备份原文件
         backup_path = tex_file.with_suffix('.tex.bak')

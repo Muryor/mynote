@@ -1,9 +1,10 @@
-\examxtitle{江苏省苏锡常镇四市2025届高三教学情况调研（二）}
+\examxtitle{江苏省宿迁市宿城区2024-2025学年高三上学期第二次质量检测数学试题}
 
 \section{单选题}
 
 \begin{question}
-已知集合\(A = \left\{ 1,2,3,4,5 \right\},B = \left\{ x\left| 0 < \text{log}_{2}x < 2 \right. \right\}\)，
+已知集合\(A = \left\{ 1,2,3,4,5 \right\}，
+B = \left\{ x\left| 0 < \text{log}_{2}x < 2 \right.\  \right\}\)，
 则\(A \cap B =\)(    )
 \begin{choices}
   \item \(\left\{ 2,3 \right\}\)
@@ -15,9 +16,9 @@
 \difficulty{0.85}
 \answer{A}
 \explain{\(\text{log}_{2}x > 0 = \text{log}_{2}1\)，
-故\(x > 1,\text{log}_{2}x < 2 = \text{log}_{2}4\)，
-故\(x < 4\)，\par
-所以\(B = \left\{ x\left| 1 < x < 4 \right. \right\}\)，\par
+故\(x > 1，
+\text{log}_{2}x < 2 = \text{log}_{2}4\)，故\(x < 4\)，\par
+所以\(B = \left\{ x\left| 1 < x < 4 \right.\  \right\}\)，\par
 又\(A = \left\{ 1,2,3,4,5 \right\}\)，
 故\(A \cap B = \left\{ 2,3 \right\}\)}
 \end{question}
@@ -58,18 +59,18 @@
 
 \begin{question}
 已知圆\(C：x^{2} + (y - 2)^{2} = \frac{10}{3}\)，
-将直线\(l_{1}:\sqrt{3}x - y = 0\)绕原点按顺时针方向旋转\(30{^\circ}\)后得到直线\(l_{2}\)，
+将直线\(l_{1}：\sqrt{3}x - y = 0\)绕原点按顺时针方向旋转\(30{^\circ}\)后得到直线\(l_{2}\)，
 则(    )
 \begin{choices}
-  \item 直线\(l_{2}过圆心C\)
-  \item 直线\(l_{2}与圆C\)相交，但不过圆心
-  \item 直线\(l_{2}与圆C\)相切
-  \item 直线\(l_{2}与圆C\)无公共点
+  \item 直线\(l_{2}\)过\(圆心C\)
+  \item 直线\(l_{2}\)与\(圆C\)相交，但不过圆心
+  \item 直线\(l_{2}\)与\(圆C\)相切
+  \item 直线\(l_{2}\)与\(圆C\)无公共点
 \end{choices}
 \topics{直线的倾斜角；判断直线与圆的位置关系}
 \difficulty{0.85}
 \answer{B}
-\explain{直线\(l_{1}:\sqrt{3}x - y = 0即y = \sqrt{3}x\)，
+\explain{直线\(l_{1}：\sqrt{3}x - y = 0\)即\(y = \sqrt{3}x\)，
 斜率为\(\sqrt{3}\)，倾斜角为\(60{^\circ}\)，\par
 将直线\(l_{1}\)绕原点顺时针方向旋转\(30{^\circ}\)得到直线\(l_{2}\)，
 则直线\(l_{2}\)的倾斜角为\(30{^\circ}\)，\par
@@ -77,8 +78,8 @@
 即\(x - \sqrt{3}y = 0\)，\par
 圆\(C：x^{2} + (y - 2)^{2} = \frac{10}{3}\)的圆心坐标为\(C(0,2)\)，
 半径\(r = \frac{\sqrt{10}}{\sqrt{3}}\)，\par
-圆心到直线\(l_{2}\)的距离\(d = \frac{2\sqrt{3}}{2} = \sqrt{3} < \frac{\sqrt{10}}{\sqrt{3}}\)，\par
-\(\therefore\)直线\(l_{2}\)与圆\(C\)相交但不过圆心}
+圆心到直线\(l_{2}\)的\(距离d = \frac{2\sqrt{3}}{2} = \sqrt{3} < \frac{\sqrt{10}}{\sqrt{3}}\)，\par
+\(\therefore\)直线\(l_{2}\)与\(圆C\)相交但不过圆心}
 \end{question}
 
 \begin{question}
@@ -93,15 +94,16 @@
 \topics{三角函数的化简；求值------同角三角函数基本关系；二倍角的正切公式}
 \difficulty{0.85}
 \answer{B}
-\explain{由\(\text{sin}\alpha + \text{cos}\alpha = \frac{1}{5}与\text{sin}^{2}\alpha + \text{cos}^{2}\alpha = 1\)联立，
+\explain{由\(\text{sin}\alpha + \text{cos}\alpha = \frac{1}{5}\)与\(\text{sin}^{2}\alpha + \text{cos}^{2}\alpha = 1\)联立，
 结合\(\alpha \in \left( 0,\pi \right)\)可解得：\par
-\(\text{sin}\alpha = \frac{4}{5},\text{cos}\alpha = - \frac{3}{5}\)，
+\(\text{sin}\alpha = \frac{4}{5}，
+\text{cos}\alpha = - \frac{3}{5}\)，
 \(\text{tan}\alpha = - \frac{4}{3}\)，\par
 再由二倍角公式可得\(\text{tan}2\alpha = \frac{2\tan\alpha}{1 - \tan^{2}\alpha} = \frac{- \frac{8}{3}}{1 - \frac{16}{9}} = \frac{24}{7}\)}
 \end{question}
 
 \begin{question}
-已知等比数列\(\left\{ a_{n} \right\}的公比q \neq - 1\)，
+已知等比数列\(\left\{ a_{n} \right\}\)的\(公比q \neq - 1\)，
 前\(n项和为S_{n}\)，
 则对于\(\forall n \in N^{\ast}\)，下列结论一定正确的是(    )
 \begin{choices}
@@ -113,13 +115,13 @@
 \topics{求等比数列前n项和}
 \difficulty{0.85}
 \answer{D}
-\explain{令\(a_{n} = 2^{n},S_{1} = 2\)，
-\(S_{2} = 6,S_{3} = 14\)，
+\explain{令\(a_{n} = 2^{n}，S_{1} = 2\)，S_{2} = 6，
+S_{3} = 14\)，
 \(S_{1} + S_{3} \neq 2S_{2}\)，A错；\par
 \(3S_{1} + S_{3} \neq 2S_{2}\)，B错；\par
 \(S_{2}^{2} \neq S_{1}S_{3}\)，C错；\par
-一般情况，\(q = 1\)时，
-\(S_{n} = na_{1},S_{2n} - S_{n} = na_{1}\)，
+一般情况，\(q = 1\)时，\(S_{n} = na_{1}，
+S_{2n} - S_{n} = na_{1}\)，
 \(S_{2n}\left( S_{2n} - S_{n} \right) = 2n^{2}a_{1}^{2}\)，\par
 \(S_{n}\left( S_{3n} - S_{n} \right) = na_{1} \cdot 2na_{1} = 2n^{2}a_{1}^{2}\)，
 此时\(S_{2n}\left( S_{2n} - S_{n} \right) = S_{n}\left( S_{3n} - S_{n} \right)\)；\par
@@ -182,8 +184,8 @@ D对；}
 
 \begin{center}
 % IMAGE_TODO_START id=js-suxichang-2025-q2-Q8-img3 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/js-suxichang-2025-q2/media/image4.png width=60% inline=false question_index=8 sub_index=1
-% CONTEXT_BEFORE:\({16}\)，则边长之比为\)1:4\(，即"小三角形"边长为1.然后如图：
-% CONTEXT_AFTER: 设圆的半径为\(r\)，由余弦定理可得\)BD = + AB^{2}
+% CONTEXT_BEFORE:\({16}\)，则边长之比为\)1:4\(，\)即\("小三角形"边长为1.然后如图：
+% CONTEXT_AFTER: 设圆\)的\(半径为\(r\)，由余弦定理可得\)BD = + AB^{2}
 \begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
   % TODO: AI_AGENT_REPLACE_ME (id=js-suxichang-2025-q2-Q8-img3)
 \end{tikzpicture}
@@ -195,8 +197,10 @@ D对；}
 \difficulty{0.65}
 \answer{A}
 \explain{方法一：\par
-\(V_{水} = \frac{1}{2} \times 4 \times 4 \times \frac{\sqrt{3}}{2} \times \frac{15}{4} = 15\sqrt{3},V_{ABC - A_{1}B_{1}C_{1}} = \frac{1}{2} \times 4 \times 4 \times \frac{\sqrt{3}}{2} \times 4 = 16\sqrt{3}\)\par
-如图\(V_{C_{1}D_{1}E_{1} - CDE} = 16\sqrt{3} - 15\sqrt{3} = \sqrt{3} = S_{\bigtriangleup C_{1}D_{1}E_{1}} \times 4,\therefore S_{\bigtriangleup C_{1}D_{1}E_{1}} = \frac{\sqrt{3}}{4}\)，\par
+\(V_{水} = \frac{1}{2} \times 4 \times 4 \times \frac{\sqrt{3}}{2} \times \frac{15}{4} = 15\sqrt{3}，
+V_{ABC - A_{1}B_{1}C_{1}} = \frac{1}{2} \times 4 \times 4 \times \frac{\sqrt{3}}{2} \times 4 = 16\sqrt{3}\)\par
+如图\(V_{C_{1}D_{1}E_{1} - CDE} = 16\sqrt{3} - 15\sqrt{3} = \sqrt{3} = S_{\bigtriangleup C_{1}D_{1}E_{1}} \times 4，
+\therefore S_{\bigtriangleup C_{1}D_{1}E_{1}} = \frac{\sqrt{3}}{4}\)，\par
 而\(S_{\bigtriangleup A_{1}B_{1}C_{1}} = 4\sqrt{3}\)，\par
 %
 % IMAGE_TODO_START id=js-suxichang-2025-q2-Q8-img2 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/js-suxichang-2025-q2/media/image3.png width=60% inline=true question_index=8 sub_index=1
@@ -206,7 +210,8 @@ D对；}
 \end{tikzpicture}
 % IMAGE_TODO_END id=js-suxichang-2025-q2-Q8-img
 2
-\(\therefore\frac{S_{\bigtriangleup C_{1}D_{1}E_{1}}}{S_{\bigtriangleup A_{1}B_{1}C_{1}}} = \frac{1}{16},\therefore\frac{C_{1}D_{1}}{C_{1}B_{1}} = \frac{C_{1}E_{1}}{C_{1}A_{1}} = \frac{1}{4}\)，
+\(\therefore\frac{S_{\bigtriangleup C_{1}D_{1}E_{1}}}{S_{\bigtriangleup A_{1}B_{1}C_{1}}} = \frac{1}{16}，
+\therefore\frac{C_{1}D_{1}}{C_{1}B_{1}} = \frac{C_{1}E_{1}}{C_{1}A_{1}} = \frac{1}{4}\)，
 即\(C_{1}D_{1} = C_{1}E_{1} = D_{1}E_{1} = 1\)，\par
 由于\(C_{1}到A_{1}B_{1}距离2\sqrt{3}\)，
 则\(D_{1}到A_{1}B_{1}距离\frac{3}{4} \times 2\sqrt{3} = \frac{3\sqrt{3}}{2}\)，\par
@@ -214,10 +219,10 @@ D对；}
 则\(r_{1} = \frac{\sqrt{2}}{2}AB = 2\sqrt{2}\)\par
 设矩形\(DEE_{1}D_{1}\)外接圆圆心\(O_{2}\)，
 则\(r_{2} = \frac{1}{2}D_{1}E = \frac{1}{2} \times \sqrt{4^{2} + 1^{2}} = \frac{\sqrt{17}}{2}\)，
-设外接球半径\(R\)，\(\left\{ \begin{array}{r}
+设外接球半径\(R\left\{ \begin{array}{r}
 O_{1}O^{2} + 8 = R^{2} \\
 \left( O_{1}O + \frac{3\sqrt{3}}{2} \right)^{2} + \frac{17}{4} = R^{2}
-\end{array} \right.\)，\(\therefore R^{2} = \frac{25}{3}\)，故外接球表面积为\(4\piR^{2} = \frac{100\pi}{3}\)，\par
+\end{array} \right.\ ，\therefore R^{2} = \frac{25}{3}\)，故外接球表面积为\(4\piR^{2} = \frac{100\pi}{3}\)，\par
 故选;A.\par
 方法二：由当底面\(ABC\)水平放置时，水面高为\(\frac{15}{4}\)可知容器内的空气占容器体积的\(\frac{1}{16}\)，于是侧放时，图中的空气区域的"小三棱柱"的体积为容器的\(\frac{1}{16}\)，因此"小三棱柱"的底面"小三角形"的面积为大三角形的\(\frac{1}{16}\)，则边长之比为\(1:4\)，即"小三角形"边长为1.然后如图：\par
 设圆的半径为\(r\)，由余弦定理可得\(BD = \sqrt{AD^{2} + AB^{2} - 2AD \cdot AB\cos 60^{\circ}} = \sqrt{9 + 16 - 2 \times 3 \times 4 \times \frac{1}{2}} = \sqrt{13}\)，\par
@@ -308,21 +313,21 @@ D选项，\(x = 1\)时，\((1 - 2)^{5} = - 1\)，
 \item \(f(x) = \sqrt{3}在\left\lbrack 0,2\pi \right\rbrack\)有4个根，
 \item D正确.\par
 \item 方法二：由\(f(x) = \text{sin}x + \text{cos}x + \left| \text{sin}x - \text{cos}x \right| = \left\{ \begin{array}{r}
-2\sin x,\sin x \geq \cos x \\
-2\cos x,\sin x < \cos x
-\end{array} \right. = 2\text{max}\left\{ \text{sin}x,\text{cos}x \right\}\)，\par
+\item 2\sin x,\sin x \geq \cos x \\
+\item 2\cos x,\sin x < \cos x
+\item \end{array} \right.\  = 2\text{max}\left\{ \text{sin}x,\text{cos}x \right\}\)，\par
 \item 作出\(g(x) = 2\text{sin}x和h(x) = 2\text{cos}x\)的图像，取位于上方的部分即可：\par
 \item 由图可知，AC错误，B正确，\par
-\item 对于D，计算知\(2\text{sin}x与2\text{cos}x在\left( 0,\pi \right)\)内的交点坐标为\(\left( \frac{\pi}{4},\sqrt{2} \right)\)，\par
+\item 对于D，计算知\(2\text{sin}x\)与\(2\text{cos}x在\left( 0,\pi \right)\)内的交点坐标为\(\left( \frac{\pi}{4},\sqrt{2} \right)\)，\par
 \item 而\(\sqrt{2} < \sqrt{3} < 2\)，结合函数\(f(x)\)的图象特征可知函数\(f(x)与y = \sqrt{3}图象在\left\lbrack 0,2\pi \right\rbrack\)内有四个交点，\par
 \item 所以\(f(x) = \sqrt{3}在\left\lbrack 0,2\pi \right\rbrack\)上有四个不同的实数解，故D正确}
 \end{enumerate}
 \end{question}
 
 \begin{question}
-已知\(P为曲线E:y^{4} = 4x\)上一个动点(异于原点)，
+已知\(P为曲线E：y^{4} = 4x\)上一个动点(异于原点)，
 \(E在P(x,y)(y \neq 0)\)处的切线是指曲线\(y = \pm \sqrt[4]{4x}在P\)处的切线.直线\(m为E在P\)处的切线，
-过\(P作m的垂线n\)，若\(m,n分别与x轴交于A,B\)两点，
+过\(P作m\)的\(垂线n\)，若\(m，n分别\)与\(x轴交于A，B\)两点，
 则(    )
 \begin{choices}
   \item \(E关于x\)轴对称
@@ -388,8 +393,9 @@ D，由C选项可知，
 \begin{question}
 在平面直角坐标系\(xOy\)中，双曲线\(C\)的中心在原点，
 焦点在\(x\)轴上，
-焦距长为\(4\sqrt{3}\).若\(C\)和抛物线\(y^{2} = x交于A,B\)两点，
-且\(\bigtriangleup OAB\)为正三角形，则\(C\)的离心率为
+焦距长为\(4\sqrt{3}\).若\(C\)和抛物线\(y^{2} = x交于A，
+B\)两点，且\(\bigtriangleup OAB\)为正三角形，
+则\(C\)的离心率为
 .
 
 \begin{center}
@@ -404,10 +410,10 @@ D，由C选项可知，
 \topics{求双曲线的离心率或离心率的取值范围；求直线与抛物线的交点坐标}
 \difficulty{0.85}
 \answer{\(\sqrt{2}\)}
-\explain{由对称性知\(A,B\)关于\(x\)轴对称，
+\explain{由对称性知\(A、B关于x\)轴对称，
 \(\bigtriangleup AOB\)为正三角形，\par
-则由正三角形对称性可知\(A,B\)为\(y = \pm \text{tan}30^\circ x = \pm \frac{\sqrt{3}}{3}x\)与抛物线的交点，\par
-联立\(y = \frac{\sqrt{3}}{3}x\)与\(y^{2} = x\)得\(x = 3\)或0(舍去)，
+则由正三角形对称性可知\(A、B为y = \pm \text{tan}30{^\circ}x = \pm \frac{\sqrt{3}}{3}x\)与抛物线的交点，\par
+联立\(y = \frac{\sqrt{3}}{3}x\)与\(y^{2} = x得x = 3\)或0(舍去)，
 当\(x = 3\)时，\(y = \sqrt{3}\)，\par
 故其中一个交点为\(\left( 3,\sqrt{3} \right)\)，\par
 设双曲线方程为\(\frac{x^{2}}{a^{2}} - \frac{y^{2}}{b^{2}} = 1\)，
@@ -417,12 +423,11 @@ D，由C选项可知，
 \frac{9}{a^{2}} - \frac{3}{b^{2}} = 1 \\
 a^{2} = 12 - b^{2}
 \end{array} \right.\)，\par
-故离心率为\(e = \frac{c}{a} = \frac{2\sqrt{3}}{\sqrt{6}} = \sqrt{2}\)
-}
+故离心率为\(e = \frac{c}{a} = \frac{2\sqrt{3}}{\sqrt{6}} = \sqrt{2}；\sqrt{2}\)}
 \end{question}
 
 \begin{question}
-已知随机变量\(X,Y\)相互独立，且\(X \sim N(4,4)，
+已知随机变量\(X，Y\)相互独立，且\(X \sim N(4,4)，
 Y \sim B\left( 8,\frac{1}{2} \right)\)，
 则\(P(X \leq 4,Y \leq 4) =\)
 ；若\(Z = X + Y\)，
@@ -437,7 +442,8 @@ P(X \leq 4) = \frac{1}{2}\)，
 并利用\(P(Y = k) = P(Y = 8 - k)，
 P(X \leq k) + P(X \leq 8 - k) = 1\)\par
 记原式\(= S\)，\par
-倒序相加\(\Rightarrow 15\left\lbrack P(Y = 0) + P(Y = 1) + \cdot \cdot \cdot + P(Y = 8) \right\rbrack = 2S \Rightarrow S = \frac{15}{2}\(.\)\frac{163}{512};\frac{15}{2}\).}
+倒序相加\(\Rightarrow 15\left\lbrack P(Y = 0) + P(Y = 1) + \cdot \cdot \cdot + P(Y = 8) \right\rbrack = 2S \Rightarrow S = \frac{15}{2}\(.\)\frac{163}{512}；
+\frac{15}{2}\).}
 \end{question}
 
 \section{解答题}
@@ -488,20 +494,20 @@ P(X \leq k) + P(X \leq 8 - k) = 1\)\par
 \hline
 \(x_{\alpha}\) \& 2.706 \& 3.841 \& 6.635 \& 7.879 \& 10.828 \\
 \hline
-\end{tabular}
+\end{tabular
 \end{center}
 
 \end{question}
 
 \begin{question}
 如图，在三棱柱\(ABC - A_{1}B_{1}C_{1}\)中，
-\(AB = 2,BC = 2\sqrt{2}\)，
-\(\angle ABC = 45{^\circ},BC_{1}\bot AC\).
+\(AB = 2，BC = 2\sqrt{2}\)，
+\(\angle ABC = 45{^\circ}，BC_{1}\bot AC\).
 \begin{enumerate}[label=(\arabic*)]
   \item 证明：\(AC\bot平面ABC_{1}\)；
   \item 若\(CC_{1} = 2\sqrt{2}\)，
 \item 二面角\(C_{1} - AC - B\)的大小为\(60{^\circ}\)，
-\item 求直线\(BC_{1}与平面AA_{1}B_{1}B\)所成角的正弦值.
+\item 求直线\(BC_{1}\)与\(平面AA_{1}B_{1}B\)所成角的正弦值.
 \end{enumerate}
 
 \begin{center}
@@ -519,19 +525,23 @@ P(X \leq k) + P(X \leq 8 - k) = 1\)\par
 \difficulty{0.65}
 \answer{(1)证明见解析
 (2)\(\frac{\sqrt{21}}{7}\)}
-\explain{(1)\(\because AB = 2,BC = 2\sqrt{2}\)，
+\explain{(1)\(\because AB = 2，BC = 2\sqrt{2}\)，
 \(\angle ABC = 45{^\circ}\)，\par
 由余弦定理得\(AC^{2} = AB^{2} + BC^{2} - 2AB \cdot BC\cos 45{^\circ} = 4 + 8 - 2 \times 2 \times 2\sqrt{2} \times \frac{\sqrt{2}}{2} = 4\)，\par
 \(\therefore AC = 2\)，\par
-\(\therefore AB^{2} + AC^{2} = BC^{2},\therefore AC\bot AB\)，\par
-又\(\because AC\bot BC_{1},AB \cap BC_{1} = B\)，
+\(\therefore AB^{2} + AC^{2} = BC^{2}，
+\therefore AC\bot AB\)，\par
+又\(\because AC\bot BC_{1}，
+AB \cap BC_{1} = B\)，
 \(AB,BC_{1} \subset平面ABC_{1}\)，\par
 \(\therefore AC\bot平面ABC_{1}\)；\par
-(2)方法一：\(\because AC\bot平面ABC_{1},C_{1}A,AB \subset平面ABC_{1}\)，\par
+(2)方法一：\(\because AC\bot平面ABC_{1}，
+C_{1}A,AB \subset平面ABC_{1}\)，\par
 \(\therefore AC\bot C_{1}A且AC\bot AB\)，\par
-\(\therefore二面角C_{1} - AC - B\)的平面角为\(\angle BAC_{1} = 60{^\circ}\)，
+\(\therefore\)二面角\(C_{1} - AC - B\)的平面角为\(\angle BAC_{1} = 60{^\circ}\)，
 而\(CC_{1} = 2\sqrt{2}\)，\par
-\(\therefore AC_{1} = \sqrt{CC_{1}^{2} - AC^{2}} = \sqrt{8 - 4} = 2 = AB,\therefore \bigtriangleup ABC_{1}\)为等边三角形，\par
+\(\therefore AC_{1} = \sqrt{CC_{1}^{2} - AC^{2}} = \sqrt{8 - 4} = 2 = AB，
+\therefore \bigtriangleup ABC_{1}\)为等边三角形，\par
 以\(A\)为坐标原点，\(AB,AC\)所在直线分别为\(x,y\)轴，
 \(\bigtriangleup ABC_{1}\)所在平面为\(xAz\)平面，
 建立如图所示的空间直角坐标系，\par
@@ -544,37 +554,42 @@ P(X \leq k) + P(X \leq 8 - k) = 1\)\par
 \end{tikzpicture}
 % IMAGE_TODO_END id=js-suxichang-2025-q2-Q16-img
 2
-\(\therefore A(0,0,0)\)，\(B(2,0,0)\)，\(C(0,2,0)\)，\(C_{1}\left( 1,0,\sqrt{3} \right)\)，\par
+\(\therefore A(0,0,0)，
+B(2,0,0)\)，C(0,2,0)，
+C_{1}\left( 1,0,\sqrt{3} \right)\)，\par
 由\(\overrightarrow{A_{1}C_{1}} = \overrightarrow{AC} \Rightarrow A_{1}\left( 1, - 2,\sqrt{3} \right)，
 \therefore\overrightarrow{BC_{1}} = \left( - 1,0,\sqrt{3} \right)\)，
 \(\overrightarrow{AB} = (2,0,0)，
 \overrightarrow{AA_{1}} = \left( 1, - 2,\sqrt{3} \right)\)，\par
 设平面\(AA_{1}B_{1}B\)的一个法向量\(\overrightarrow{n} = (x,y,z)\)，\par
-\(\therefore\left\{ \begin{array}{r}\)
+\(\therefore\left\{ \begin{array}{r}
 \overrightarrow{AB} \cdot \overrightarrow{n} = (2,0,0) \cdot (x,y,z) = 2x = 0 \\
 \overrightarrow{AA_{1}} \cdot \overrightarrow{n} = \left( 1, - 2,\sqrt{3} \right) \cdot (x,y,z) = x - 2y + \sqrt{3}z = 0
 \end{array} \right.，\par
-解得x = 0,令y = \sqrt{3},则z = 2,故\overrightarrow{n} = \left( 0,\sqrt{3},2 \right)\(,\par
-设BC_{1}与平面AA_{1}B_{1}B所成角为\theta,\therefore\text{sin}\theta = \frac{\left| \overrightarrow{BC_{1}} \cdot \overrightarrow{n} \right|}{\left| \overrightarrow{BC_{1}} \right|\left| \overrightarrow{n} \right|} = \frac{2\sqrt{3}}{2 \times \sqrt{7}} = \frac{\sqrt{21}}{7}\(.\par
-方法二:因为AC\bot平面ABC_{1}\(,又\)AC_{1} \subset平面ABC_{1},所以AC\bot AC_{1}\(．\par
-又AC\bot AB,所以\angle C_{1}AB为二面角C_{1} - AC - B的平面角,即\angle C_{1}AB = 60^{{^\circ}}\(,\par
-在Rt \bigtriangleup ACC_{1}中,因为CC_{1} = 2\sqrt{2}，AC = 2,所以AC_{1} = 2\(．\)故\bigtriangleup ABC_{1}\(是等边三角形\par
+解得x = 0，令y = \sqrt{3}，则z = 2，故\overrightarrow{n} = \left( 0,\sqrt{3},2 \right)\(，\par
+设BC_{1}\)与\(平面AA_{1}B_{1}B所成角为\theta，\therefore\text{sin}\theta = \frac{\left| \overrightarrow{BC_{1}} \cdot \overrightarrow{n} \right|}{\left| \overrightarrow{BC_{1}} \right|\left| \overrightarrow{n} \right|} = \frac{2\sqrt{3}}{2 \times \sqrt{7}} = \frac{\sqrt{21}}{7}\(.\par
+方法二：因为AC\bot平面ABC_{1}，又AC_{1} \subset平面ABC_{1}，所以AC\bot AC_{1}\(．\par
+又AC\bot AB，所以\angle C_{1}AB为二面角C_{1} - AC - B\)的\(平面角，\)即\(\angle C_{1}AB = 60^{{^\circ}}\(，\par
+在Rt \bigtriangleup ACC_{1}中，因为CC_{1} = 2\sqrt{2}，AC = 2，所以AC_{1} = 2\(．故\)\bigtriangleup ABC_{1}\(是等边三角形\par
 所以V_{A - ABC_{1}} = V_{C - ABC_{1}} = \frac{1}{3} \cdot S_{\bigtriangleup ABC_{1}} \cdot AC = \frac{1}{3} \times \frac{\sqrt{3}}{4} \times 2^{2} \times 2 = \frac{2\sqrt{3}}{3}\(．\par
-在三棱柱ABC - A_{1}B_{1}C_{1}中,AC//A_{1}C_{1}\(,又\)AC\bot平面ABC_{1},所以A_{1}C_{1}\bot平面ABC_{1}\(,\par
-又BC_{1} \subset平面ABC_{1},所以A_{1}C_{1}\bot BC_{1}\(．\)故\bigtriangleup A_{1}BC_{1}\(为直角三角形．\par
-在直角\bigtriangleup A_{1}BC_{1}中,因为BC_{1} = 2，A_{1}C_{1} = 2,所以A_{1}B = 2\sqrt{2},故S_{\bigtriangleup ABA_{1}} = \sqrt{7}\(．\par
-设点C_{1}到平面ABA_{1}的距离为d\(,由\(V_{C_{1} - ABA_{1}} = V_{A - ABC_{1}}\),\par
-得\frac{1}{3} \times \sqrt{7} \times d = \frac{2\sqrt{3}}{3}\(,解\(得d = \frac{2\sqrt{21}}{7}\)．\par
-设直线BC_{1}与平面AA_{1}B_{1}B所成角为\theta,则\sin\theta = \frac{d}{BC_{1}} = \frac{\sqrt{21}}{7}\(,\par
-即直线BC_{1}与平面AA_{1}B_{1}B所成角的正弦值为\frac{\sqrt{21}}{7}\(．\)}
+在三棱柱ABC - A_{1}B_{1}C_{1}中，AC//A_{1}C_{1}，又AC\bot平面ABC_{1}，所以A_{1}C_{1}\bot平面ABC_{1}\(，\par
+又BC_{1} \subset平面ABC_{1}，所以A_{1}C_{1}\bot BC_{1}\(．故\)\bigtriangleup A_{1}BC_{1}\(为直角三角形．\par
+在直角\bigtriangleup A_{1}BC_{1}中，因为BC_{1} = 2，A_{1}C_{1} = 2，所以A_{1}B = 2\sqrt{2}，故S_{\bigtriangleup ABA_{1}} = \sqrt{7}\(．\par
+设点C_{1}到平面ABA_{1}\)的\(距离为d，由V_{C_{1} - ABA_{1}} = V_{A - ABC_{1}}\(，\par
+得\frac{1}{3} \times \sqrt{7} \times d = \frac{2\sqrt{3}}{3}，解得d = \frac{2\sqrt{21}}{7}\(．\par
+设直线BC_{1}\)与\(平面AA_{1}B_{1}B所成角为\theta，则\sin\theta = \frac{d}{BC_{1}} = \frac{\sqrt{21}}{7}\(，\par
+\)即\(直线BC_{1}\)与\(平面AA_{1}B_{1}B所成角\)的\(正弦值为\frac{\sqrt{21}}{7}\(．\)}
 \end{question}
 
 \begin{question}
 已知椭圆\(E：\frac{x^{2}}{a^{2}} + \frac{y^{2}}{b^{2}} = 1(a > b > 0)\)的离心率为\(\frac{3}{5}\)，
-且经过点\((3,\frac{16}{5})\(.\)F_{1},F_{2}是E\)的左、右焦点.
+且经过点\((3,\frac{16}{5})\(.\)F_{1}，
+F_{2}是E\)的左、右焦点.
 \begin{enumerate}[label=(\arabic*)]
   \item 求\(E\)的标准方程；
-  \item 过\(F_{2}\)的直线与\(E交于P,Q\)两点.若\(\bigtriangleup F_{1}PQ\)的内切圆半径为\(r,r = \frac{\sqrt{3}}{10}|PQ|\)，
+  \item 过\(F_{2}\)的直线与\(E交于P，
+\item Q\)两点.若\(\bigtriangleup F_{1}PQ\)的内切圆半径为\(r，
+\item r = \frac{\sqrt{3}}{10}|PQ|\)，
 \item 求\(\left| F_{2}P \right| \cdot \left| F_{2}Q \right|\)的值.
 \end{enumerate}
 
@@ -593,21 +608,22 @@ P(X \leq k) + P(X \leq 8 - k) = 1\)\par
 (2)\(\frac{256}{19}\).}
 \explain{(1)设椭圆\(E\)的半焦距为\(c\)，
 由离心率为\(\frac{3}{5}\)，
-得\(\frac{c}{a} = \frac{3}{5}\)，
-令\(a = 5t,t > 0,c = 3t,b = 4t\)，\par
-椭圆\(E:\frac{x^{2}}{25t^{2}} + \frac{y^{2}}{16t^{2}} = 1过点(3,\frac{16}{5})\)，
+得\(\frac{c}{a} = \frac{3}{5}\)，令\(a = 5t,t > 0，
+c = 3t,b = 4t\)，\par
+椭圆\(E：\frac{x^{2}}{25t^{2}} + \frac{y^{2}}{16t^{2}} = 1\)过\(点(3,\frac{16}{5})\)，
 则\(\frac{9}{25t^{2}} + \frac{16}{25t^{2}} = 1\)，
 解得\(t^{2} = 1\)，\par
 所以椭圆\(E\)的标准方程为\(\frac{x^{2}}{25} + \frac{y^{2}}{16} = 1\).\par
 (2)由(1)知\(F_{1}( - 3,0),F_{2}(3,0)\)，
 设直线\(PQ\)的方程为\(x = my + 3，
 P(x_{1},y_{1})\)，Q(x_{2},y_{2})\)，\par
-由\(\left\{ \begin{array}{r} x = my + 3 \\
+由\(\left\{ \begin{array}{r}
+x = my + 3 \\
 16x^{2} + 25y^{2} = 400
 \end{array} \right.消去x得(16m^{2} + 25)y^{2} + 96my - 256 = 0\)，\par
 \(\text{Δ} = {(96m)}^{2} + 4 \times 256(16m^{2} + 25) = 100 \times 256(m^{2} + 1) > 0，y_{1}y_{2} = \frac{- 256}{16m^{2} + 25}\)，\par
-\(S_{\bigtriangleup F_{1}PQ} = \frac{1}{2}|F_{1}F_{2}||y_{1} - y_{2}| = 3|y_{1} - y_{2}|,r = \frac{2S_{\bigtriangleup F_{1}PQ}}{4a} = \frac{6|y_{1} - y_{2}|}{20} = \frac{3}{10}|y_{1} - y_{2}|\)，\par
-而\(|PQ| = \sqrt{1 + m^{2}} \cdot |y_{1} - y_{2}|,r = \frac{\sqrt{3}}{10}|PQ|\)，则\(\frac{3}{10}|y_{1} - y_{2}| = \frac{\sqrt{3}}{10}\sqrt{1 + m^{2}} \cdot |y_{1} - y_{2}|\)，解得\(m^{2} = 2\)，\par
+\(S_{\bigtriangleup F_{1}PQ} = \frac{1}{2}|F_{1}F_{2}||y_{1} - y_{2}| = 3|y_{1} - y_{2}|，r = \frac{2S_{\bigtriangleup F_{1}PQ}}{4a} = \frac{6|y_{1} - y_{2}|}{20} = \frac{3}{10}|y_{1} - y_{2}|\)，\par
+而\(|PQ| = \sqrt{1 + m^{2}} \cdot |y_{1} - y_{2}|，r = \frac{\sqrt{3}}{10}|PQ|\)，则\(\frac{3}{10}|y_{1} - y_{2}| = \frac{\sqrt{3}}{10}\sqrt{1 + m^{2}} \cdot |y_{1} - y_{2}|\)，解得\(m^{2} = 2\)，\par
 所以\(|F_{2}P| \cdot |F_{2}Q| = \sqrt{1 + m^{2}}|y_{1}| \cdot \sqrt{1 + m^{2}} \cdot |y_{2}| = \frac{256(1 + m^{2})}{16m^{2} + 25} = \frac{3 \times 256}{57} = \frac{256}{19}\).}
 \end{question}
 
@@ -635,47 +651,50 @@ g'(x) = a\mathrm{e}^{ax}\)，
 则\(y = g(x)\)过该点的切线方程为：\(y - \mathrm{e}^{ax_{0}} = a\mathrm{e}^{ax_{0}}\left( x - x_{0} \right)\)，\par
 整理得\(y = a\mathrm{e}^{ax_{0}}x - a\mathrm{e}^{ax_{0}}x_{0} + \mathrm{e}^{ax_{0}}\)，
 由于该切线与\(y = x\)重合，\par
-则\(\therefore\left\{ \begin{array}{r} a\mathrm{e}^{ax_{0}} = 1 \\
+则\(\therefore\left\{ \begin{array}{r}
+a\mathrm{e}^{ax_{0}} = 1 \\
  - a\mathrm{e}^{ax_{0}}x_{0} + \mathrm{e}^{ax_{0}} = 0
 \end{array} \Rightarrow \left\{ \begin{array}{r}
 a = \frac{1}{\text{e}} \\
 x_{0} = \text{e}
-\end{array} \right. \right..\par
-(2)由\(h(x) = \frac{x - 1}{\mathrm{e}^{ax}}\),求导\(得h'(x) = \frac{\mathrm{e}^{ax} - a\mathrm{e}^{ax}(x - 1)}{\left( \mathrm{e}^{ax} \right)^{2}} = \frac{a + 1 - ax}{\mathrm{e}^{ax}}\),\par
-①当- 1 \leq a \leq 0时,\because x > 0，\therefore h'(x) > 0,h(x)在(0, + \infty)\(上单调递增;\par
-②当a < - 1时,令h'(x) = 0 \Rightarrow x = \frac{a + 1}{a}当0 < x < \frac{a + 1}{a}时,h'(x) < 0，h(x)在区间\left( 0,\frac{a + 1}{a} \right)\(上单调递减,\par
-当x > \frac{a + 1}{a}时,h'(x) > 0，h(x)在区间\left( \frac{a + 1}{a}, + \infty \right)\(上单调递增\par
-③当a > 0时,令h'(x) = 0 \Rightarrow x = \frac{a + 1}{a}当0 < x < \frac{a + 1}{a}时,h'(x) > 0，h(x)在区间\left( 0,\frac{a + 1}{a} \right)\(上单调递增;\par
-当x > \frac{a + 1}{a}时,h'(x) < 0，h(x)在区间\left( \frac{a + 1}{a}, + \infty \right)\(上单调递减\par
-(3)由题意得\(\mathrm{e}^{ax}\text{sin}x < x,即\mathrm{e}^{ax}\text{sin}x - x < 0对\forall x \in (0, + \infty)\)恒成立.\par
-令F(x) = \mathrm{e}^{ax}\text{sin}x - x，F'(x) = a\mathrm{e}^{ax}\text{sin}x + \mathrm{e}^{ax}\text{cos}x - 1 = \mathrm{e}^{ax}\left( a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax} \right)\(,\par
-令\varphi(x) = a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax}，\varphi'(x) = a\text{cos}x - \text{sin}x + a\mathrm{e}^{- ax}\(,\par
-因为F(0) = \mathrm{e}^{0}\text{sin}0 - 0 = 0，F'(0) = 0\(,\par
-若\varphi'(0) = 2a > 0,则\varphi(x) = a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax}在x = 0\(处的切线必然是上升的,\par
-又因为\varphi(0) = a\text{sin}0 + \text{cos}0 - \mathrm{e}^{0} = 0,所以当x > 0且靠近0的函数值满足\varphi(x) > 0\(,\par
-此时就有F'(x) = \mathrm{e}^{ax}\left( a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax} \right) > 0\(,\par
-从而可推导F(x) = \mathrm{e}^{ax}\text{sin}x - x在x > 0且靠近0\(的附近是递增的,\par
-又因为F(0) = \mathrm{e}^{0}\text{sin}0 - 0 = 0\(,\par
-所以在x > 0且靠近0的附近必有F(x) = \mathrm{e}^{ax}\text{sin}x - x > 0则必然不满足对\forall x \in (0, + \infty)恒有F(x) < 0\(,\par
-所以要满足对\forall x \in (0, + \infty)恒有F(x) < 0\(,\par
-首先必需满足在x > 0且靠近0的附近F'(x) \leq 0\(,\par
-所以满足\varphi'(0) = 2a \leq 0 \Rightarrow a \leq 0\(,\par
-从而可得参数a满足的必要条件是a \leq 0\(;\par
-下面再证充分性,当a \leq 0，x > 0时,则\mathrm{e}^{ax} < \mathrm{e}^{0} = 1,即有\frac{x}{\mathrm{e}^{ax}} > x\(,\par
-又构造\varphi(x) = x - \sin x，x > 0,可得\varphi'(x) = 1 - \cos x \geq 0\(,\par
-所以\varphi(x) = x - \sin x在区间(0, + \infty)上单调递增,即\varphi(x) = x - \sin x > \varphi(0) = 0\(,\par
-则可知\text{sin}x - \frac{x}{\mathrm{e}^{ax}} \leq \text{sin}x - x < 0,则F(x) = \mathrm{e}^{ax}\left( \text{sin}x - \frac{x}{\mathrm{e}^{ax}} \right) < 0,\therefore F(x) < 0\(恒成立,符合题意,\par
-综上:a的取值范围为( - \infty,0\rbrack.}
+\end{array} \right.\  \right..\par
+(2)由\)h(x) = \frac{x - 1}{\mathrm{e}^{ax}}，求导得h'(x) = \frac{\mathrm{e}^{ax} - a\mathrm{e}^{ax}(x - 1)}{\left( \mathrm{e}^{ax} \right)^{2}} = \frac{a + 1 - ax}{\mathrm{e}^{ax}}\(，\par
+①当- 1 \leq a \leq 0时，\because x > 0，\therefore h'(x) > 0，h(x)在(0, + \infty)\(上单调递增；\par
+②当a < - 1时，令h'(x) = 0 \Rightarrow x = \frac{a + 1}{a}当0 < x < \frac{a + 1}{a}时，h'(x) < 0，h(x)在区间\left( 0,\frac{a + 1}{a} \right)\(上单调递减，\par
+当x > \frac{a + 1}{a}时，h'(x) > 0，h(x)在区间\left( \frac{a + 1}{a}, + \infty \right)\(上单调递增\par
+③当a > 0时，令h'(x) = 0 \Rightarrow x = \frac{a + 1}{a}当0 < x < \frac{a + 1}{a}时，h'(x) > 0，h(x)在区间\left( 0,\frac{a + 1}{a} \right)\(上单调递增；\par
+当x > \frac{a + 1}{a}时，h'(x) < 0，h(x)在区间\left( \frac{a + 1}{a}, + \infty \right)\(上单调递减\par
+(3)由题意得\(\mathrm{e}^{ax}\text{sin}x < x，\)即\(\mathrm{e}^{ax}\text{sin}x - x < 0对\forall x \in (0, + \infty)\)恒成立.\par
+令F(x) = \mathrm{e}^{ax}\text{sin}x - x，F'(x) = a\mathrm{e}^{ax}\text{sin}x + \mathrm{e}^{ax}\text{cos}x - 1 = \mathrm{e}^{ax}\left( a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax} \right)\(，\par
+令\varphi(x) = a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax}，\varphi'(x) = a\text{cos}x - \text{sin}x + a\mathrm{e}^{- ax}\(，\par
+因为F(0) = \mathrm{e}^{0}\text{sin}0 - 0 = 0，F'(0) = 0\(，\par
+若\varphi'(0) = 2a > 0，则\varphi(x) = a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax}在x = 0\(处\)的\(切线必然是上升的，\par
+又因为\varphi(0) = a\text{sin}0 + \text{cos}0 - \mathrm{e}^{0} = 0，所以当x > 0且靠近0的函数值满足\varphi(x) > 0\(，\par
+此时就有F'(x) = \mathrm{e}^{ax}\left( a\text{sin}x + \text{cos}x - \mathrm{e}^{- ax} \right) > 0\(，\par
+从而可推导F(x) = \mathrm{e}^{ax}\text{sin}x - x在x > 0且靠近0\(的附近是递增的，\par
+又因为F(0) = \mathrm{e}^{0}\text{sin}0 - 0 = 0\(，\par
+所以在x > 0且靠近0\)的\(附近必有F(x) = \mathrm{e}^{ax}\text{sin}x - x > 0则必然不满足对\forall x \in (0, + \infty)恒有F(x) < 0\(，\par
+所以要满足对\forall x \in (0, + \infty)恒有F(x) < 0\(，\par
+首先必需满足在x > 0且靠近0\)的\(附近F'(x) \leq 0\(，\par
+所以满足\varphi'(0) = 2a \leq 0 \Rightarrow a \leq 0\(，\par
+从而可得参数a满足\)的\(必要条件是a \leq 0\(；\par
+下面再证充分性，当a \leq 0，x > 0时，则\mathrm{e}^{ax} < \mathrm{e}^{0} = 1，\)即\(有\frac{x}{\mathrm{e}^{ax}} > x\(，\par
+又构造\varphi(x) = x - \sin x，x > 0，可得\varphi'(x) = 1 - \cos x \geq 0\(，\par
+所以\varphi(x) = x - \sin x在区间(0, + \infty)上单调递增，即\varphi(x) = x - \sin x > \varphi(0) = 0\(，\par
+则可知\text{sin}x - \frac{x}{\mathrm{e}^{ax}} \leq \text{sin}x - x < 0，则F(x) = \mathrm{e}^{ax}\left( \text{sin}x - \frac{x}{\mathrm{e}^{ax}} \right) < 0，\therefore F(x) < 0\(恒成立，符合题意，\par
+综上：a\)的\(取值范围为( - \infty,0\rbrack.}
 \end{question}
 
 \begin{question}
 若无穷数列\(\left\{ a_{n} \right\}\)满足：，
-\(\forall n \in N^{\ast},a_{1} > \frac{a_{1} + a_{2}}{2} > \cdot \cdot \cdot > \frac{a_{1} + a_{2} + \cdot \cdot \cdot + a_{n}}{n} > \cdot \cdot \cdot\)，
+\(\forall n \in N^{\ast}，
+a_{1} > \frac{a_{1} + a_{2}}{2} > \cdot \cdot \cdot > \frac{a_{1} + a_{2} + \cdot \cdot \cdot + a_{n}}{n} > \cdot \cdot \cdot\)，
 则称\(\left\{ a_{n} \right\}\)为"均值递减数列".
 \begin{enumerate}[label=(\arabic*)]
-  \item 已知无穷数列\(\left\{ a_{n} \right\}的前n项和为S_{n}\)，
+  \item 已知无穷数列\(\left\{ a_{n} \right\}\)的\(前n项和为S_{n}\)，
 \item 若\(\left\{ a_{n} \right\}\)为"均值递减数列"，
-\item 求证：\(\forall n \in N^{\ast},S_{n} > na_{n + 1}\)；
+\item 求证：\(\forall n \in N^{\ast}，
+\item S_{n} > na_{n + 1}\)；
   \item 若数列\(\left\{ b_{n} \right\}\)的通项公式\(b_{n} = - 6(n - 4)^{3} + n^{2}\)，
 \item 判断\(\left\{ b_{n} \right\}\)是否为"均值递减数列"，
 \item 并说明理由；
@@ -696,7 +715,7 @@ x_{0} = \text{e}
 \(\therefore\frac{S_{n + 1}}{n + 1} < \frac{S_{n}}{n}，
 \therefore nS_{n + 1} < (n + 1)S_{n} = nS_{n} + S_{n}\Rightarrow S_{n} > n\left( S_{n + 1} - S_{n} \right) = na_{n + 1}\)；\par
 (2)法一：\par
-设\(b_{n}的前n项和为T_{n}\)，\par
+设\(b_{n}\)的\(前n项和为T_{n}\)，\par
 \(T_{n} = 216 - \frac{3}{2}(n - 4)^{2}(n - 3)^{2} + \frac{1}{6}n(n + 1)(2n + 1)= n\left( \frac{1}{6}(n + 1)(2n + 1) - \frac{3}{2}(n - 7)\left( n^{2} - 7n + 24 \right) \right)\),\par
 令\(G_{n} = \frac{T_{n}}{n} = \frac{1}{6}(n + 1)(2n + 1) - \frac{3}{2}(n - 7)\left( n^{2} - 7n + 24 \right)\)，
 则\(G_{n + 1} - G_{n} = \frac{- 27n^{2} + 229n - 535}{6}\)，
@@ -710,47 +729,49 @@ x_{0} = \text{e}
 \(\left\{ b_{n} \right\}\)单调递减且\(b_{n} < 0\)，\par
 且计算易得\(b_{1} > \frac{b_{1} + b_{2}}{2} > \frac{b_{1} + b_{2} + b_{3}}{3} > \cdot \cdot \cdot > \frac{b_{1} + b_{2} + b_{3} + \cdot \cdot \cdot + b_{6}}{6}\)，\par
 设\(\left\{ b_{n} \right\}前n项和为S_{n}\)，
-归纳假设\(n = k,k \geq 6\)，
+归纳假设\(n = k，k \geq 6\)，
 \(k \in N^{\ast}\)时，\par
 \(\frac{S_{n}}{n} < \frac{S_{n - 1}}{n - 1}\)，
 即\(\frac{S_{k}}{k} < \frac{S_{k - 1}}{k - 1}\)，
 即\(kb_{k} < S_{k}，
 \therefore\frac{S_{k + 1}}{k + 1} - \frac{S_{k}}{k} = \frac{kS_{k + 1} - (k + 1)S_{k}}{k(k + 1)} = \frac{kb_{k + 1} - S_{k}}{k(k + 1)} < \frac{k\left( b_{k + 1} - b_{k} \right)}{k(k + 1)} < 0\)，\par
 \(\therefore\frac{S_{k + 1}}{k + 1} < \frac{S_{k}}{k}\)，
-即\(n = k + 1,k \geq 6\)，
+即\(n = k + 1，k \geq 6\)，
 \(k \in N^{\ast}\)时，
 \(\frac{S_{n}}{n} < \frac{S_{n - 1}}{n - 1}\)成立.\par
 而\(\frac{S_{6}}{6} < \frac{S_{5}}{5}\)成立，
 \(\therefore\frac{S_{n}}{n} < \frac{S_{n - 1}}{n - 1}对\forall n \geq 6且n \in N^{\ast}\)恒成立，\par
-\(\therefore也有\frac{S_{5}}{5} > \frac{S_{6}}{6} > \cdot \cdot \cdot > \frac{S_{n}}{n} < \cdot \cdot \cdot \Rightarrow S_{1} > \frac{S_{2}}{2} > \frac{S_{3}}{3} > \cdot \cdot \cdot > \frac{S_{6}}{6} > \cdot \cdot \cdot > \frac{S_{n}}{n} > \cdot \cdot \cdot\)，\par
+\(\therefore\)也有\(\frac{S_{5}}{5} > \frac{S_{6}}{6} > \cdot \cdot \cdot > \frac{S_{n}}{n} < \cdot \cdot \cdot \Rightarrow S_{1} > \frac{S_{2}}{2} > \frac{S_{3}}{3} > \cdot \cdot \cdot > \frac{S_{6}}{6} > \cdot \cdot \cdot > \frac{S_{n}}{n} > \cdot \cdot \cdot\)，\par
 即\(\left\{ b_{n} \right\}\)为"均值递减数列"；\par
 (3)法一：\par
-设\(\left\{ \begin{array}{r}\)
+设\(\left\{ \begin{array}{r}
 \frac{c_{1} + c_{2} + \cdot \cdot \cdot + c_{n}}{n} = x_{n} \\
 \frac{d_{1} + d_{2} + \cdot \cdot \cdot + d_{n}}{n} = y_{n}
-\end{array} \right.依题意\left\{ x_{n} \right\},\left\{ y_{n} \right\}\)均为递减数列，\par
-而\(\left\{ \begin{array}{r} c_{n} = nx_{n} - (n - 1)x_{n - 1} \\
+\end{array} \right.依题意\left\{ x_{n} \right\}，\left\{ y_{n} \right\}\)均为递减数列，\par
+而\(\left\{ \begin{array}{r}
+c_{n} = nx_{n} - (n - 1)x_{n - 1} \\
 d_{n} = nx_{n} - (n - 1)x_{n - 1}
 \end{array} \right.\)，\par
 相乘展开得\(c_{n}d_{n} = n^{2}x_{n}y_{n} + (n - 1)^{2}x_{n - 1}y_{n - 1} - n(n - 1)\left( x_{n}y_{n - 1} + y_{n}x_{n - 1} \right)\)，\par
-由于\(x_{n} < x_{n - 1},y_{n} < y_{n - 1}\)，则由补充不等式有\(x_{n}y_{n - 1} + y_{n}x_{n - 1} < x_{n}y_{n} + y_{n - 1}x_{n - 1}\)，\par
+由于\(x_{n} < x_{n - 1}，y_{n} < y_{n - 1}\)，则由补充不等式有\(x_{n}y_{n - 1} + y_{n}x_{n - 1} < x_{n}y_{n} + y_{n - 1}x_{n - 1}\)，\par
 所以\(c_{n}d_{n} > n^{2}x_{n}y_{n} + (n - 1)^{2}x_{n - 1}y_{n - 1} - n(n - 1)\left( x_{n}y_{n} + y_{n - 1}x_{n - 1} \right)= nx_{n}y_{n} - (n - 1)x_{n - 1}y_{n - 1}\)，\par
-求和得\(\sum_{i = 1}^{n}{}c_{i}d_{i} > nx_{n}y_{n}\)，由(1)的结论知\(x_{n} > c_{n + 1},y_{n} > d_{n + 1}\)，\par
+求和得\(\sum_{i = 1}^{n}{}c_{i}d_{i} > nx_{n}y_{n}\)，由(1)的结论知\(x_{n} > c_{n + 1}，y_{n} > d_{n + 1}\)，\par
 所以\(\sum_{i = 1}^{n}{}c_{i}d_{i} > nc_{n + 1}d_{n + 1}\)，\par
 于是再由(1)的结论即可知\(\left\{ c_{n}d_{n} \right\}\)是"均值递减数列"；\par
 法二：\par
-设\(\left\{ c_{n} \right\}的前n项和为S_{n},\left\{ d_{n} \right\}的前n项和为T_{n}\)，\par
+设\(\left\{ c_{n} \right\}\)的\(前n项和为S_{n}，\left\{ d_{n} \right\}的前n项和为T_{n}\)，\par
 \(\because\left\{ c_{n} \right\}和\left\{ d_{n} \right\}\)均为均值递减数列，\par
-由(1)知\(\left\{ \begin{array}{r}\)
+由(1)知\(\left\{ \begin{array}{r}
 S_{n} > nc_{n + 1},① \\
 T_{n} > nd_{n + 1},②
 \end{array} \right.对\forall n \in N^{\ast}\)恒成立，\par
-由①②知\(\left\{ \begin{array}{r} c_{1} > c_{2} \\
+由①②知\(\left\{ \begin{array}{r}
+c_{1} > c_{2} \\
 d_{1} > d_{2}
-\end{array} \right. ,\therefore c_{1}d_{1} > c_{2}d_{2}\)，记\(\left\{ c_{n}d_{n} \right\}的前n项和为R_{n}\)，\par
-\(\Leftrightarrow证对\forall n \in N^{\ast},R_{n} > nc_{n + 1}d_{n + 1}\)，n = 1\)时不等式显然成立，\par
-设当\(n = k,k \in N^{\ast}\)时，\(R_{n} > nc_{n + 1}d_{n + 1}\)成立，\par
-即\(R_{k} > kc_{k + 1}d_{k + 1},k \in N^{\ast}\)，\par
+\end{array} \right.\ ，\therefore c_{1}d_{1} > c_{2}d_{2}\)，记\(\left\{ c_{n}d_{n} \right\}\)的\(前n项和为R_{n}\)，\par
+\(\Leftrightarrow证对\forall n \in N^{\ast}，R_{n} > nc_{n + 1}d_{n + 1}\)，n = 1\)时不等式显然成立，\par
+设当\(n = k，k \in N^{\ast}\)时，\(R_{n} > nc_{n + 1}d_{n + 1}\)成立，\par
+即\(R_{k} > kc_{k + 1}d_{k + 1}，k \in N^{\ast}\)，\par
 \(\therefore R_{k + 1} - (k + 1)c_{k + 2}d_{k + 2} = R_{k} + c_{k + 1}d_{k + 1} - (k + 1)c_{k + 2}d_{k + 2}\)，\par
 \(> kc_{k + 1}d_{k + 1} + c_{k + 1}d_{k + 1} - (k + 1)c_{k + 2}d_{k + 2} = (k + 1)\left( c_{k + 1}d_{k + 1} - c_{k + 2}d_{k + 2} \right) > 0\)，\par
 \(\therefore R_{k + 1} > (k + 1)c_{k + 2}d_{k + 2}\)，即\(n = k + 1\)时，不等式也成立，\par
