@@ -2671,6 +2671,69 @@ def balance_array_and_cases_env(text: str) -> str:
     return ''.join(out_parts)
 
 
+def fix_nested_subquestions(text: str) -> str:
+    r"""🆕 v1.9.6：修复嵌套子题号格式
+    
+    问题模式：
+    - \item (i)xxx → 需要特殊处理，因为 (i)(ii) 是第二级子题
+    - 目前保守处理：只清理 \item 后紧跟 (i)/(ii) 的情况
+    
+    例如：
+    - \item (i)求角的大小 → \item[(i)] 求角的大小
+    """
+    import re
+    
+    # 匹配 \item 后紧跟 (i)/(ii)/(iii) 等
+    # 替换为 \item[(i)] 格式
+    pattern = r'\\item\s+\(([ivxIVX]+)\)'
+    text = re.sub(pattern, r'\\item[(\1)]', text)
+    
+    # 同样处理全角括号
+    pattern_cn = r'\\item\s+（([ivxIVX]+)）'
+    text = re.sub(pattern_cn, r'\\item[(\1)]', text)
+    
+    return text
+
+
+def fix_trig_function_spacing(text: str) -> str:
+    r"""🆕 v1.9.6：修复三角函数和对数函数后缺少空格的问题
+    
+    问题模式：
+    - \sinx → \sin x
+    - \cosB → \cos B
+    - \lnt → \ln t
+    
+    保守处理：只修复后面紧跟单个字母/变量的情况
+    """
+    import re
+    
+    # 定义需要处理的函数名
+    trig_funcs = ['sin', 'cos', 'tan', 'cot', 'sec', 'csc', 'arcsin', 'arccos', 'arctan',
+                  'sinh', 'cosh', 'tanh', 'ln', 'log', 'lg', 'exp']
+    
+    for func in trig_funcs:
+        # 匹配 \func 后紧跟字母（非 { 或空格的情况）
+        # 例如 \sinx → \sin x, \cosB → \cos B
+        pattern = rf'\\{func}([A-Za-z])(?![a-zA-Z])'
+        text = re.sub(pattern, rf'\\{func} \1', text)
+    
+    return text
+
+
+def fix_undefined_symbols(text: str) -> str:
+    r"""🆕 v1.9.6：替换可能未定义的数学符号
+    
+    已知问题：
+    - \bigtriangleup → \triangle (amssymb 中有定义)
+    """
+    import re
+    
+    # \bigtriangleup 替换为 \triangle
+    text = re.sub(r'\\bigtriangleup\b', r'\\triangle', text)
+    
+    return text
+
+
 def fix_specific_reversed_pairs(text: str) -> str:
     r"""🆕 v1.8.7：极窄自动修复特定反向数学定界符模式
 
@@ -5118,6 +5181,11 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
     # 🆕 v1.9.1：修复 tabular 环境缺失列格式（P1）
     result = fix_tabular_environments(result)
+
+    # 🆕 v1.9.6：修复三角函数空格和未定义符号
+    result = fix_trig_function_spacing(result)
+    result = fix_undefined_symbols(result)
+    result = fix_nested_subquestions(result)
 
     return result
 
