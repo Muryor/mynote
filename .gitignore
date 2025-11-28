@@ -43,6 +43,9 @@ ocr_to_tex/
 #!content/exams/auto/*/converted_exam.tex
 content/exams/auto/*/figures/
 
+# Settings that change frequently
+settings/metadata.tex
+
 # word_to_tex: keep source, ignore build artifacts
 word_to_tex/venv/
 word_to_tex/figures/raw/
