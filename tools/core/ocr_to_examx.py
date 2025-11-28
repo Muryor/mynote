@@ -5593,65 +5593,36 @@ def main():
         if image_count > 0:
             print(f"🖼️  图片占位: {image_count}")
         
-        print(f"\n🆕 v1.4 改进已应用:")
-        print(f"  ✅ 数学公式双重包裹修复")
-        print(f"  ✅ 单行选项自动展开")
-        print(f"  ✅ 显示公式正确处理")
-        
-        print(f"\n✅ v1.3 改进（已保留）:")
-        print(f"  ✅ $ 格式兜底转换")
-        print(f"  ✅ 增强的'故选'清理")
-        print(f"  ✅ 中英文标点统一")
-        print(f"  ✅ 自动验证功能")
-        
-        print(f"\n✅ v1.2 改进（已保留）:")
-        print(f"  ✅ 空行清理增强")
-        print(f"  ✅ 超长行自动分割")
-        print(f"  ✅ 数学变量智能检测")
-        print(f"  ✅ 选项解析增强")
-        
-        # 🆕 v1.6.3：显示问题日志信息
-        debug_log = Path("word_to_tex/output/debug") / f"{slug}_issues.log"
-        if debug_log.exists():
-            log_size = debug_log.stat().st_size
-            if log_size > 100:  # 如果日志文件有实质内容
-                print(f"\n📋 问题检测日志: {debug_log}")
-                print(f"   文件大小: {log_size:,} 字节")
-            else:
-                print(f"\n✅ 未检测到问题（日志为空）")
-
         # 🆕 v1.8.6：显示验证结果（包含花括号检查）
         if warnings or integrity_issues or brace_issues:
             combined = warnings + integrity_issues + brace_issues
             print(f"\n⚠️  验证发现 {len(combined)} 个潜在问题:")
 
-            # 分类显示
+            # 分类显示（只显示前几条）
             if warnings:
-                print(f"\n  📋 结构问题 ({len(warnings)}):")
-                for issue in warnings:
+                print(f"  📋 结构问题: {len(warnings)} 个")
+                for issue in warnings[:3]:
                     print(f"    {issue}")
+                if len(warnings) > 3:
+                    print(f"    ... 还有 {len(warnings) - 3} 个")
 
             if brace_issues:
-                print(f"\n  🔧 花括号问题 ({len(brace_issues)}):")
-                for issue in brace_issues:
-                    print(f"    [BRACE] {issue}")
+                print(f"  🔧 花括号问题: {len(brace_issues)} 个")
+                for issue in brace_issues[:3]:
+                    print(f"    {issue}")
+                if len(brace_issues) > 3:
+                    print(f"    ... 还有 {len(brace_issues) - 3} 个")
 
             if integrity_issues:
-                print(f"\n  🔢 数学定界符问题 ({len(integrity_issues)}):")
-                for issue in integrity_issues:
-                    print(f"    [MATH] {issue}")
+                print(f"  🔢 数学定界符问题: {len(integrity_issues)} 个")
+                for issue in integrity_issues[:3]:
+                    print(f"    {issue}")
+                if len(integrity_issues) > 3:
+                    print(f"    ... 还有 {len(integrity_issues) - 3} 个")
 
             print("\n💡 建议：使用 AI Agent 检查并人工确认数学结构")
         else:
-            print(f"\n✅ 验证通过：未发现明显问题 (结构 + 数学 + 花括号)" )
-
-        print("\n💡 下一步:")
-        print("  1. AI Agent 读取此文件进行精修")
-        print("  2. AI Agent 查看 images/ 中的图片")
-        print("  3. AI Agent 生成 TikZ 代码")
-        print("  4. 输出最终的 exam_final.tex")
-        if debug_log.exists() and debug_log.stat().st_size > 100:
-            print(f"  5. 查看问题日志: {debug_log}")
+            print(f"\n✅ 验证通过：未发现明显问题")
 
         # 🆕 Prompt 1: 强制检查【分析】残留
         if slug:

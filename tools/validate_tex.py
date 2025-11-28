@@ -456,7 +456,8 @@ class TeXValidator:
             choices_match = re.search(r'\\begin\{choices\}(.*?)\\end\{choices\}', q_content, re.DOTALL)
             if choices_match:
                 choices_content = choices_match.group(1)
-                item_count = len(re.findall(r'\\item\b', choices_content))
+                # Count both \item and \choice (which is often aliased to \item)
+                item_count = len(re.findall(r'\\(?:item|choice)\b', choices_content))
 
                 if item_count < 2:
                     line_no = base_line + q_content[:choices_match.start()].count('\n')
