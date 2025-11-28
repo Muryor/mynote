@@ -1,0 +1,7 @@
+\begin{tikzpicture}[scale=0.8,baseline=-0.5ex]
+  \draw[->] (-1.3,0) -- (1.3,0) node[right] {$x$};
+  \draw[->] (0,-1.3) -- (0,1.3) node[above] {$y$};
+  \draw[thick,domain=0:360,samples=100,smooth] plot ({cos(\x)^3},{sin(\x)^3});
+  \node at (0,0) [circle,fill,inner sep=1pt] {};
+  \node at (0,0) [below right=1pt] {$O$};
+\end{tikzpicture}
