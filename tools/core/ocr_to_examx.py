@@ -1,7 +1,29 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-ocr_to_examx_v1.9.py - v1.9 改进版
+ocr_to_examx_v1.9.py - v1.9.3 改进版
+
+🆕 v1.9.3 黑箱测试修复（2025-01-XX）：
+1. ✅ 修复 T008/T017 根本原因：preprocess_multiline_math 错误合并
+   - 问题：$$P$$，$$B$$ 错误合并为 $$P，B$$，导致嵌套定界符
+   - 修复：只对冒号（：）分隔的模式进行合并（标签：公式）
+   - 移除：逗号（，）、顿号（、）、句号（。）、分号（；）分隔的合并
+   - 结果：$$P$$，$$B$$ → \(P\)，\(B\)（正确保持独立）
+
+🆕 v1.9.2 黑箱测试修复（2025-11-28）：
+1. ✅ 修复 T008 定界符不平衡问题（P0 - 最高优先级）
+   - 问题：跨行数学环境（array/cases）导致定界符不平衡
+   - 修复：增强 balance_delimiters() 支持跨行环境检测
+   - 修复：处理 \therefore \( 等符号后直接跟数学模式的情况
+   - 改进：全局平衡检查和智能修复
+2. ✅ 修复 T016 LaTeX 特殊字符转义问题（P2）
+   - 问题：& 等字符在非数学模式下未正确转义
+   - 修复：增强 escape_latex_special() 保护数学模式内的 &
+   - 改进：正确处理 tabular/array/matrix 环境中的列分隔符
+3. ✅ 修复 T017 数学模式内中文标点问题（P2）
+   - 问题：数学模式内残留全角标点（逗号、分号等）
+   - 修复：增强 normalize_punctuation_in_math() 迭代处理
+   - 新增：额外的遗漏标点检测和转换逻辑
 
 🆕 v1.9.1 关键修复（2025-11-26）：
 1. ✅ 修复反向定界符 - 冒号模式（P0 - 最高优先级）
@@ -125,29 +147,7 @@ v1.6 P0 修复（2025-11-19）：
 1. ✅ 修复数组环境闭合错误（\right.\\) → \right.\)）
 2. ✅ 清理图片属性残留（{width="..." height="..."}）
 
-v1.5 核心修复（2025-11-18）：
-1. ✅ 彻底修复数学公式双重包裹（$$\(...\)$$ → \(...\)）
-   - 改进 smart_inline_math 避免嵌套
-   - 新增 fix_double_wrapped_math 后处理清理
-   - 统一将所有 $$...$$ 转换为行内 \(...\)（examx 兼容）
-2. ✅ 改进单行选项展开（> A... B... C... D... → 多行）
-   - 更精确的选项分割正则
-   - 保留选项内的数学公式和标点
-3. ✅ 减少手动修正工作量：2小时 → 15分钟 (目标 -87.5%)
-
-v1.4 改进回顾：
-- 修复数学公式双重包裹（初版）
-- 自动展开单行选项（初版）
-- 统一数学公式格式（$$...$$ → \(...\)）
-
-v1.3 改进回顾：
-- 修复 docstring 警告，添加 $ 格式兜底转换
-- 改进"故选"清理规则
-- 统一中英文标点
-- 添加自动验证功能
-
 版本：v1.9.1
-作者：Claude
 日期：2025-11-26
 """
 
@@ -194,11 +194,15 @@ class MathStateMachine:
         """预处理多行数学环境（修复 P0-001, P0-002）
 
         处理跨多行的 $$...array/cases...$$ 块，避免被逐行拆散
+        
+        🆕 v1.9.3：修复 T008/T017 问题
+        - 只合并冒号分隔的 $$标签$$：$$公式$$ 模式
+        - 不合并逗号/顿号分隔的独立变量 $$P$$，$$B$$ 模式
         """
-        # 🆕 修复 P0-001a: 合并 $$...$$ 中文标点 $$...$$ 模式
+        # 🆕 修复 P0-001a: 只合并冒号分隔的模式（标签：公式）
         # 例如: $$C$$：$$x^{2}$$ → $$C：x^{2}$$
-        # 修复: 原正则丢失第二个公式内容，现在捕获并保留两个公式
-        text = re.sub(r'\$\$([^$]+)\$\$([：，。；、])\$\$([^$]+)\$\$', r'$$\1\2\3$$', text)
+        # 🔧 v1.9.3: 移除逗号/顿号/句号/分号，这些分隔的应该保持独立
+        text = re.sub(r'\$\$([^$]+)\$\$([：])\$\$([^$]+)\$\$', r'$$\1\2\3$$', text)
 
         # 🆕 修复 P0-002: 处理 \right.\ $$ 跨行边界模式
         # 情况1: \right.\ $$ （反斜杠+空格+双美元）
@@ -253,16 +257,22 @@ class MathStateMachine:
                 j = i + 7  # 跳过 \right.
                 found_boundary = False
 
-                # 🆕 情况1：\right.\ $$（反斜杠+空格+双美元，P0-CRITICAL）
+                # 🆕 v1.9.3：修复 \right.\ $$ 处理
+                # 生成 RIGHT_BOUNDARY token 后，还要生成 DOLLAR_DOUBLE token
+                # 这样 process 函数才能正确识别数学模式的结束
+
+                # 情况1：\right.\ $$（反斜杠+空格+双美元，P0-CRITICAL）
                 if j < n - 3 and text[j:j+4] == r'\ $$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                    i = j + 4  # 跳过 \ $$
+                    tokens.append((TokenType.DOLLAR_DOUBLE, '$$', j + 2))  # 添加结束符
+                    i = j + 4
                     found_boundary = True
 
-                # 🆕 情况2：\right.\\ $$（双反斜杠+空格+双美元）
+                # 情况2：\right.\\ $$（双反斜杠+空格+双美元）
                 elif j < n - 4 and text[j:j+5] == r'\\ $$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                    i = j + 5  # 跳过 \\ $$
+                    tokens.append((TokenType.DOLLAR_DOUBLE, '$$', j + 3))  # 添加结束符
+                    i = j + 5
                     found_boundary = True
 
                 # 情况3：\right. $$（空格+双美元）
@@ -273,19 +283,22 @@ class MathStateMachine:
                         k += 1
                     if k < n - 1 and text[k:k+2] == '$$':
                         tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                        i = k + 2  # 跳过所有空格和 $$
+                        tokens.append((TokenType.DOLLAR_DOUBLE, '$$', k))  # 添加结束符
+                        i = k + 2
                         found_boundary = True
 
                 # 情况4：\right.$$（直接跟双美元，无空格）
                 elif j < n - 1 and text[j:j+2] == '$$':
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                    i = j + 2  # 跳过 $$
+                    tokens.append((TokenType.DOLLAR_DOUBLE, '$$', j))  # 添加结束符
+                    i = j + 2
                     found_boundary = True
 
-                # 情况5：\right. $（单美元）
-                elif j < n and text[j] == '$':
+                # 情况5：\right. $（单美元）- 这种情况比较特殊，保持原样
+                elif j < n and text[j] == '$' and (j + 1 >= n or text[j+1] != '$'):
                     tokens.append((TokenType.RIGHT_BOUNDARY, r'\right.', i))
-                    i = j + 1  # 跳过 $
+                    tokens.append((TokenType.DOLLAR_SINGLE, '$', j))  # 添加结束符
+                    i = j + 1
                     found_boundary = True
 
                 # 情况6：\right.\)（已经正确闭合）
@@ -352,7 +365,12 @@ class MathStateMachine:
         return tokens
 
     def fix_malformed_patterns(self, text: str) -> str:
-        """修复格式错误的数学模式"""
+        """修复格式错误的数学模式（增强版 v1.9.2）
+        
+        🆕 v1.9.2: 处理更多的畸形模式
+        - 嵌套定界符：\(P,B\(，\)C,D\) → \(P,B\)，\(C,D\)
+        - 反向嵌套：\)...\( → 修正为正确顺序
+        """
         import re
 
         # 1. 删除空数学模式 \(\)
@@ -373,6 +391,29 @@ class MathStateMachine:
 
         # 4. 修复 \)(\( → )(  (错误的定界符包裹括号)
         text = re.sub(r'\\\)\(\\\(', ')(', text)
+        
+        # 🆕 v1.9.2: 修复嵌套定界符中的中文标点
+        # 模式: \(标点\) → 标点 (当标点是独立的数学块时)
+        # 例如: \(P,B\(，\)C,D\) 中的 \(，\) 应该变成 ，
+        chinese_punct = ['，', '。', '；', '：', '、', '！', '？']
+        for punct in chinese_punct:
+            # 匹配 \(标点\) 模式（标点单独在数学块中）
+            pattern = r'\\\(' + re.escape(punct) + r'\\\)'
+            text = re.sub(pattern, punct, text)
+        
+        # 修复 \(，\therefore\) 这类模式 → ，\(\therefore\)
+        text = re.sub(r'\\\(([，。；：、！？])\\\\therefore\\\)', r'\1\\(\\therefore\\)', text)
+        
+        # 修复 \(，\) 后面紧跟内容的情况（可能是嵌套错误）
+        # \(内容\(，\)内容\) → \(内容\)，\(内容\)
+        for punct in chinese_punct:
+            pattern = rf'(\\\([^)]+)\\\({re.escape(punct)}\\\)([^)]+\\\))'
+            replacement = r'\1\\)' + punct + r'\\(\2'
+            for _ in range(3):
+                new_text = re.sub(pattern, replacement, text)
+                if new_text == text:
+                    break
+                text = new_text
 
         return text
 
@@ -430,8 +471,94 @@ class MathStateMachine:
 
             return r'\(' + content + r'\)'
         
-        # 处理 \(...\) 内的标点
-        text = re.sub(r'\\\(([^)]*?)\\\)', replace_in_math, text, flags=re.DOTALL)
+        # 处理 \(...\) 内的标点（使用更宽松的匹配，支持嵌套括号）
+        def replace_in_math_v2(match):
+            content = match.group(1)
+            # 不处理 \text{}, \mbox{}, \mathrm{} 内的内容
+            protected = []
+            def save_text(m):
+                protected.append(m.group(0))
+                return f"@@TEXT_{len(protected)-1}@@"
+
+            # 保护各种文本命令
+            content = re.sub(r'\\text\{[^}]*\}', save_text, content)
+            content = re.sub(r'\\mbox\{[^}]*\}', save_text, content)
+            content = re.sub(r'\\mathrm\{[^}]*\}', save_text, content)
+            content = re.sub(r'\\textbf\{[^}]*\}', save_text, content)
+            content = re.sub(r'\\textit\{[^}]*\}', save_text, content)
+
+            # 替换全角标点
+            for full, half in punct_map.items():
+                content = content.replace(full, half)
+
+            # 恢复保护的内容
+            for i, p in enumerate(protected):
+                content = content.replace(f"@@TEXT_{i}@@", p)
+
+            return r'\(' + content + r'\)'
+        
+        # 🆕 v1.9.2: 使用基于位置的匹配来处理嵌套括号
+        def process_all_math_blocks(text: str) -> str:
+            """逐个处理所有数学块，支持嵌套括号"""
+            result = []
+            i = 0
+            n = len(text)
+            
+            while i < n:
+                # 查找 \(
+                if i < n - 1 and text[i:i+2] == r'\(':
+                    # 找到对应的 \)
+                    start = i
+                    depth = 1
+                    j = i + 2
+                    
+                    while j < n - 1 and depth > 0:
+                        if text[j:j+2] == r'\(':
+                            depth += 1
+                            j += 2
+                        elif text[j:j+2] == r'\)':
+                            depth -= 1
+                            if depth == 0:
+                                break
+                            j += 2
+                        else:
+                            j += 1
+                    
+                    if depth == 0:
+                        # 成功匹配，处理内容
+                        math_content = text[start+2:j]
+                        
+                        # 保护 \text{} 等
+                        protected = []
+                        def save_text(m):
+                            protected.append(m.group(0))
+                            return f"@@TEXT_{len(protected)-1}@@"
+                        
+                        processed = re.sub(r'\\text\{[^}]*\}', save_text, math_content)
+                        processed = re.sub(r'\\mbox\{[^}]*\}', save_text, processed)
+                        processed = re.sub(r'\\mathrm\{[^}]*\}', save_text, processed)
+                        
+                        # 替换全角标点
+                        for full, half in punct_map.items():
+                            processed = processed.replace(full, half)
+                        
+                        # 恢复保护的内容
+                        for idx, p in enumerate(protected):
+                            processed = processed.replace(f"@@TEXT_{idx}@@", p)
+                        
+                        result.append(r'\(' + processed + r'\)')
+                        i = j + 2
+                    else:
+                        # 未能找到匹配的 \)，保持原样
+                        result.append(text[i])
+                        i += 1
+                else:
+                    result.append(text[i])
+                    i += 1
+            
+            return ''.join(result)
+        
+        text = process_all_math_blocks(text)
         
         # 🆕 P1-003: 同样处理 $$...$$ 内的标点（转换前）
         def replace_in_dollar(match):
@@ -588,42 +715,76 @@ class MathStateMachine:
         return re.sub(r'\\\(([^)]*?)\\\)', process_math_block, text, flags=re.DOTALL)
 
     def balance_delimiters(self, text: str) -> str:
-        """平衡数学定界符"""
+        """平衡数学定界符（增强版 v1.9.3）
+        
+        🆕 v1.9.3 修复:
+        - 移除了错误的 connector 前添加 \) 的逻辑
+        - 该逻辑假设 \therefore 等符号前一定有数学内容需要闭合
+        - 但实际上这些符号可能出现在行首，前面是普通文本或中文标点
+        
+        🆕 v1.9.2 改进:
+        1. 支持跨行数学环境（array/cases）的平衡检查
+        3. 全局平衡检查和修复
+        """
         import re
 
-        # 忽略注释行
+        # 步骤1：处理跨行数学环境
+        # 检测 \(\left\{ \begin{array} 但没有对应的 \end{array} \right.\)
         lines = text.split('\n')
         processed_lines = []
-
-        for line in lines:
+        pending_close = 0  # 累积需要闭合的数量
+        in_multiline_math = False
+        
+        for i, line in enumerate(lines):
             if line.strip().startswith('%'):
                 processed_lines.append(line)
                 continue
 
-            # 在每行内检查平衡
-            opens = list(re.finditer(r'\\\(', line))
-            closes = list(re.finditer(r'\\\)', line))
+            # 检测跨行数学环境开始
+            if re.search(r'\\\(.*\\begin\{(array|cases|matrix|pmatrix|bmatrix)\}', line) and \
+               not re.search(r'\\end\{(array|cases|matrix|pmatrix|bmatrix)\}.*\\\)', line):
+                in_multiline_math = True
+                pending_close += 1
+            
+            # 检测跨行数学环境结束
+            if in_multiline_math and re.search(r'\\end\{(array|cases|matrix|pmatrix|bmatrix)\}', line):
+                # 检查这行是否有 \)
+                if not re.search(r'\\\)', line):
+                    # 在 \right. 或行尾添加 \)
+                    if r'\right.' in line:
+                        line = line.replace(r'\right.', r'\right.\)')
+                    else:
+                        line = line + r'\)'
+                    pending_close = max(0, pending_close - 1)
+                in_multiline_math = False
 
-            # 统计差值
-            open_count = len(opens)
-            close_count = len(closes)
+            # 在每行内检查平衡（仅对非跨行环境）
+            if not in_multiline_math:
+                opens = list(re.finditer(r'\\\(', line))
+                closes = list(re.finditer(r'\\\)', line))
+                open_count = len(opens)
+                close_count = len(closes)
 
-            if open_count > close_count:
-                # 缺少 \)，在行尾补充
-                line = line + r'\)' * (open_count - close_count)
-            elif close_count > open_count:
-                # 多余的 \)，尝试删除行首的多余闭合符
-                diff = close_count - open_count
-                for _ in range(diff):
-                    # 删除第一个没有匹配的 \)
-                    line = re.sub(r'^([^\\]*)\\\)', r'\1', line, count=1)
+                if open_count > close_count:
+                    # 检查是否是跨行开始
+                    if not re.search(r'\\begin\{(array|cases|matrix)', line):
+                        line = line + r'\)' * (open_count - close_count)
+                elif close_count > open_count:
+                    diff = close_count - open_count
+                    for _ in range(diff):
+                        line = re.sub(r'^([^\\]*)\\\)', r'\1', line, count=1)
 
             processed_lines.append(line)
 
         return '\n'.join(processed_lines)
     
     def final_cleanup(self, text: str) -> str:
-        """最终清理和验证"""
+        """最终清理和验证（增强版 v1.9.2）
+        
+        🆕 v1.9.2 改进:
+        1. 全局定界符平衡修复
+        2. 识别并修复孤立的数学内容
+        """
         import re
         
         if not text:
@@ -640,12 +801,59 @@ class MathStateMachine:
             text = re.sub(r'\\\(\\\(', r'\\(', text)
             text = re.sub(r'\\\)\\\)', r'\\)', text)
         
-        # 4. 验证定界符平衡（仅输出警告，不自动修复）
+        # 4. 🆕 全局定界符平衡修复
         open_count = len(re.findall(r'\\\(', text))
         close_count = len(re.findall(r'\\\)', text))
         
         if open_count != close_count:
-            print(f"⚠️ 警告：定界符不平衡！\\( = {open_count}, \\) = {close_count}")
+            diff = open_count - close_count
+            print(f"⚠️ 警告：定界符不平衡！\\( = {open_count}, \\) = {close_count}, diff = {diff}")
+            
+            # 尝试智能修复
+            if diff > 0:
+                # \( 多于 \)，需要添加 \)
+                # 查找可能缺少 \) 的位置：行尾有 \( 但没有对应的 \)
+                lines = text.split('\n')
+                fixed_lines = []
+                remaining_diff = diff
+                
+                for line in lines:
+                    if remaining_diff > 0 and not line.strip().startswith('%'):
+                        line_opens = len(re.findall(r'\\\(', line))
+                        line_closes = len(re.findall(r'\\\)', line))
+                        line_diff = line_opens - line_closes
+                        
+                        if line_diff > 0:
+                            # 在行尾添加缺少的 \)
+                            line = line + r'\)' * min(line_diff, remaining_diff)
+                            remaining_diff -= line_diff
+                    fixed_lines.append(line)
+                
+                text = '\n'.join(fixed_lines)
+            elif diff < 0:
+                # \) 多于 \(，需要移除多余的 \) 或添加 \(
+                # 查找行首孤立的 \)
+                lines = text.split('\n')
+                fixed_lines = []
+                remaining_diff = abs(diff)
+                
+                for line in lines:
+                    if remaining_diff > 0 and not line.strip().startswith('%'):
+                        # 检查行首是否有孤立的 \)
+                        while remaining_diff > 0 and re.match(r'^\s*\\\)', line):
+                            line = re.sub(r'^(\s*)\\\)', r'\1', line, count=1)
+                            remaining_diff -= 1
+                    fixed_lines.append(line)
+                
+                text = '\n'.join(fixed_lines)
+            
+            # 重新验证
+            new_open = len(re.findall(r'\\\(', text))
+            new_close = len(re.findall(r'\\\)', text))
+            if new_open != new_close:
+                print(f"⚠️ 自动修复后仍不平衡：\\( = {new_open}, \\) = {new_close}")
+            else:
+                print(f"✅ 定界符已自动平衡：\\( = {new_open}, \\) = {new_close}")
         
         return text
 
@@ -763,7 +971,7 @@ class MathStateMachine:
                 i += 1
                 continue
             if t_type == TokenType.DOLLAR_DOUBLE:
-                # 收集直到下一个 $$
+                # 收集直到下一个 $$ 或 RIGHT_BOUNDARY
                 i += 1
                 buf = []
                 while i < len(tokens):
@@ -771,6 +979,24 @@ class MathStateMachine:
                     if tt == TokenType.DOLLAR_DOUBLE:
                         i += 1
                         break
+                    # 🆕 v1.9.4：遇到 DOLLAR_SINGLE，视为 $$ 的错误结束符（$$...$模式）
+                    # 将 $ 作为结束符，不收集到 buf 中
+                    if tt == TokenType.DOLLAR_SINGLE:
+                        i += 1
+                        break
+                    # 🆕 v1.9.3：遇到 RIGHT_BOUNDARY，输出它然后检查下一个是否是 $$
+                    if tt == TokenType.RIGHT_BOUNDARY:
+                        buf.append(r'\right.')
+                        i += 1
+                        # 检查下一个 token 是否是 $$ 结束符
+                        if i < len(tokens) and tokens[i][0] == TokenType.DOLLAR_DOUBLE:
+                            i += 1  # 跳过结束的 $$
+                            break
+                        # 也检查 DOLLAR_SINGLE（$$...\right.$模式）
+                        if i < len(tokens) and tokens[i][0] == TokenType.DOLLAR_SINGLE:
+                            i += 1
+                            break
+                        continue
                     buf.append(tv)
                     i += 1
                 out.append(r'\(' + ''.join(buf).strip() + r'\)')
@@ -836,7 +1062,7 @@ math_sm = MathStateMachine()
 
 # ==================== 配置 ====================
 
-VERSION = "v1.9.1"
+VERSION = "v1.9.6"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -1019,23 +1245,69 @@ def copy_images_to_output(images_dir: Path, output_dir: Path) -> int:
 # ==================== LaTeX 处理函数 ====================
 
 def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
-    """转义 LaTeX 特殊字符"""
+    """转义 LaTeX 特殊字符（增强版 v1.9.2）
+    
+    🆕 v1.9.2 改进:
+    1. 正确保护数学模式内的 & （用于 matrix/array 列分隔）
+    2. 保护已转义的字符（\&, \%, \#）
+    3. 保护 LaTeX 命令（\text{}, \left, \right 等）
+    """
+    if not text:
+        return text
+        
+    # 保护已经转义的字符
+    protected_escaped = []
+    def save_escaped(match):
+        protected_escaped.append(match.group(0))
+        return f"@@ESCAPED_{len(protected_escaped)-1}@@"
+    
+    # 保护已转义的特殊字符
+    text = re.sub(r'\\[%&#~]', save_escaped, text)
+    
     if in_math_mode:
-        for char in ["%", "&", "#", "~"]:
+        # 在数学模式内，不转义 &（用于 array/matrix 列分隔）
+        for char in ["%", "#", "~"]:
             if char in LATEX_SPECIAL_CHARS:
                 text = text.replace(char, LATEX_SPECIAL_CHARS[char])
     else:
-        protected = []
+        # 保护注释
+        protected_comments = []
         def save_comment(match):
-            protected.append(match.group(0))
-            return f"@@COMMENT_{len(protected)-1}@@"
+            protected_comments.append(match.group(0))
+            return f"@@COMMENT_{len(protected_comments)-1}@@"
         text = re.sub(r'%.*$', save_comment, text, flags=re.MULTILINE)
         
+        # 保护数学模式内的 &（用于 array/matrix/tabular）
+        protected_math = []
+        def save_math(match):
+            protected_math.append(match.group(0))
+            return f"@@MATH_{len(protected_math)-1}@@"
+        
+        # 保护 \(...\) 和 \[...\] 内的内容
+        text = re.sub(r'\\\([^)]*\\\)', save_math, text, flags=re.DOTALL)
+        text = re.sub(r'\\\[[^\]]*\\\]', save_math, text, flags=re.DOTALL)
+        
+        # 保护 tabular/array/matrix 环境
+        text = re.sub(r'\\begin\{(tabular|array|matrix|pmatrix|bmatrix|vmatrix|cases)\}.*?\\end\{\1\}', 
+                       save_math, text, flags=re.DOTALL)
+        
+        # 转义特殊字符
         for char, escaped in LATEX_SPECIAL_CHARS.items():
             text = text.replace(char, escaped)
         
-        for i, comment in enumerate(protected):
+        # 恢复保护的数学模式
+        for i, math_block in enumerate(protected_math):
+            text = text.replace(f"@@MATH_{i}@@", math_block)
+        
+        # 恢复保护的注释
+        for i, comment in enumerate(protected_comments):
             text = text.replace(f"@@COMMENT_{i}@@", comment)
+    
+    # 恢复保护的已转义字符
+    for i, escaped in enumerate(protected_escaped):
+        text = text.replace(f"@@ESCAPED_{i}@@", escaped)
+    
+    # 清理可能的异常模式
     text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
 
     # 统一常见数学符号的排版
@@ -2183,8 +2455,10 @@ def fix_broken_set_definitions(text: str) -> str:
     text = pattern1.sub(r'\1\\text{\2}\\left.', text)
     
     # 模式2: \right.\ $$中文（行尾截断）
+    # 🔧 v1.9.5：增加限制条件，避免匹配 \right.\ $$，\n 这种标点后换行的模式
+    # 要求中文内容至少包含一个中文字符，而不仅仅是标点
     pattern2 = re.compile(
-        r'(\\right\.)\s*\\\s*\$\$([^$]+)$',
+        r'(\\right\.)\s*\\\s*\$\$([\u4e00-\u9fff][^$]*)$',
         re.MULTILINE
     )
     text = pattern2.sub(r'\1\\text{\2}', text)
@@ -2278,57 +2552,79 @@ def fix_right_boundary_errors(text: str) -> str:
 
 
 def fix_reversed_delimiters(text: str) -> str:
-    r"""修复反向定界符 - 使用栈算法
+    r"""修复反向定界符 - 使用栈算法（跨行处理）
     
-    检测没有匹配的 \) 并删除它们
+    检测没有匹配的 \) 并删除它们。
+    
+    🆕 v1.9.4: 改为全文跨行处理，而非逐行处理，以正确处理多行数学块如：
+        联立\(\left\{ \begin{array}{r}
+        x = my + \frac{3}{2} \\
+        y^{2} = 6x
+        \end{array} \right.\)
+    
+    逐行处理会错误地在第一行末尾添加 \)，因为该行的 \( 在后续行才闭合。
     """
     import re
     
     if not text:
         return text
     
+    # 全文处理：使用栈检测不匹配的定界符
+    stack = []  # 存储 \( 的位置
+    unmatched_close = []  # 存储没有匹配的 \) 的位置
+    
+    # 找到所有定界符（排除注释行中的）
     lines = text.split('\n')
-    fixed_lines = []
-    
+    comment_ranges = []  # 记录注释行的字符范围
+    pos = 0
     for line in lines:
-        # 跳过注释行
         if line.strip().startswith('%'):
-            fixed_lines.append(line)
-            continue
-        
-        # 使用栈检测不匹配的定界符
-        stack = []  # 存储 \( 的位置
-        unmatched_close = []  # 存储没有匹配的 \) 的位置
-        
-        # 找到所有定界符
-        for m in re.finditer(r'\\\(|\\\)', line):
-            delim = m.group(0)
-            pos = m.start()
-            
-            if delim == r'\(':
-                stack.append(pos)
-            else:  # \)
-                if stack:
-                    stack.pop()  # 找到匹配
-                else:
-                    unmatched_close.append(pos)  # 没有匹配的 \)
-        
-        # 删除没有匹配的 \)（从后往前删除以保持位置正确）
-        if unmatched_close:
-            line_chars = list(line)
-            for pos in reversed(unmatched_close):
-                # 删除 \) (两个字符)
-                if pos + 1 < len(line_chars):
-                    del line_chars[pos:pos+2]
-            line = ''.join(line_chars)
-        
-        # 处理没有匹配的 \(（在行尾补充 \)）
-        if stack:
-            line = line + r'\)' * len(stack)
-        
-        fixed_lines.append(line)
+            comment_ranges.append((pos, pos + len(line)))
+        pos += len(line) + 1  # +1 for \n
     
-    return '\n'.join(fixed_lines)
+    def is_in_comment(position):
+        for start, end in comment_ranges:
+            if start <= position < end:
+                return True
+        return False
+    
+    for m in re.finditer(r'\\\(|\\\)', text):
+        if is_in_comment(m.start()):
+            continue
+        delim = m.group(0)
+        pos = m.start()
+        
+        if delim == r'\(':
+            stack.append(pos)
+        else:  # \)
+            if stack:
+                stack.pop()  # 找到匹配
+            else:
+                unmatched_close.append(pos)  # 没有匹配的 \)
+    
+    # 如果存在不匹配的定界符，需要修复
+    if not unmatched_close and not stack:
+        return text  # 已经平衡，无需修改
+    
+    # 删除没有匹配的 \)（从后往前删除以保持位置正确）
+    result = text
+    if unmatched_close:
+        text_chars = list(result)
+        for pos in reversed(unmatched_close):
+            # 删除 \) (两个字符)
+            if pos + 1 < len(text_chars):
+                del text_chars[pos:pos+2]
+        result = ''.join(text_chars)
+    
+    # 注意：不再为未匹配的 \( 在行尾添加 \)
+    # 这是因为多行数学块的 \( 可能在后续行才闭合，逐行添加会造成错误
+    # 如果真的有未闭合的 \(，应该由其他后处理函数或手动修复
+    # （只记录警告，不自动添加）
+    if stack:
+        # 可以选择打印警告，但不自动修复
+        pass
+    
+    return result
 
 
 def balance_array_and_cases_env(text: str) -> str:
@@ -2401,49 +2697,96 @@ def fix_specific_reversed_pairs(text: str) -> str:
 
 
 def fix_simple_reversed_inline_pairs(text: str) -> str:
-    r"""🆕 v1.8.8：极度保守的反向定界符自动修复，仅在简单场景启用
+    r"""🆕 v1.8.8 / v1.9.3：极度保守的反向定界符自动修复
 
-    只修复形如 \)...\( 的模式，且中间只包含空白/中英文标点的情况：
-    例如：
-        "求点\) \(X_2 所有可能的坐标" → "求点\( \)X_2 所有可能的坐标"
-        "其中\) ，\(x_i" → "其中\( ，\)x_i"
+    只修复真正的反向定界符：即 \) 之前没有匹配的 \(，且 \( 之后没有匹配的 \)。
 
-    约束：
-    - 仅当 \) 和 \( 之间只有空白字符和常见标点时才修复
-    - 其他情况一律不改，避免误伤
-    - 保留中间内容原样，仅反转定界符顺序
+    v1.9.3 修复：不再错误地合并两个独立的正确数学块，例如：
+    - 正确保留：\(AP\bot AB\)，\(AP\bot AD\) （两个独立块，不应修改）
+    - 仅修复真正反向的：求点\) X_2 \(所有可能 → 求点\( X_2 \)所有可能
 
-    安全性：非常保守，只处理明显的简单错误
+    安全性：使用定界符平衡检查，确保只修复真正悬空的定界符对
     """
     if not text:
         return text
 
     import re
 
-    # 核心模式：\) <中间若干字符> \(
-    pattern = re.compile(r'(\\\))([^\n]*?)(\\\()')
-    math_token_pattern = re.compile(
-        r'(=|\\frac|\\sqrt|\\sum|\\prod|\\int|\\lim|\\sin|\\cos|\\tan|\\log|'
-        r'\\ln|\\times|\\cdot|\\pm|\\mp|\\leq|\\geq|\\approx|\\sim|\\because|'
-        r'\\therefore|[+\-*/])'
-    )
+    # 逐行处理，避免跨行匹配带来的复杂性
+    lines = text.split('\n')
+    fixed_lines = []
 
-    def _replace(m: re.Match) -> str:
-        middle = m.group(2)
-        # 只允许空白和常见标点（中英文）
-        if re.fullmatch(r'[\s.,，。；;:：、!?！？"""\'\'《》（）()…—\-]*', middle or ''):
-            # 安全：直接反转顺序，保持中间内容不变
-            return r'\(' + middle + r'\)'
-        # 如果中间包含常见数学符号/命令，也视为误反转，进行修复
-        if middle and len(middle) <= 160 and math_token_pattern.search(middle):
-            if '\\(' in middle or '\\)' in middle:
-                return m.group(0)
-            return r'\(' + middle + r'\)'
-        else:
-            # 保守：不碰
-            return m.group(0)
+    for line in lines:
+        # 跳过注释行
+        if line.strip().startswith('%'):
+            fixed_lines.append(line)
+            continue
 
-    return pattern.sub(_replace, text)
+        # 🆕 v1.9.5：跳过多行数学块的中间行
+        # 如果行包含 \begin{array/cases 或 \end{array/cases}，说明是多行块的一部分
+        # 这些行的定界符可能是跨行配对的，不应该按单行处理
+        if re.search(r'\\begin\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)', line) or \
+           re.search(r'\\end\{(array|cases|matrix|pmatrix|bmatrix|vmatrix)', line):
+            fixed_lines.append(line)
+            continue
+
+        # 找到所有定界符的位置
+        delimiters = []
+        for m in re.finditer(r'\\\(|\\\)', line):
+            delimiters.append((m.start(), m.group(0)))
+
+        if len(delimiters) < 2:
+            fixed_lines.append(line)
+            continue
+
+        # 使用栈算法找到真正悬空的 \) 和 \(
+        stack = []  # 存储未匹配 \( 的索引
+        unmatched_close_indices = []  # 存储悬空 \) 在 delimiters 中的索引
+        unmatched_open_indices = []  # 存储悬空 \( 在 delimiters 中的索引
+
+        for i, (pos, delim) in enumerate(delimiters):
+            if delim == r'\(':
+                stack.append(i)
+            else:  # \)
+                if stack:
+                    stack.pop()  # 匹配成功
+                else:
+                    unmatched_close_indices.append(i)  # 悬空的 \)
+
+        # 栈中剩余的是悬空的 \(
+        unmatched_open_indices = stack
+
+        # 只有当存在悬空的 \) 且紧随其后有悬空的 \( 时，才考虑修复
+        # 找到 (悬空\), 悬空\() 配对
+        pairs_to_fix = []
+        for close_idx in unmatched_close_indices:
+            # 找紧随其后的悬空 \(
+            for open_idx in unmatched_open_indices:
+                if open_idx > close_idx:
+                    # 检查中间是否只有简单内容（标点、空白、简单字母数字）
+                    close_pos = delimiters[close_idx][0]
+                    open_pos = delimiters[open_idx][0]
+                    middle = line[close_pos + 2:open_pos]  # 跳过 \) 的两个字符
+
+                    # 允许空白、标点、简单字母数字和下划线（类似变量名）
+                    # 但不允许复杂的 LaTeX 命令或嵌套定界符
+                    if re.fullmatch(r'[\s.,，。；;:：、!?！？"""\'\'《》（）()…—\-A-Za-z0-9_{}]*', middle or ''):
+                        pairs_to_fix.append((close_idx, open_idx, middle))
+                        break  # 每个悬空 \) 只配对一个悬空 \(
+
+        # 从后往前修复（保持位置正确）
+        line_chars = list(line)
+        for close_idx, open_idx, middle in reversed(pairs_to_fix):
+            close_pos = delimiters[close_idx][0]
+            open_pos = delimiters[open_idx][0]
+            # 替换 \) 为 \(
+            line_chars[close_pos:close_pos + 2] = list(r'\(')
+            # 替换 \( 为 \)（注意：由于前面的替换，长度不变）
+            line_chars[open_pos:open_pos + 2] = list(r'\)')
+
+        fixed_lines.append(''.join(line_chars))
+
+    return '\n'.join(fixed_lines)
 
 
 def collect_reversed_math_samples(text: str, slug: str = "") -> None:
@@ -3785,6 +4128,56 @@ def ensure_choices_environment(lines: List[str], has_options: bool) -> List[str]
     return lines
 
 
+def _smart_replace_because_therefore(text: str) -> str:
+    """智能替换 ∵/∴ 符号为 LaTeX 命令
+    
+    🆕 v1.9.6：根据符号位置决定是否需要包裹在数学模式内
+    
+    规则：
+    1. 如果 ∵/∴ 在 $$...$$ 内部，直接替换为 \\because/\\therefore
+    2. 如果 ∵/∴ 在 $$...$$ 外部，替换为 \\(\\because\\)/\\(\\therefore\\)
+    
+    判断方法：计算符号前的 $$ 数量，奇数 = 在数学内，偶数 = 在数学外
+    """
+    if not text:
+        return text
+    
+    def replace_symbol(symbol: str, latex_cmd: str, text: str) -> str:
+        if symbol not in text:
+            return text
+        
+        result = []
+        last_pos = 0
+        
+        for i, char in enumerate(text):
+            if char == symbol:
+                # 计算此位置前 $$ 的数量
+                before = text[:i]
+                dollar_count = before.count('$$')
+                
+                # 奇数 = 在数学模式内，偶数 = 在数学模式外
+                in_math = dollar_count % 2 == 1
+                
+                result.append(text[last_pos:i])
+                
+                if in_math:
+                    # 在数学模式内，直接替换
+                    result.append(f'\\{latex_cmd} ')
+                else:
+                    # 在数学模式外，需要包裹
+                    result.append(f'\\(\\{latex_cmd}\\) ')
+                
+                last_pos = i + 1
+        
+        result.append(text[last_pos:])
+        return ''.join(result)
+    
+    text = replace_symbol('∵', 'because', text)
+    text = replace_symbol('∴', 'therefore', text)
+    
+    return text
+
+
 # DEPRECATED: 状态机已避免这些行内异常，保留兜底测试使用
 def fix_inline_math_glitches(text: str) -> str:
     """🆕 修复行内数学的各种异常模式
@@ -3842,10 +4235,10 @@ def process_text_for_latex(text: str, is_math_heavy: bool = False) -> str:
     text = re.sub(r'\\\\right\.\s*\\\\\\\)', r'\\\\right.', text)
     text = re.sub(r'\\\\right\.\\\\\+\)', r'\\\\right.', text)
 
-    # Unicode 符号替换（先行包裹为数学，后续状态机会规范）
-    # ∵/∴ 直接替换为命令（不再包裹美元，避免生成孤立 $）
+    # Unicode 符号替换（智能处理 ∵/∴）
+    # 🆕 v1.9.6：根据符号位置决定是否需要包裹在数学模式内
     if '∵' in text or '∴' in text:
-        text = text.replace('∵', '\\because ').replace('∴', '\\therefore ')
+        text = _smart_replace_because_therefore(text)
 
     # 非数学模式下的 LaTeX 特殊字符转义
     if not is_math_heavy:
@@ -3926,25 +4319,14 @@ def fix_common_issues_v2(text: str) -> str:
     # 匹配单独一行只包含 $ 或行首/行末的单美元
     text = re.sub(r'(^|\s)(\$)(?=\s|$)', lambda m: m.group(1), text)
     
-    # 🆕 v1.8.6: 修复被错误分隔的数学模式
+    # 🔧 v1.9.3: 移除 v1.8.6 的错误合并逻辑
+    # 原策略错误地将 \(D\)均在球\(O\) 合并成 \(D均在球O\)
+    # 正确行为是保持各个独立变量的数学模式分隔
     # 
-    # 问题：$$text1$$中文$$text2$$ 被转换成 \(text1\)中文\(text2\)
-    # 但实际上整行应该在一个数学模式内（特别是在 explain 中）
-    #
-    # 策略1: 移除 \)[1-3个中文]\( 中间的数学分隔符
-    # 例如：\)的\( → 的，\)平面\( → 平面
-    text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
-    
-    # 策略2: 处理 \right. 后跟中文和数学的情况
-    # \right.\)，得\( → \right.，得
-    text = re.sub(r'(\\right\.)\\\)([，。、；：,]{0,2}[\u4e00-\u9fa5]{0,3})\\\(', r'\1\2', text)
-    
-    # 策略3: 只合并被错误拆分的极短距离行内数学模式
-    # 问题：$$A$$的$$B$$ → \(A\)的\(B\) （这是正确的，不应该合并）
-    # 问题：$$text$$，得$$x$$ → \(text\)，得\(x\) （这也是正确的，不应该合并）
-    # 但是：如果只有1-3个中文字符被包裹，可能是错误：$$word$$中$$text$$ → 应该是 \(word中text\)
-    # 解决方案：只合并 \)和\(之间只有1-3个**纯中文**字符的情况
-    text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
+    # 已删除的错误代码：
+    # - 策略1: text = re.sub(r'\\\)([\u4e00-\u9fa5]{1,3})\\\(', r'\1', text)
+    # - 策略2: text = re.sub(r'(\\right\.)\\\)...', r'\1\2', text)
+    # - 策略3: 重复的策略1
     
     return text
 
@@ -4673,9 +5055,27 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
     # 最终兜底：规范/移除残留的 $$ 显示数学标记
     # 1) 将成对 $$...$$ 统一为行内 \(...\)（与 smart_inline_math 行为一致）
-    result = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', result, flags=re.DOTALL)
-    # 2) 清理任何残留的孤立 $$（避免编译错误）
-    result = result.replace('$$', '')
+    # 🆕 v1.9.3：跳过注释行，避免破坏 CONTEXT 注释
+    def convert_display_math_skip_comments(text: str) -> str:
+        lines = text.split('\n')
+        result_lines = []
+        for line in lines:
+            if line.strip().startswith('%'):
+                # 注释行：不处理，直接保留（包括 $$...$$）
+                result_lines.append(line)
+            else:
+                # 非注释行：转换 $$...$$ 为 \(...\)
+                line = re.sub(r'\$\$\s*(.+?)\s*\$\$', r'\\(\1\\)', line)
+                result_lines.append(line)
+        return '\n'.join(result_lines)
+    
+    result = convert_display_math_skip_comments(result)
+    # 2) 清理任何残留的孤立 $$（避免编译错误）- 同样跳过注释行
+    lines = result.split('\n')
+    result = '\n'.join(
+        line if line.strip().startswith('%') else line.replace('$$', '')
+        for line in lines
+    )
 
     # 🆕 后备占位符转换：清理任何残留的 Markdown 图片标记
     result = cleanup_remaining_image_markers(result)
