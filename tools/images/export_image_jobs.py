@@ -37,6 +37,7 @@ export_image_jobs.py - 从 converted_exam.tex 提取 IMAGE_TODO 块生成 JSONL
 
 import re
 import json
+import shutil
 import argparse
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
@@ -232,12 +233,13 @@ def parse_image_todos(tex_file: Path) -> List[Dict]:
     return image_jobs
 
 
-def export_image_jobs(tex_files: List[Path], output_file: Path) -> int:
+def export_image_jobs(tex_files: List[Path], output_file: Path, copy_images: bool = False) -> int:
     """导出所有图片任务到 JSONL 文件
 
     Args:
         tex_files: TeX 文件列表
         output_file: 输出 JSONL 文件路径
+        copy_images: 是否复制图片到 content/exams 目录
 
     Returns:
         导出的任务数量
@@ -256,6 +258,33 @@ def export_image_jobs(tex_files: List[Path], output_file: Path) -> int:
         output_file.parent.mkdir(parents=True, exist_ok=True)
         output_file.write_text('', encoding='utf-8')
         return 0
+
+    # 复制图片到 content/exams 目录（如果启用）
+    if copy_images:
+        print("\n📦 复制图片到 content/exams 目录...")
+        copy_count = 0
+        for job in all_jobs:
+            # 处理 LaTeX 转义字符：将 \_ 替换为 _
+            src_path_str = job['path'].replace(r'\_', '_')
+            src_path = Path(src_path_str)
+            # 目标目录：<exam_dir>/images/
+            dest_dir = Path(job['exam_dir']) / 'images'
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_path = dest_dir / src_path.name
+            
+            if src_path.exists():
+                try:
+                    shutil.copy2(src_path, dest_path)
+                    copy_count += 1
+                    print(f"   ✓ {src_path.name} → {dest_path.relative_to(Path(job['exam_dir']).parent.parent.parent)}")
+                    # 更新 job 中的 local_path 字段（用于 includegraphics fallback）
+                    job['local_path'] = str(dest_path)
+                except Exception as e:
+                    print(f"   ✗ 复制失败 {src_path.name}: {e}")
+            else:
+                print(f"   ⚠️  源文件不存在: {src_path}")
+        
+        print(f"   共复制 {copy_count} 张图片")
 
     # 写入 JSONL
     output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -304,6 +333,13 @@ def main():
         help='输出 JSONL 文件路径（默认：与第一个输入文件同目录的 image_jobs.jsonl）'
     )
 
+    parser.add_argument(
+        '--copy-images',
+        action='store_true',
+        default=False,
+        help='复制图片到 content/exams/auto/<slug>/images/ 目录（作为 PNG fallback）'
+    )
+
     args = parser.parse_args()
 
     # 确定输出文件路径
@@ -317,20 +353,27 @@ def main():
     print("━" * 60)
     print(f"输入文件: {len(args.files)} 个")
     print(f"输出文件: {args.output}")
+    if args.copy_images:
+        print(f"📦 复制图片: 是")
     print()
 
     # 导出任务
-    count = export_image_jobs(args.files, args.output)
+    count = export_image_jobs(args.files, args.output, copy_images=args.copy_images)
 
     print("\n" + "━" * 60)
     if count > 0:
         print(f"✅ 导出完成，共 {count} 个图片任务")
         print(f"📄 输出文件: {args.output}")
+        if args.copy_images:
+            print(f"📁 图片目录: <exam_dir>/images/")
         print("\n💡 下一步:")
         print("  1. AI Agent 读取 image_jobs.jsonl")
         print("  2. 对每个任务，使用 view 工具查看图片")
         print("  3. 生成对应的 TikZ 代码")
         print("  4. 替换 TeX 文件中的 TODO 占位符")
+        if args.copy_images:
+            print("\n💡 PNG Fallback:")
+            print("  如果没时间画 TikZ，可用 \\includegraphics{images/<filename>.png}")
     else:
         print("⚠️  未找到任何图片任务")
 
