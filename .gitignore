@@ -50,7 +50,7 @@ settings/metadata.tex
 word_to_tex/venv/
 word_to_tex/figures/raw/
 word_to_tex/input/
-word_to_tex/output/figures/
+word_to_tex/output/
 
 # Temporary backups
 tmp/
