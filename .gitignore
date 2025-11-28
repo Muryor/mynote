@@ -47,6 +47,7 @@ content/exams/auto/*/figures/
 word_to_tex/venv/
 word_to_tex/figures/raw/
 word_to_tex/input/
+word_to_tex/output/figures/
 
 # Temporary backups
 tmp/
