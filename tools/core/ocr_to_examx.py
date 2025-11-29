@@ -2695,6 +2695,115 @@ def fix_nested_subquestions(text: str) -> str:
     return text
 
 
+def fix_spurious_items_in_enumerate(text: str) -> str:
+    r"""🆕 v1.9.6：合并 enumerate 中错误的多余 \item
+    
+    问题模式：
+    在 enumerate 环境中，如果一个子问题跨多行，每行可能都被错误地加上 \item。
+    例如：
+      \item 若角平分线交AC于点D，
+      \item 且AD = 2DC，
+      \item 求BD．
+    
+    应该合并为：
+      \item 若角平分线交AC于点D，且AD = 2DC，求BD．
+    
+    保守策略：
+    - 只合并那些不以小问编号（如 "①②" 或 "(1)(2)"）开头的 \item
+    - 如果 \item 内容以 "求"、"证明"、"设" 等动词开头，保留为独立 \item
+    """
+    import re
+    
+    lines = text.split('\n')
+    result = []
+    i = 0
+    n = len(lines)
+    
+    # 用于判断是否是子问题开头的模式
+    subq_start_patterns = [
+        r'^\\item\s*[\(（][1-9ivxIVX]+[\)）]',  # (1), (i), （1）, （i）
+        r'^\\item\s*[①②③④⑤⑥⑦⑧⑨⑩]',  # ①②③...
+        r'^\\item\s*\[[^\]]+\]',  # \item[(i)]
+        r'^\\item\s*(求证|证明|求|设|解)',  # 以动词开头
+    ]
+    
+    def is_subq_start(line: str) -> bool:
+        """判断是否是子问题开头"""
+        for pattern in subq_start_patterns:
+            if re.match(pattern, line.strip()):
+                return True
+        return False
+    
+    in_enumerate = False
+    enumerate_depth = 0
+    pending_item = None  # 待合并的 \item 行
+    
+    while i < n:
+        line = lines[i]
+        stripped = line.strip()
+        
+        # 检测 enumerate 环境
+        if r'\begin{enumerate}' in line:
+            if pending_item:
+                result.append(pending_item)
+                pending_item = None
+            result.append(line)
+            in_enumerate = True
+            enumerate_depth += 1
+            i += 1
+            continue
+        
+        if r'\end{enumerate}' in line:
+            if pending_item:
+                result.append(pending_item)
+                pending_item = None
+            result.append(line)
+            enumerate_depth -= 1
+            if enumerate_depth == 0:
+                in_enumerate = False
+            i += 1
+            continue
+        
+        # 如果不在 enumerate 中，直接输出
+        if not in_enumerate:
+            result.append(line)
+            i += 1
+            continue
+        
+        # 在 enumerate 中
+        if stripped.startswith(r'\item'):
+            # 检查是否是子问题开头
+            if is_subq_start(stripped):
+                # 这是一个新的子问题，先输出之前的 pending
+                if pending_item:
+                    result.append(pending_item)
+                pending_item = line
+            else:
+                # 不是子问题开头，可能需要合并
+                if pending_item:
+                    # 提取 \item 后的内容
+                    item_content = re.sub(r'^\\item\s*', '', stripped)
+                    # 合并到 pending_item
+                    pending_item = pending_item.rstrip() + item_content
+                else:
+                    # 没有 pending，这是第一个 item
+                    pending_item = line
+        else:
+            # 非 \item 行
+            if pending_item:
+                result.append(pending_item)
+                pending_item = None
+            result.append(line)
+        
+        i += 1
+    
+    # 输出最后的 pending
+    if pending_item:
+        result.append(pending_item)
+    
+    return '\n'.join(result)
+
+
 def fix_trig_function_spacing(text: str) -> str:
     r"""🆕 v1.9.6：修复三角函数和对数函数后缺少空格的问题
     
@@ -5176,8 +5285,9 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     if slug:
         collect_reversed_math_samples(result, slug)
 
-    # 🆕 任务1：enumerate 环境兜底 - 自动补充缺失的 \item
-    result = fix_missing_items_in_enumerate(result)
+    # 🆕 v1.9.6：禁用 fix_missing_items_in_enumerate
+    # 原因：这个函数会把 enumerate 中的每行都加 \item，导致多行子问题变成多个 \item
+    # result = fix_missing_items_in_enumerate(result)
 
     # 🆕 v1.9.1：修复 tabular 环境缺失列格式（P1）
     result = fix_tabular_environments(result)
@@ -5186,6 +5296,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     result = fix_trig_function_spacing(result)
     result = fix_undefined_symbols(result)
     result = fix_nested_subquestions(result)
+    result = fix_spurious_items_in_enumerate(result)
 
     return result
 
