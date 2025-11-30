@@ -2804,6 +2804,35 @@ def fix_spurious_items_in_enumerate(text: str) -> str:
     return '\n'.join(result)
 
 
+def fix_keep_questions_together(text: str) -> str:
+    r"""🆕 v1.9.7：尽量不分页（保守）
+
+    保守策略：在每个 `question` 环境的主体前后添加 `samepage` 环境包装：
+      \begin{question}
+      {\begin{samepage}\QuestionFont
+      ... question body ...
+      \end{samepage}}
+      \answer ...
+
+    - 只在找到 `\begin{question}` 且随后没有已有 `samepage` 的情况下插入。
+    - 在 `\answer` 或 `\explain` 前关闭 `samepage`。这样解析部分保持独立，不受影响。
+    """
+    import re
+
+    # 如果已经包含 samepage，跳过
+    if '{\\begin{samepage}' in text:
+        return text
+
+    # 在 \begin{question} 后插入 samepage 和字体命令
+    text = re.sub(r'\\begin\{question\}\s*', r'\\begin{question}\n{\\begin{samepage}\\QuestionFont\n', text)
+
+    # 在 \answer 或 \explain 前关闭 samepage
+    text = re.sub(r'\n(\\\\answer\b)', r'\n\\end{samepage}}\n\1', text)
+    text = re.sub(r'\n(\\\\explain\b)', r'\n\\end{samepage}}\n\1', text)
+
+    return text
+
+
 def fix_trig_function_spacing(text: str) -> str:
     r"""🆕 v1.9.6：修复三角函数和对数函数后缺少空格的问题
     
@@ -5297,6 +5326,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     result = fix_undefined_symbols(result)
     result = fix_nested_subquestions(result)
     result = fix_spurious_items_in_enumerate(result)
+    result = fix_keep_questions_together(result)
 
     return result
 
