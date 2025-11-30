@@ -9,6 +9,9 @@
 %% Enable enumitem shortlabels for backward compatibility
 \PassOptionsToPackage{shortlabels}{enumitem}
 
+%% 🆕 v0.5: 加载 needspace 包，用于题目尽量不分页
+\RequirePackage{needspace}
+
 %% Accept package options [teacher]/[student]; default to student.
 \RequirePackage{kvoptions}
 \SetupKeyvalOptions{family=examx,prefix=examx@}
@@ -146,6 +149,16 @@
   \providecommand{\choicelabel}{\Alph{choicesi}.}
 }
 \makeatother
+
+%% ============================================================
+%% 🆕 v0.5: 题目尽量不分页 (Keep Questions Together)
+%% ============================================================
+%% 使用 needspace 在每个 question 环境前请求一定的垂直空间
+%% 如果剩余空间不足，则在题目前分页，避免题目被拆分
+\RequirePackage{etoolbox}
+\BeforeBeginEnvironment{question}{%
+  \needspace{5\baselineskip}% 至少需要 5 行空间，否则分页
+}
 
 \ExplSyntaxOff
 
