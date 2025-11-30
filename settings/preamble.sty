@@ -192,6 +192,18 @@
 }
 
 % =========================
+% Question font preference (保守设置)
+% 优先使用 PingFang SC（macOS），并在可用时配合无衬线样式。
+% 仅当使用 XeTeX 或 LuaTeX 时启用（preamble 已要求 Xe/Lua）。
+\IfFontExistsTF{PingFang SC}{%
+  \setCJKfamilyfont{PingFangQuestion}{PingFang SC}%
+  \newcommand\QuestionFont{\sffamily\CJKfamily{PingFangQuestion}}%
+}{%
+  % 如果未找到 PingFang，则让问题使用默认字体
+  \newcommand\QuestionFont{\normalfont}%
+}
+
+% =========================
 % 表格美化支持
 % =========================
 \RequirePackage{booktabs}     % 专业表格线条
