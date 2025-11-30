@@ -2807,29 +2807,13 @@ def fix_spurious_items_in_enumerate(text: str) -> str:
 def fix_keep_questions_together(text: str) -> str:
     r"""🆕 v1.9.7：尽量不分页（保守）
 
-    保守策略：在每个 `question` 环境的主体前后添加 `samepage` 环境包装：
-      \begin{question}
-      {\begin{samepage}\QuestionFont
-      ... question body ...
-      \end{samepage}}
-      \answer ...
-
-    - 只在找到 `\begin{question}` 且随后没有已有 `samepage` 的情况下插入。
-    - 在 `\answer` 或 `\explain` 前关闭 `samepage`。这样解析部分保持独立，不受影响。
+    ⚠️ 已禁用：samepage 环境不能在 question 环境内部使用，会导致嵌套错误。
+    需要在 examx.sty 中通过其他方式实现（如 needspace 或 samepage 在 question 环境定义中）。
+    
+    原设计：在每个 `question` 环境的主体前后添加 `samepage` 环境包装
+    问题：question 环境有特殊结构，内部插入 samepage 会导致 LaTeX 嵌套错误
     """
-    import re
-
-    # 如果已经包含 samepage，跳过
-    if '{\\begin{samepage}' in text:
-        return text
-
-    # 在 \begin{question} 后插入 samepage 和字体命令
-    text = re.sub(r'\\begin\{question\}\s*', r'\\begin{question}\n{\\begin{samepage}\\QuestionFont\n', text)
-
-    # 在 \answer 或 \explain 前关闭 samepage
-    text = re.sub(r'\n(\\\\answer\b)', r'\n\\end{samepage}}\n\1', text)
-    text = re.sub(r'\n(\\\\explain\b)', r'\n\\end{samepage}}\n\1', text)
-
+    # 暂时禁用，直接返回原文本
     return text
 
 
