@@ -2872,6 +2872,34 @@ def fix_undefined_symbols(text: str) -> str:
     return text
 
 
+def fix_markdown_bold_residue(text: str) -> str:
+    r"""🆕 v1.9.7：清理 Markdown 粗体残留
+    
+    问题来源：
+    - Word 文档中某些标点被加粗，Pandoc 转换为 **，** 等
+    - 预处理可能没有完全清理干净
+    
+    保守策略：
+    - 只处理"纯标点或短文本+标点被粗体包裹"的情况
+    - 不处理正常的粗体文本
+    
+    例如：
+    - **，** → ，
+    - **，得证.** → ，得证.
+    - **。** → 。
+    """
+    import re
+    
+    # 模式1：纯标点被粗体包裹 **，** **。** **；** 等
+    text = re.sub(r'\*\*([，。；、：！？,.;:!?])\*\*', r'\1', text)
+    
+    # 模式2：标点开头+短文本+标点结尾被粗体包裹
+    # 例如：**，得证.** → ，得证.
+    text = re.sub(r'\*\*([，。；、：,.;:][^\*]{0,10}[.．。])\*\*', r'\1', text)
+    
+    return text
+
+
 def fix_specific_reversed_pairs(text: str) -> str:
     r"""🆕 v1.8.7：极窄自动修复特定反向数学定界符模式
 
@@ -5324,6 +5352,7 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     # 🆕 v1.9.6：修复三角函数空格和未定义符号
     result = fix_trig_function_spacing(result)
     result = fix_undefined_symbols(result)
+    result = fix_markdown_bold_residue(result)  # 🆕 v1.9.7：清理粗体残留
     result = fix_nested_subquestions(result)
     result = fix_spurious_items_in_enumerate(result)
     result = fix_keep_questions_together(result)

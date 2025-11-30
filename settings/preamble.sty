@@ -193,11 +193,31 @@
 
 % =========================
 % Question font preference (保守设置)
-% 优先使用 PingFang SC（macOS），并在可用时配合无衬线样式。
+% 优先使用 SF Pro Text + PingFang SC（macOS），并在可用时配合无衬线样式。
 % 仅当使用 XeTeX 或 LuaTeX 时启用（preamble 已要求 Xe/Lua）。
+
+% 先定义 Latin 字体族（SF Pro Text > SF Pro Display > 当前 sffamily）
+\newif\ifquestionlatinfontset
+\questionlatinfontsetfalse
+\IfFontExistsTF{SF Pro Text}{%
+  \newfontfamily\QuestionLatinFont{SF Pro Text}%
+  \questionlatinfontsettrue
+}{}
+\ifquestionlatinfontset\else
+  \IfFontExistsTF{SF Pro Display}{%
+    \newfontfamily\QuestionLatinFont{SF Pro Display}%
+    \questionlatinfontsettrue
+  }{}
+\fi
+\ifquestionlatinfontset\else
+  % 回退：使用当前 sans-serif
+  \let\QuestionLatinFont\sffamily
+\fi
+
+% CJK 字体族
 \IfFontExistsTF{PingFang SC}{%
   \setCJKfamilyfont{PingFangQuestion}{PingFang SC}%
-  \newcommand\QuestionFont{\sffamily\CJKfamily{PingFangQuestion}}%
+  \newcommand\QuestionFont{\QuestionLatinFont\CJKfamily{PingFangQuestion}}%
 }{%
   % 如果未找到 PingFang，则让问题使用默认字体
   \newcommand\QuestionFont{\normalfont}%
