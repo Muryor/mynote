@@ -61,18 +61,36 @@ python3 "$TOOLS_DIR/core/ocr_to_examx.py" \
 echo "✅ 生成: $EXAMX_TEX"
 
 # Step 4: Run agent_refine
-echo "步骤 4/5: Agent 精修（TikZ 占位符处理）"
+echo "步骤 4/6: Agent 精修（TikZ 占位符处理）"
 AUTO_DIR="$ROOT_DIR/content/exams/auto/$OUTPUT_NAME"
 REFINED_TEX="$AUTO_DIR/converted_exam.tex"
 python3 "$TOOLS_DIR/core/agent_refine.py" "$EXAMX_TEX" "$REFINED_TEX" --create-tikz
 echo "✅ 生成: $REFINED_TEX"
 
-# Step 5: Validation
-echo "步骤 5/5: 验证输出"
+# Step 5: 🆕 复制图片到试卷目录
+echo "步骤 5/6: 复制图片到试卷目录"
+IMAGES_DIR="$AUTO_DIR/images/media"
+mkdir -p "$IMAGES_DIR"
+if [ -d "$FIGURES_DIR/media" ]; then
+  IMAGE_COUNT=$(find "$FIGURES_DIR/media" -type f \( -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.gif" \) 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$IMAGE_COUNT" -gt 0 ]; then
+    cp "$FIGURES_DIR/media/"*.{png,jpg,jpeg,gif} "$IMAGES_DIR/" 2>/dev/null || true
+    echo "✅ 复制了 $IMAGE_COUNT 个图片到 $IMAGES_DIR"
+  else
+    echo "ℹ️  未找到需要复制的图片"
+  fi
+else
+  echo "ℹ️  图片目录不存在: $FIGURES_DIR/media"
+fi
+
+# Step 6: Validation
+echo "步骤 6/6: 验证输出"
 QUESTION_COUNT=$(grep -c '\\begin{question}' "$REFINED_TEX" || echo "0")
 TIKZ_COUNT=$(find "$AUTO_DIR/figures/tikz" -name "*.tikz" 2>/dev/null | wc -l | tr -d ' ')
+IMAGE_COUNT_FINAL=$(find "$IMAGES_DIR" -type f \( -name "*.png" -o -name "*.jpg" \) 2>/dev/null | wc -l | tr -d ' ')
 echo "  📋 题目数量: $QUESTION_COUNT"
 echo "  🖼️  TikZ 文件: $TIKZ_COUNT"
+echo "  📷 图片文件: $IMAGE_COUNT_FINAL"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -82,16 +100,18 @@ echo ""
 echo "📁 输出文件:"
 echo "   Raw TeX:    $EXAMX_TEX"
 echo "   Refined:    $REFINED_TEX"
+echo "   图片目录:   $IMAGES_DIR"
 echo ""
 echo "💡 下一步:"
 echo "   1. 🎉 v1.5 已自动修复数学公式双重包裹和选项格式"
-echo "   2. 补充 TikZ 图形代码（在 $AUTO_DIR/figures/tikz/）"
-echo "   3. 使用 VS Code Copilot Agent 进行语义精修（中文润色、公式规范化）"
+echo "   2. 🖼️  使用 PNG 图片: tools/images/process_images_to_tikz.py --mode include --files $REFINED_TEX"
+echo "   3. 或补充 TikZ 图形代码（在 $AUTO_DIR/figures/tikz/）"
 echo "   4. 编译测试: 修改 settings/metadata.tex 指向 $REFINED_TEX"
 echo "                然后运行 ./build.sh exam teacher"
 echo ""
-echo "📊 v1.5 改进："
+echo "📊 v1.6 改进："
 echo "   • 数学公式自动统一为 \\(...\\) 格式"
 echo "   • 单行选项自动展开为 choices 环境"
-echo "   • 预期手动修正时间：~15分钟（原 ~2小时）"
+echo "   • 🆕 自动复制图片到试卷目录"
+echo "   • 预期手动修正时间：~10分钟"
 echo ""
