@@ -55,6 +55,15 @@ word_to_tex/output/
 # Temporary backups
 tmp/
 files (6)/
-# Testing outputs
-tools/testing/tools/testing/test_out/*.tex
-tools/testing/tools/testing/test_out/*.md
+# Testing outputs (ignore generated test outputs/reports/images)
+tools/testing/ocr_blackbox_tests/output/
+tools/testing/ocr_blackbox_tests/output/**
+tools/testing/ocr_blackbox_tests/reports/
+tools/testing/ocr_blackbox_tests/reports/**
+tools/testing/ocr_blackbox_tests/input/
+tools/testing/ocr_blackbox_tests/input/**
+tools/testing/ocr_blackbox_tests/output/images/
+# Keep test scripts and source; ignore generated data
+# (previous malformed patterns kept as comment for reference)
+# tools/testing/tools/testing/test_out/*.tex
+# tools/testing/tools/testing/test_out/*.md
