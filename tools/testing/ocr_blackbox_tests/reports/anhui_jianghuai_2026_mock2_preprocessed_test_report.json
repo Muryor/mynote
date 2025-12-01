@@ -1,6 +1,6 @@
 {
-  "exam_file": "word_to_tex/output/gaokao_2024_national_1_preprocessed.md",
-  "timestamp": "2025-12-01T11:43:08.638908",
+  "exam_file": "word_to_tex/output/anhui_jianghuai_2026_mock2_preprocessed.md",
+  "timestamp": "2025-11-30T22:37:22.139519",
   "summary": {
     "total": 18,
     "passed": 18,
@@ -11,21 +11,21 @@
       "test_id": "T001",
       "name": "【答案】提取",
       "passed": true,
-      "message": "找到 17 个 \\answer，Markdown 中有 19 个【答案】",
-      "details": "提取率: 89.5%"
+      "message": "找到 19 个 \\answer，Markdown 中有 19 个【答案】",
+      "details": "提取率: 100.0%"
     },
     {
       "test_id": "T002",
       "name": "【难度】提取",
       "passed": true,
-      "message": "找到 17 个 \\difficulty，Markdown 中有 19 个【难度】",
+      "message": "找到 19 个 \\difficulty，Markdown 中有 19 个【难度】",
       "details": null
     },
     {
       "test_id": "T003",
       "name": "【知识点】/【考点】合并",
       "passed": true,
-      "message": "找到 17 个 \\topics，Markdown 中有 19 个知识点/考点",
+      "message": "找到 19 个 \\topics，Markdown 中有 19 个知识点/考点",
       "details": null
     },
     {
@@ -39,14 +39,14 @@
       "test_id": "T005",
       "name": "【详解】保留",
       "passed": true,
-      "message": "找到 17 个 \\explain，Markdown 中有 19 个【详解】",
+      "message": "找到 19 个 \\explain，Markdown 中有 19 个【详解】",
       "details": null
     },
     {
       "test_id": "T008",
       "name": "定界符平衡",
       "passed": true,
-      "message": "\\( = 745, \\) = 745, diff = 0",
+      "message": "\\( = 634, \\) = 634, diff = 0",
       "details": "平衡"
     },
     {
@@ -67,7 +67,7 @@
       "test_id": "T011",
       "name": "question 环境闭合",
       "passed": true,
-      "message": "\\begin{question} = 17, \\end{question} = 17",
+      "message": "\\begin{question} = 19, \\end{question} = 19",
       "details": null
     },
     {
@@ -88,7 +88,7 @@
       "test_id": "T014",
       "name": "IMAGE_TODO 格式",
       "passed": true,
-      "message": "找到 7 个图片占位符",
+      "message": "找到 2 个图片占位符",
       "details": null
     },
     {
@@ -116,7 +116,7 @@
       "test_id": "T018",
       "name": "array/cases 左括号",
       "passed": true,
-      "message": "找到 17 个 array/cases，62 个 \\left\\{",
+      "message": "找到 7 个 array/cases，41 个 \\left\\{",
       "details": "需要手工检查具体上下文"
     },
     {

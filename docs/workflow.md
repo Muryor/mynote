@@ -31,6 +31,18 @@
 输出 PDF:      output/wrap-exam-*.pdf
 ```
 
+
+注意：在用 PNG 快速替换 `IMAGE_TODO` 占位时，建议保留原始的 `IMAGE_TODO_START` / `IMAGE_TODO_END` 注释块（以及其中的 TikZ `TODO` 占位注释）。
+这样可以：
+- 立即生成可用 PDF（使用 PNG），
+- 同时保留后续由 AI / 手工将该占位替换为 TikZ 的上下文信息。
+
+自动命名构建（避免覆盖）:
+- 若希望自动将构建产物按试卷标题命名并避免覆盖，可使用仓库自带的包装脚本：
+       `./scripts/build_named_exam.sh <path/to/converted_exam.tex> {teacher|student|both}`。
+       该脚本会调用 `./build.sh exam {teacher|student}`，并把生成的 `output/wrap-exam-*.pdf` 复制为
+       `output/<examxtitle>（教师版/学生版）.pdf`（如文件已存在，会自动附加 `-1,-2,...` 以避免覆盖）。
+
 ### 1.2 元信息映射
 
 | Markdown | LaTeX | 备注 |
@@ -41,7 +53,32 @@
 | `【详解】`/`【点睛】` | `\explain{...}` | ✅ 主要来源 |
 | `【分析】` | **丢弃** | ⚠️ 严禁使用 |
 
-### 1.3 编译命令
+### 1.3 表格格式规范
+
+**重要**：试卷中的表格需要使用竖线边框，以保持清晰的视觉效果。
+
+```tex
+% ✅ 正确：带竖线边框的表格
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+$x$ & -2 & -1 & 0 & 1 \\
+\hline
+$y$ & 5 & 4 & 2 & 1 \\
+\hline
+\end{tabular}
+
+% ❌ 错误：无竖线边框
+\begin{tabular}{ccccc}
+...
+\end{tabular}
+```
+
+**注意事项**：
+- 每列之间用 `|` 分隔（如 `{|c|c|c|}`）
+- 使用 `\hline` 添加水平线
+- 确保 `\end{tabular}` 后有完整的 `}`（OCR 常见错误）
+
+### 1.4 编译命令
 
 ```bash
 # 带预检查（推荐）
@@ -70,8 +107,22 @@ word_to_tex/scripts/preprocess_docx.sh \
 # 3. 修改 metadata.tex 指向生成的文件
 # \newcommand{\examSourceFile}{content/exams/auto/exam_2025/converted_exam.tex}
 
-# 4. 编译
-./build.sh exam teacher
+# 4. ⚠️ 插入图片（重要！）
+# 复制图片到试卷目录
+mkdir -p content/exams/auto/exam_2025/images/media
+cp word_to_tex/output/figures/exam_2025/media/*.png content/exams/auto/exam_2025/images/media/
+
+# 将 IMAGE_TODO 替换为 \includegraphics
+# 找到所有 IMAGE_TODO 位置：
+grep -n "IMAGE_TODO_START" content/exams/auto/exam_2025/converted_exam.tex
+# 手动替换 TikZ 占位为：
+# \includegraphics[width=0.4\textwidth]{content/exams/auto/exam_2025/images/media/imageN.png}
+
+# 5. 编译 + 自动重命名（推荐，使用 build.sh 统一入口）
+EXAM_TEX=content/exams/auto/exam_2025/converted_exam.tex ./build.sh exam both
+
+# 或者直接调用重命名脚本（功能相同）：
+# ./scripts/build_named_exam.sh content/exams/auto/exam_2025/converted_exam.tex both
 ```
 
 ### 方式 B：分步执行（调试用）
@@ -106,6 +157,24 @@ python3 tools/validate_tex.py converted_exam.tex
 ```bash
 python3 tools/validate_tex.py <tex_file>
 ```
+
+### 可选：通过 `build.sh` 一步完成编译并自动重命名
+
+如果希望使用统一入口进行编译并让输出按 `\examxtitle{}` 自动命名（并避免覆盖），可以在调用 `build.sh` 时设置环境变量 `EXAM_TEX` 指向 `converted_exam.tex`：
+
+```bash
+# 一键编译并自动重命名（teacher 版本）
+EXAM_TEX=content/exams/auto/exam_2025/converted_exam.tex ./build.sh exam teacher
+
+# 同时生成 teacher + student 并自动命名
+EXAM_TEX=content/exams/auto/exam_2025/converted_exam.tex ./build.sh exam both
+```
+
+该机制为保守设计：
+- 仅在 `EXAM_TEX` 被设置时才会调用 `scripts/build_named_exam.sh`；
+- 如果重命名脚本不存在或失败，`build.sh` 只会打印警告并继续，不会中止构建；
+- 生成的文件名保持原有的中文符号（脚本会使用 `tools/utils/get_exam_title.py` 提取标题）。
+
 
 **检查内容**：
 - `\explain{}` 中的空行（Runaway argument 主因）
@@ -153,6 +222,18 @@ tools/test_compile.sh
 | Missing $ inserted | 定界符不匹配 | 检查 `\(...\)` |
 | Environment unbalanced | 缺少 `\end{question}` | 补充结束标记 |
 | Undefined control sequence | 命令拼写错误 | 检查命令名 |
+| `\pir` 等希腊字母连写 | OCR 识别问题 | 改为 `\pi r`（加空格） |
+| `*\(R\)*` 格式错误 | Pandoc 粗体转换问题 | 改为 `\(\mathbf{R}\)` |
+| 18、19题进入17题答案框 | 解答题未正确分隔 | 检查 `> N．` 引用前缀 |
+
+### 常见手动修复项
+
+转换后常需手动检查的问题：
+
+1. **希腊字母与变量连写**：如 `\pir` → `\pi r`，`\alphax` → `\alpha x`
+2. **实数集粗体**：`*\(R\)*` → `\(\mathbf{R}\)`
+3. **解答题小问分隔**：确保每个小问有独立的 `\item`
+4. **Markdown 引用符号**：检查是否有 `>` 符号导致的内容合并
 
 ### 诊断流程
 
@@ -171,7 +252,33 @@ VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
 
 ## 五、图片流水线
 
-### 流程概览
+### ⭐ 推荐策略：PNG 优先
+
+**最佳实践**：优先使用 PNG 图片，有时间再转换为 TikZ。
+
+理由：
+- ✅ **快速交付**：直接使用 PNG 图片可立即编译出完整试卷
+- ✅ **质量保证**：保留原始图片所有细节，避免 TikZ 绘制误差
+- ✅ **灵活转换**：后续有时间可逐步替换为 TikZ，不影响现有工作
+- ⚠️ **TikZ 耗时**：手工绘制或 AI 生成 TikZ 都需要大量时间和调试
+
+### PNG 快速流程（推荐）
+
+```bash
+# 方式 1：转换时已有图片（推荐）
+# 图片已在 <exam_dir>/images/media/ 目录中
+
+# 直接在 TeX 中使用（手动替换 IMAGE_TODO）
+# 注意：使用从项目根目录的完整路径
+\begin{center}
+\includegraphics[width=0.40\textwidth]{content/exams/auto/changzhou_2026_midterm/images/media/image2.png}
+\end{center}
+
+# 方式 2：批量替换所有 IMAGE_TODO 为 includegraphics（调试用）
+python3 tools/images/process_images_to_tikz.py --mode include --files converted_exam.tex
+```
+
+### TikZ 完整流程（时间充裕时）
 
 ```text
 DOCX → Pandoc → Markdown + media/
@@ -204,25 +311,42 @@ build.sh → 最终 PDF
 ### 图片处理命令
 
 ```bash
+# === PNG 快速方案（推荐） ===
+# 手动替换 IMAGE_TODO 为 \includegraphics{images/media/<filename>.png}
+# 示例见上方"PNG 快速流程"
+
+# === TikZ 流程（时间充裕时） ===
 # 导出图片任务
 python3 tools/images/export_image_jobs.py --files converted_exam.tex
-
-# 导出图片任务 + 复制图片到 content/exams（作为 PNG fallback）
-python3 tools/images/export_image_jobs.py --files converted_exam.tex --copy-images
 
 # 应用 TikZ 代码
 python3 tools/images/apply_tikz_snippets.py --tex-file converted_exam.tex
 
-# 快速用 includegraphics 替代（调试用）
+# 批量替换为 includegraphics（调试/临时方案）
 python3 tools/images/process_images_to_tikz.py --mode include --files converted_exam.tex
 ```
 
-### PNG Fallback 流程
+### 图片路径说明
 
-当没时间画 TikZ 时，可直接使用 PNG 图片：
+转换后的图片位置：
+```
+content/exams/auto/<exam_name>/
+├── converted_exam.tex
+└── images/
+    └── media/
+        ├── image1.png
+        ├── image2.png
+        └── ...
+```
 
-1. 导出时添加 `--copy-images` 参数，图片会复制到 `<exam_dir>/images/`
-2. 在 TeX 中用 `\includegraphics{images/<filename>.png}` 替代 TikZ 占位符
+TeX 中引用方式（从项目根目录的相对路径）：
+```tex
+% ✅ 正确：从项目根目录的完整路径
+\includegraphics[width=0.40\textwidth]{content/exams/auto/changzhou_2026_midterm/images/media/image2.png}
+
+% ❌ 错误：相对于 converted_exam.tex 的路径（编译时找不到文件）
+\includegraphics[width=0.40\textwidth]{images/media/image2.png}
+```
 3. 之后有时间再逐步替换为 TikZ
 
 ---
