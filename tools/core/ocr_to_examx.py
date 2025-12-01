@@ -1,7 +1,27 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-ocr_to_examx_v1.9.py - v1.9.3 改进版
+ocr_to_examx_v1.9.py - v1.9.9 改进版
+
+🆕 v1.9.9 粗体数学符号和希腊字母修复（2025-12-01）：
+1. ✅ 新增 fix_bold_math_symbols() 函数
+   - 问题：Word 粗体字母通过 Pandoc 转换为 *\(R\)* 格式
+   - 修复：转换为 \(\mathbf{R}\)
+   - 应用：实数集 R、整数集 Z、自然数 N 等数学集合符号
+   - 安全：只处理单个大写字母，避免误伤
+2. ✅ 新增 fix_greek_letter_spacing() 函数
+   - 问题：OCR 将希腊字母与变量连写，如 \pir 应该是 \pi r
+   - 修复：在希腊字母和后续小写字母之间添加空格
+   - 覆盖：alpha, beta, gamma, delta, pi, theta 等常用希腊字母
+   - 安全：不影响下标模式如 \pi_r
+
+🆕 v1.9.8 表格边框支持（2025-12-01）：
+1. ✅ 新增 add_table_borders() 函数（P1）
+   - 功能：自动为无边框表格添加竖线边框和 \hline
+   - 转换：\begin{tabular}{ccc} → \begin{tabular}{|c|c|c|}
+   - 智能：已有边框的表格不修改
+   - 应用：符合试卷表格格式规范要求
+   - 测试：通过 6 项测试用例验证
 
 🆕 v1.9.3 黑箱测试修复（2025-01-XX）：
 1. ✅ 修复 T008/T017 根本原因：preprocess_multiline_math 错误合并
@@ -234,9 +254,26 @@ class MathStateMachine:
         )
 
         def replace_multiline(match):
-            # Extract just the \left...\right. part
-            content = re.search(r'\\left.*?\\right(?:\\[\}\]\)])?\.?', match.group(0), re.DOTALL)
-            return r'\(' + content.group(0) + r'\)'
+            # 🔧 v1.9.7: 修复内部 \left|...\right| 导致的截断问题
+            # 原来的正则 \\left.*?\\right 使用非贪婪匹配，会在遇到第一个 \right 时停止
+            # 当方程组内部包含 \left|...\right|（绝对值）时会错误截断
+            #
+            # 修复方案：使用贪婪匹配 .* 配合 \right\. 来匹配最外层的 \right.
+            # 因为外层 pattern 已经确保了整个块的正确性，这里只需要提取 \left...\right. 部分
+            content = re.search(r'\\left.*\\right\.', match.group(0), re.DOTALL)
+            if content:
+                return r'\(' + content.group(0) + r'\)'
+            # 降级：如果没有 \right.，尝试匹配 \right 后跟其他括号
+            content = re.search(r'\\left.*\\right(?:\\[\}\]\)])?', match.group(0), re.DOTALL)
+            if content:
+                return r'\(' + content.group(0) + r'\)'
+            # 最后降级：返回去掉 $$ 的原内容
+            inner = match.group(0).strip()
+            if inner.startswith('$$'):
+                inner = inner[2:]
+            if inner.endswith('$$'):
+                inner = inner[:-2]
+            return r'\(' + inner.strip() + r'\)'
 
         return pattern.sub(replace_multiline, text)
 
@@ -365,8 +402,8 @@ class MathStateMachine:
         return tokens
 
     def fix_malformed_patterns(self, text: str) -> str:
-        """修复格式错误的数学模式（增强版 v1.9.2）
-        
+        r"""修复格式错误的数学模式（增强版 v1.9.2）
+
         🆕 v1.9.2: 处理更多的畸形模式
         - 嵌套定界符：\(P,B\(，\)C,D\) → \(P,B\)，\(C,D\)
         - 反向嵌套：\)...\( → 修正为正确顺序
@@ -715,13 +752,13 @@ class MathStateMachine:
         return re.sub(r'\\\(([^)]*?)\\\)', process_math_block, text, flags=re.DOTALL)
 
     def balance_delimiters(self, text: str) -> str:
-        """平衡数学定界符（增强版 v1.9.3）
-        
+        r"""平衡数学定界符（增强版 v1.9.3）
+
         🆕 v1.9.3 修复:
         - 移除了错误的 connector 前添加 \) 的逻辑
         - 该逻辑假设 \therefore 等符号前一定有数学内容需要闭合
         - 但实际上这些符号可能出现在行首，前面是普通文本或中文标点
-        
+
         🆕 v1.9.2 改进:
         1. 支持跨行数学环境（array/cases）的平衡检查
         3. 全局平衡检查和修复
@@ -1062,7 +1099,7 @@ math_sm = MathStateMachine()
 
 # ==================== 配置 ====================
 
-VERSION = "v1.9.6"
+VERSION = "v1.9.8"
 
 SECTION_MAP = {
     "一、单选题": "单选题",
@@ -1245,8 +1282,8 @@ def copy_images_to_output(images_dir: Path, output_dir: Path) -> int:
 # ==================== LaTeX 处理函数 ====================
 
 def escape_latex_special(text: str, in_math_mode: bool = False) -> str:
-    """转义 LaTeX 特殊字符（增强版 v1.9.2）
-    
+    r"""转义 LaTeX 特殊字符（增强版 v1.9.2）
+
     🆕 v1.9.2 改进:
     1. 正确保护数学模式内的 & （用于 matrix/array 列分隔）
     2. 保护已转义的字符（\&, \%, \#）
@@ -2884,6 +2921,68 @@ def fix_markdown_bold_residue(text: str) -> str:
     return text
 
 
+def fix_bold_math_symbols(text: str) -> str:
+    r"""🆕 v1.9.9：修复 Pandoc 粗体包裹数学符号的问题
+    
+    问题来源：
+    - Word 中的粗体字母（如 **R** 表示实数集）
+    - Pandoc 转换为 *\(R\)* 格式
+    - 这在 LaTeX 中会导致渲染问题
+    
+    保守策略：
+    - 只处理 *\(X\)* 格式，其中 X 是单个大写字母
+    - 转换为 \(\mathbf{X}\)
+    - 常见于数学集合符号：R（实数）、Z（整数）、N（自然数）等
+    
+    例如：
+    - *\(R\)* → \(\mathbf{R}\)
+    - *\(Z\)* → \(\mathbf{Z}\)
+    """
+    import re
+    
+    # 模式：*\(单个大写字母\)* → \(\mathbf{字母}\)
+    # 只匹配单个大写字母，避免误伤其他粗体数学表达式
+    text = re.sub(r'\*\\\(([A-Z])\\\)\*', r'\\(\\mathbf{\1}\\)', text)
+    
+    return text
+
+
+def fix_greek_letter_spacing(text: str) -> str:
+    r"""🆕 v1.9.9：修复希腊字母与变量连写问题
+    
+    问题来源：
+    - OCR 或 Pandoc 将希腊字母与变量连写，如 \pir 应该是 \pi r
+    - LaTeX 会将 \pir 解释为未定义的命令
+    
+    保守策略：
+    - 只处理常见的希腊字母后直接跟小写英文字母的情况
+    - 不处理 \alpha_1 等下标情况（这是正确的）
+    - 仅添加空格分隔，不改变其他内容
+    
+    常见问题模式：
+    - \pir → \pi r
+    - \thetar → \theta r
+    
+    注意：这是保守修复，只处理明确的连写模式
+    """
+    import re
+    
+    # 常见希腊字母列表（只处理最常见的，避免误伤）
+    greek_letters = [
+        'alpha', 'beta', 'gamma', 'delta', 'epsilon', 
+        'theta', 'lambda', 'mu', 'nu', 'pi', 
+        'rho', 'sigma', 'tau', 'phi', 'omega'
+    ]
+    
+    for letter in greek_letters:
+        # 模式：\greek + 小写字母（不是下标开头）
+        # 例如：\pir → \pi r，但不改变 \pi_r 或 \pi{...}
+        pattern = rf'(\\{letter})([a-z])(?![_{{])'
+        text = re.sub(pattern, r'\1 \2', text)
+    
+    return text
+
+
 def fix_specific_reversed_pairs(text: str) -> str:
     r"""🆕 v1.8.7：极窄自动修复特定反向数学定界符模式
 
@@ -3112,6 +3211,10 @@ def validate_and_fix_image_todo_blocks(text: str) -> str:
     )
 
     # 修复4：IMAGE_TODO_END 与正文同处一行，自动拆分
+    # 🔧 v1.9.9：修复正则表达式错误截断 ID 的问题
+    # 原正则 r'(% IMAGE_TODO_END id=[^\n]+)([^\n]+)' 会错误地将 ID 末尾的数字
+    # （如 img2 的 2）当作"尾随内容"拆分到下一行
+    # 修复：ID 格式为 slug-QN-imgN，以字母数字结尾，后面必须有非字母数字字符才算尾随内容
     def _split_image_end(match: re.Match) -> str:
         trailing = match.group(2)
         if not trailing.strip():
@@ -3119,7 +3222,7 @@ def validate_and_fix_image_todo_blocks(text: str) -> str:
         return f"{match.group(1)}\n{trailing.lstrip()}"
 
     text = re.sub(
-        r'(% IMAGE_TODO_END id=[^\n]+)([^\n]+)',
+        r'(% IMAGE_TODO_END id=[a-zA-Z0-9_-]+)([^a-zA-Z0-9_\n-][^\n]*)',
         _split_image_end,
         text
     )
@@ -3376,6 +3479,96 @@ def fix_tabular_environments(text: str) -> str:
         return match.group(0) + '{' + col_format + '}'
 
     return pattern.sub(fix_tabular, text)
+
+
+def add_table_borders(text: str) -> str:
+    r"""🆕 v1.9.8：为 LaTeX 表格添加边框（2025-12-01）
+    
+    将无边框表格转换为有边框表格，符合试卷格式要求。
+    
+    转换示例：
+        \begin{tabular}{ccc}        →  \begin{tabular}{|c|c|c|}
+        A & B & C \\                    \hline
+        1 & 2 & 3 \\                    A & B & C \\
+        \end{tabular}                   \hline
+                                        1 & 2 & 3 \\
+                                        \hline
+                                        \end{tabular}
+    
+    Args:
+        text: LaTeX 文本
+        
+    Returns:
+        添加边框后的文本
+        
+    Notes:
+        - 只处理无边框表格（列格式不含 |）
+        - 已有边框的表格不修改
+        - 自动添加 \hline 到表格首尾和每行后
+    """
+    if not text or '\\begin{tabular}' not in text:
+        return text
+    
+    # 匹配整个 tabular 环境
+    pattern = re.compile(
+        r'(\\begin\{tabular\}\{)([^}]+)(\})(.*?)(\\end\{tabular\})',
+        re.DOTALL
+    )
+    
+    def process_table(match):
+        begin_part = match.group(1)  # \begin{tabular}{
+        col_spec = match.group(2)     # ccc 或 |c|c|c| 等
+        end_bracket = match.group(3)  # }
+        content = match.group(4)      # 表格内容
+        end_part = match.group(5)     # \end{tabular}
+        
+        # 如果已经有边框，不修改
+        if '|' in col_spec:
+            return match.group(0)
+        
+        # 添加竖线到列格式：ccc -> |c|c|c|
+        new_col_spec = '|' + '|'.join(list(col_spec)) + '|'
+        
+        # 处理表格内容，添加 \hline
+        lines = content.split('\n')
+        new_lines = []
+        
+        # 首行前添加 \hline
+        has_content = False
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            
+            # 跳过空行
+            if not stripped:
+                new_lines.append(line)
+                continue
+            
+            # 第一个非空行前添加 \hline
+            if not has_content and stripped:
+                new_lines.append('\\hline')
+                has_content = True
+            
+            # 添加当前行
+            new_lines.append(line)
+            
+            # 如果行包含数据（含 & 或 \\），在其后添加 \hline
+            if '&' in stripped or '\\\\' in stripped:
+                # 避免重复添加 \hline
+                next_line_index = i + 1
+                next_is_hline = False
+                if next_line_index < len(lines):
+                    next_stripped = lines[next_line_index].strip()
+                    if next_stripped == '\\hline':
+                        next_is_hline = True
+                
+                if not next_is_hline:
+                    new_lines.append('\\hline')
+        
+        new_content = '\n'.join(new_lines)
+        
+        return f"{begin_part}{new_col_spec}{end_bracket}{new_content}{end_part}"
+    
+    return pattern.sub(process_table, text)
 
 
 def convert_markdown_table_to_latex(text: str) -> str:
@@ -4479,13 +4672,19 @@ def fix_unclosed_math_mode(text: str) -> str:
     修复模式：
     1. \\)text} → \\)text（删除多余的}）
     2. \\(text未闭合 → \\(text\\)
+
+    🔧 v1.9.8: 修复正则表达式错误匹配 \\end{tabular} 等环境的 } 的问题
+    - 原正则 ([^}]*?) 会贪婪匹配到 \\end{tabular} 的 }
+    - 修复：排除包含 \\end{ 的内容，避免误删环境结束标签的 }
     """
     if not text:
         return text
 
     # 模式1: \\)后面跟着文本和}，删除多余的}
     # 例如: \\)相交但不过圆心} → \\)相交但不过圆心
-    text = re.sub(r'(\\\))([^}]*?)\}(\s*\\end\{)', r'\1\2\3', text)
+    # 🔧 v1.9.8: 使用负向前瞻排除 \\end{ 模式，避免误删 \\end{tabular} 等的 }
+    # 只匹配：\) 后面紧跟中文/字母/数字（不含换行和 \end），然后是 } 和 \end{
+    text = re.sub(r'(\\\))([^\n}]{1,50}?)\}(\s*\\end\{question\})', r'\1\2\3', text)
 
     return text
 
@@ -5332,11 +5531,19 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
 
     # 🆕 v1.9.1：修复 tabular 环境缺失列格式（P1）
     result = fix_tabular_environments(result)
+    
+    # 🆕 v1.9.8：为表格添加边框（2025-12-01）
+    result = add_table_borders(result)
 
     # 🆕 v1.9.6：修复三角函数空格和未定义符号
     result = fix_trig_function_spacing(result)
     result = fix_undefined_symbols(result)
     result = fix_markdown_bold_residue(result)  # 🆕 v1.9.7：清理粗体残留
+    
+    # 🆕 v1.9.9：修复粗体数学符号和希腊字母连写（2025-12-01）
+    result = fix_bold_math_symbols(result)  # *\(R\)* → \(\mathbf{R}\)
+    result = fix_greek_letter_spacing(result)  # \pir → \pi r
+    
     result = fix_nested_subquestions(result)
     result = fix_spurious_items_in_enumerate(result)
     result = fix_keep_questions_together(result)
@@ -6194,6 +6401,30 @@ B. 选项B
         print("  ✅ PASSED")
     else:
         print("  ❌ FAILED: ASCII 表格未被转换")
+        all_passed = False
+
+    # 测试 18：fix_bold_math_symbols 修复粗体数学符号（v1.9.9）
+    print("\n测试 18: fix_bold_math_symbols 修复 *\\(R\\)* → \\(\\mathbf{R}\\)")
+    bold_math_input = r"在*\(R\)*上单调递增"
+    bold_math_output = fix_bold_math_symbols(bold_math_input)
+    if r"\(\mathbf{R}\)" in bold_math_output and r"*\(R\)*" not in bold_math_output:
+        print("  ✅ PASSED")
+    else:
+        print(f"  ❌ FAILED: 粗体数学符号未被修复")
+        print(f"     输入: {bold_math_input}")
+        print(f"     输出: {bold_math_output}")
+        all_passed = False
+
+    # 测试 19：fix_greek_letter_spacing 修复希腊字母连写（v1.9.9）
+    print("\n测试 19: fix_greek_letter_spacing 修复 \\pir → \\pi r")
+    greek_input = r"所以\(2\pir \times \sqrt{3} = \pir\)"
+    greek_output = fix_greek_letter_spacing(greek_input)
+    if r"\pi r" in greek_output and r"\pir" not in greek_output:
+        print("  ✅ PASSED")
+    else:
+        print(f"  ❌ FAILED: 希腊字母连写未被修复")
+        print(f"     输入: {greek_input}")
+        print(f"     输出: {greek_output}")
         all_passed = False
 
     print("\n" + "=" * 60)

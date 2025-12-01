@@ -377,6 +377,23 @@ case "${MODE}" in
   *) usage ;;
 esac
 
+# Optional: if EXAM_TEX is set, call the naming wrapper to copy/rename PDFs
+# This keeps behavior backward-compatible: only triggers when EXAM_TEX is provided.
+if [[ -n "${EXAM_TEX-}" ]]; then
+  SCRIPTS_DIR="$(cd "$(dirname "$0")/scripts" && pwd)"
+  NAMER="$SCRIPTS_DIR/build_named_exam.sh"
+  if [[ -x "$NAMER" ]]; then
+    if [[ "${MODE}" == "teacher" || "${MODE}" == "both" ]]; then
+      SKIP_BUILD=1 "$NAMER" "$EXAM_TEX" teacher || echo "Warning: build_named_exam.sh (teacher) failed" >&2
+    fi
+    if [[ "${MODE}" == "student" || "${MODE}" == "both" ]]; then
+      SKIP_BUILD=1 "$NAMER" "$EXAM_TEX" student || echo "Warning: build_named_exam.sh (student) failed" >&2
+    fi
+  else
+    echo "Warning: build_named_exam.sh not found or not executable at $NAMER" >&2
+  fi
+fi
+
 cleanup_artifacts
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
