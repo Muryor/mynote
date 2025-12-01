@@ -16,7 +16,7 @@
     # 预览模式：查看所有图片TODO和模板示例（不修改文件）
     python tools/images/process_images_to_tikz.py --mode preview --files content/exams/auto/*/converted_exam.tex
     
-    # 模式1：转换WMF为PNG并使用\includegraphics
+    # 模式1：转换WMF为PNG并使用 includegraphics
     python tools/images/process_images_to_tikz.py --mode include --files content/exams/auto/*/converted_exam.tex
     
     # 模式2：生成TikZ模板供手工填充
@@ -148,10 +148,11 @@ def generate_includegraphics(image_path: Path, width: str, project_root: Path = 
     r"""生成\includegraphics代码
 
     🆕 Prompt 5: 移除硬编码路径，使用相对路径
+    🆕 修复: 正确处理 width 百分比，移除路径中的转义下划线
 
     Args:
         image_path: 图片路径
-        width: 宽度设置
+        width: 宽度设置（如 "60" 或 "60%"）
         project_root: 项目根目录（如果未提供，使用当前工作目录）
 
     Returns:
@@ -169,10 +170,19 @@ def generate_includegraphics(image_path: Path, width: str, project_root: Path = 
 
     # 使用 POSIX 风格路径（LaTeX 兼容）
     rel_path_str = rel_path.as_posix()
+    # 移除路径中的转义下划线（\_ → _）
+    rel_path_str = rel_path_str.replace('\\_', '_')
 
-    return f"""\\begin{{center}}
-\\includegraphics[width={width}\\textwidth]{{{rel_path_str}}}
-\\end{{center}}"""
+    # 处理 width 参数：将百分比转换为小数
+    try:
+        width_val = int(width.rstrip('%')) if width.endswith('%') else int(width)
+        # 转换为小数形式（如 60 → 0.30，保守设置为较小值）
+        width_decimal = min(width_val / 100, 0.30)  # 默认最大 0.30
+    except ValueError:
+        width_decimal = 0.30  # 默认值
+
+    # 不再包裹 center 环境，因为外层已有
+    return f"""\\includegraphics[width={width_decimal:.2f}\\textwidth]{{{rel_path_str}}}"""
 
 
 def generate_tikz_template(image_name: str, width: str) -> str:

@@ -1,7 +1,7 @@
-# LaTeX 试卷流水线参考手册 (v3.6)
+# LaTeX 试卷流水线参考手册 (v4.2)
 
 > **用途**: 所有格式规范的统一速查手册  
-> **更新**: 2025-11-24 （新增：附件模板与图片路径推断章节，版本与 workflow 同步）
+> **更新**: 2025-12-01（v4.2 同步）
 
 ---
 
@@ -279,6 +279,58 @@ TikZ片段: content/exams/auto/<slug>/tikz_snippets/
 
 ---
 
+## 8. 表格环境规范
+
+### 8.1 examtableboxed（试卷专用，带竖线）
+
+带竖线的框线表格，符合试卷传统格式要求：
+
+```latex
+\begin{examtableboxed}{c|c|c|c}
+级数 & 名称 & 风速大小（单位：m/s）\\
+\hline
+2 & 轻风 & 1.6--3.3 \\
+\hline
+3 & 微风 & 3.4--5.4 \\
+\hline
+4 & 和风 & 5.5--7.9 \\
+\end{examtableboxed}
+```
+
+**特点**：
+- 外框和列间都有竖线（`|c|c|c|`）
+- 使用 `\hline` 作为水平线
+- 自动居中、小字体、统一列间距和行高
+- 适合数据表、统计表、对照表等
+
+### 8.2 examtable（讲义专用，无竖线）
+
+无竖线的 booktabs 专业三线表：
+
+```latex
+\begin{examtable}{cccc}
+$P(\chi^{2} \ge k)$ & 0.050 & 0.010 & 0.001 \\
+\midrule
+$k$ & 3.841 & 6.635 & 10.828 \\
+\end{examtable}
+```
+
+**特点**：
+- 无竖线，使用 `\toprule`/`\midrule`/`\bottomrule`
+- 现代化专业排版风格
+- 适合讲义、论文等正式文档
+
+### 8.3 使用建议
+
+| 场景 | 推荐环境 | 列分隔格式 | 水平线 |
+|------|----------|-----------|--------|
+| 试卷（exam-zh 文档类） | `examtableboxed` | `\|c\|c\|c\|` | `\hline` |
+| 讲义（article/ElegantBook） | `examtable` | `cccc` | `\midrule` |
+
+> 两种环境参数相同，切换时只需修改环境名称和线条命令。
+
+---
+
 ## 附件 Markdown 模板
 
 ### 基本格式
@@ -303,14 +355,13 @@ TikZ片段: content/exams/auto/<slug>/tikz_snippets/
 \textbf{附：}
 
 \begin{center}
-\begin{tabular}{ccc}
-\hline
+\begin{examtableboxed}{c|c|c}
 年份 & A省 & B省 \\
 \hline
 2020 & 10 & 12 \\
-2021 & 11 & 13 \\
 \hline
-\end{tabular}
+2021 & 11 & 13 \\
+\end{examtableboxed}
 \end{center}
 ```
 
@@ -349,4 +400,51 @@ python3 tools/core/ocr_to_examx.py input.md output/ --figures-dir path/to/figure
 
 ---
 
-**最后更新**: v3.6（2025-11-24）
+**最后更新**: v4.2（2025-12-01）
+
+---
+
+## 附录：脚本参考
+
+### preprocess_docx.sh (v1.6)
+
+```bash
+word_to_tex/scripts/preprocess_docx.sh <docx_file> <prefix> <title>
+```
+
+**流程**：
+1. Pandoc 转换 → raw.md
+2. 预处理 → preprocessed.md  
+3. ocr_to_examx → examx.tex
+4. agent_refine → converted_exam.tex
+5. 自动复制图片到 images/media/
+6. 验证输出
+
+### ocr_to_examx.py (v1.9.11)
+
+```bash
+python3 tools/core/ocr_to_examx.py <input.md> <output.tex> [--title "标题"] [--figures-dir path]
+python3 tools/core/ocr_to_examx.py --selftest  # 自测
+```
+
+**主要功能**：
+- Markdown → examx TeX 结构化转换
+- 反向定界符自动修复
+- 方程组 `\left\{` 补全
+- 【分析】强制过滤
+
+### process_images_to_tikz.py
+
+```bash
+python3 tools/images/process_images_to_tikz.py --mode include --files <tex_file>
+```
+
+**功能**：将 IMAGE_TODO 替换为 `\includegraphics`（宽度默认 0.30）
+
+### validate_tex.py
+
+```bash
+python3 tools/validate_tex.py <tex_file>
+```
+
+**检查项**：花括号配对、定界符平衡、环境平衡、`\explain{}` 空行

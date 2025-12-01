@@ -1,7 +1,8 @@
-# 调试与错误诊断指南
+# 调试与错误诊断指南 (v4.2)
 
 > **文档定位**: 完整的错误排查、质量检查和问题修复手册  
-> **配套文档**: [workflow.md](workflow.md), [REFERENCE.md](REFERENCE.md)
+> **配套文档**: [workflow.md](workflow.md), [REFERENCE.md](REFERENCE.md)  
+> **更新**: 2025-12-01
 
 ---
 
