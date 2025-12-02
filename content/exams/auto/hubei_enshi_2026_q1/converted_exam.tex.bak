@@ -1,0 +1,842 @@
+\examxtitle{湖北省恩施州2026届高三第一次质量监测}
+
+\section{单选题}
+
+\begin{question}
+设全集\(U = \left\{ 0,1,2 \right\}\)，
+\(A = \left\{ 0,1 \right\}\)，\(B = \left\{ 1,2 \right\}\)，
+则\(\complement_{U}(A \cap B) =\)(    )
+\begin{choices}
+  \item \(\left\{ 0,2 \right\}\)
+  \item \(\left\{ 1,2 \right\}\)
+  \item \(\left\{ 1 \right\}\)
+  \item \(\left\{ 0,1 \right\}\)
+\end{choices}
+\topics{补集的概念及运算；交集的概念及运算}
+\difficulty{0.94}
+\answer{A}
+\explain{因为\(A = \left\{ 0,1 \right\}\)，
+\(B = \left\{ 1,2 \right\}\)，
+则\(A \cap B = \left\{ 1 \right\}\)，\par
+又\(U = \left\{ 0,1,2 \right\}\)，
+所以\(\complement_{U}(A \cap B) = \left\{ 0,2 \right\}\)}
+\end{question}
+
+\begin{question}
+已知\(\overrightarrow{a} = (1,x)\)，
+\(\overrightarrow{b} = (2, - 1)\)，
+且\(\overrightarrow{a} \cdot \overrightarrow{b} = 1\)，
+则\(x =\)(    )
+\begin{choices}
+  \item \(- 2\)
+  \item \(- 1\)
+  \item 1
+  \item 2
+\end{choices}
+\topics{利用数量积求参数；数量积的坐标表示}
+\difficulty{0.94}
+\answer{C}
+\explain{由\(\overrightarrow{a} = (1,x)\)，
+\(\overrightarrow{b} = (2, - 1)\)，
+且\(\overrightarrow{a} \cdot \overrightarrow{b} = 1\)，\par
+所以\(1 \times 2 + x \times ( - 1) = 1\)，
+得\(x = 1\)}
+\end{question}
+
+\begin{question}
+复数\(z\)满足\(z \cdot \text{i} = 1 - \text{i}\)， 则
+\(|z| =\)(    )
+\begin{choices}
+  \item \(1\)
+  \item \(\sqrt{2}\)
+  \item \(3\)
+  \item \(2\)
+\end{choices}
+\topics{求复数的模；复数的除法运算}
+\difficulty{0.94}
+\answer{B}
+\explain{由已知得\(z = \frac{1 - \text{i}}{\text{i}} = \frac{\text{i}\left( 1 - \text{i} \right)}{\text{i}^{2}} = - \text{i}\left( 1 - \text{i} \right) = - \text{i} - 1\)，\par
+则\(|z| = \sqrt{( - 1)^{2} + ( - 1)^{2}} = \sqrt{2}\)}
+\end{question}
+
+\begin{question}
+根据分类变量\(x\)与\(y\)的观测数据，
+计算得到\(\chi^{2} \approx 0.837\)，
+依据小概率值\(\alpha = 0.1\)(\(x_{0.1} = 2.706\))的独立性检验，
+则(    )
+\begin{choices}
+  \item 变量\(x\)与\(y\)不独立
+  \item 变量\(x\)与\(y\)独立
+  \item 变量\(x\)与\(y\)不独立，这个结论犯错误的概率不超过0.1
+  \item 变量\(x\)与\(y\)独立，这个结论犯错误的概率不超过0.1
+\end{choices}
+\topics{独立性检验的概念及辨析；独立性检验的基本思想}
+\difficulty{0.94}
+\answer{B}
+\explain{因为\(\chi^{2} \approx 0.837 < x_{0.1} = 2.706\)，
+所以在显著性水平\(\alpha = 0.1\)下，\par
+没有充分证据拒绝原假设，因此我们认为变量\(x\)与\(y\)是独立的}
+\end{question}
+
+\begin{question}
+将函数\(y = \tan 2x\)的图象向左平移\(m\)(\(m > 0\))个单位后，所得的图象仍然关于原点对称，则\(m\)的最小值为(    )
+\begin{choices}
+  \item \(\frac{\pi}{12}\)
+  \item \(\frac{\pi}{6}\)
+  \item \(\frac{\pi}{4}\)
+  \item \(\frac{\pi}{2}\)
+\end{choices}
+\topics{求图象变化前(后)的解析式；正切函数对称性的应用}
+\difficulty{0.65}
+\answer{C}
+\explain{函数\(y = \tan 2x\)的图象平移后得到\(y = \tan(2x + 2m)\)，
+其图象关于点\((0,0)\)对称，\par
+那么\(2 \cdot 0 + 2m = \frac{k}{2}\pi(k \in Z)\)，
+所以\(m = \frac{k}{4}\pi(k \in Z)\)，
+又\(m > 0\)，所以\(m\)的最小值为\(\frac{\pi}{4}\)}
+\end{question}
+
+\begin{question}
+已知\(a < - 1\)，
+当\(x \in \lbrack 0, - a - 1\rbrack\)时，
+\(f(x) = x^{2} + ax\)的最小值是\(- \frac{1}{4}\)，
+则\(a =\)(    )
+\begin{choices}
+  \item \(- 2\)
+  \item \(- \sqrt{2}\)
+  \item \(- \frac{3}{2}\)
+  \item \(- \frac{5}{4}\)
+\end{choices}
+\topics{求二次函数的值域或最值；根据二次函数的最值或值域求参数}
+\difficulty{0.65}
+\answer{D}
+\explain{\(a < - 1\)，\(0 \leq x \leq - (a + 1)\)，
+\(f(x) = x^{2} + ax = {(x + \frac{a}{2})}^{2} - \frac{a^{2}}{4}\)的最小值是\(- \frac{1}{4}\)，\par
+若\(- (a + 1) < - \frac{a}{2}\)，
+即\(- 2 < a < - 1\)时，\par
+则\(f( - a - 1) = {(1 + \frac{a}{2})}^{2} - \frac{a^{2}}{4} = a + 1 = - \frac{1}{4}\)，
+解得\(a = - \frac{5}{4}\)，符合题意；\par
+若\(- (a + 1) \geq - \frac{a}{2}\)，
+即\(a \leq - 2\)时，\par
+\(f( - \frac{a}{2}) = - \frac{a^{2}}{4} = - \frac{1}{4}\)，
+\(a = \pm 1\)，不合题意舍去.\par
+故\(a = - \frac{5}{4}\)}
+\end{question}
+
+\begin{question}
+抛物线\(y^{2} = 2px(p > 0)\)与直线\(x + 2y - 5 = 0\)交于\(A,B\)两点，
+\(O\)为坐标原点，且满足\(OA\bot OB\)，
+则\(p =\)(    )
+\begin{choices}
+  \item \(\frac{1}{2}\)
+  \item 1
+  \item \(\frac{5}{4}\)
+  \item \(\frac{5}{2}\)
+\end{choices}
+\topics{直线与抛物线交点相关问题；根据韦达定理求参数}
+\difficulty{0.65}
+\answer{D}
+\explain{设\(A( - 2y_{1} + 5,y_{1})\)，
+\(B( - 2y_{2} + 5,y_{2})\)，\par
+由\(\left\{ \begin{array}{r}
+y^{2} = 2px(p > 0) \\
+x = - 2y + 5
+\end{array} \right.\)，消\(x\)得到\(y^{2} + 4py - 10p = 0\)，\par
+则\(y_{1} + y_{2} = - 4p,y_{1}y_{2} = - 10p\)，\par
+因为\(OA\bot OB\)，则\(\overrightarrow{OA} \cdot \overrightarrow{OB} = 0\)，又\(\overrightarrow{OA} = \left( - 2y_{1} + 5,y_{1} \right)\)，\(\overrightarrow{OB} = \left( - 2y_{2} + 5,y_{2} \right)\)，\par
+所以\(\overrightarrow{OA} \cdot \overrightarrow{OB} = ( - 2y_{1} + 5)( - 2y_{2} + 5) + y_{1}y_{2} = 5y_{1}y_{2} - 10(y_{1} + y_{2}) + 25 = 0\)，\par
+所以\(- 50p + 40p + 25 = 0\)，解得\(p = \frac{5}{2}\)}
+\end{question}
+
+\begin{question}
+已知\(a\)，\(b\)为正实数，且\(a \leq b + 1\)，
+若\(ab + b^{2} + 1 \geq m(a + b)\)恒成立，
+则\(m\)的最大值为(    )
+\begin{choices}
+  \item \(\frac{\sqrt{2} - 1}{2}\)
+  \item \(\frac{\sqrt{2} + 1}{2}\)
+  \item \(\sqrt{2} - 1\)
+  \item \(\frac{2\sqrt{2} - 1}{2}\)
+\end{choices}
+\topics{基本不等式求和的最小值；基本不等式的恒成立问题}
+\difficulty{0.4}
+\answer{D}
+\explain{\(\because ab + b^{2} + 1 \geq m(a + b)\)，
+\(\therefore b(a + b) + 1 \geq m(a + b)\)，
+\(\therefore m \leq b + \frac{1}{a + b}\)恒成立，\par
+\(\therefore m\)的最大值\(= {(b + \frac{1}{a + b})}_{\min}\)，
+又\(a \leq b + 1\)，\par
+\(\therefore b + \frac{1}{a + b} \geq b + \frac{1}{2b + 1} = b + \frac{1}{2} + \frac{\frac{1}{2}}{b + \frac{1}{2}} - \frac{1}{2} \geq 2\sqrt{\frac{1}{2}} - \frac{1}{2} = \frac{2\sqrt{2} - 1}{2}\).\par
+当且仅当\(a = b + 1\)且\(b = \frac{\sqrt{2} - 1}{2}\)取等号.\par
+\(\therefore m\)的最大值为\(\frac{2\sqrt{2} - 1}{2}\)}
+\end{question}
+
+\section{多选题}
+
+\begin{question}
+已知\(\triangle ABC\)的内角\(A\)，\(B\)，
+\(C\)所对的边分别为\(a\)，\(b\)，\(c\)，
+且\(b^{2} = ac\)，则下列说法正确的是(    )
+\begin{choices}
+  \item \(B \in \left( 0,\frac{\pi}{3} \right\rbrack\)
+  \item 当\(B\)最大时，\(\sin C - \sin B = \sin B\cos A\)成立
+  \item 若\(c = 2a\)，则\(C > \frac{2\pi}{3}\)
+  \item 若\(C = \frac{\pi}{2}\)，则\(\sin A = \frac{\sqrt{5} - 1}{2}\)
+\end{choices}
+\topics{解余弦不等式；余弦定理解三角形；正弦定理解三角形}
+\difficulty{0.65}
+\answer{AD}
+\explain{A选项，
+\(\cos B = \frac{a^{2} + c^{2} - b^{2}}{2ac} = \frac{a^{2} + c^{2} - ac}{2ac} \geq \frac{2ac - ac}{2ac} = \frac{1}{2}\)，\par
+当且仅当\(a = c\)时，等号成立，\par
+又\(y = \cos x\)在\(\left( 0,\pi \right)\)上单调递减，
+而\(B \in \left( 0,\pi \right)\)，
+所以\(B \in \left( 0,\frac{\pi}{3} \right\rbrack\)，
+A正确；\par
+B选项，当\(B = \frac{\pi}{3}\)时，\(a = c\)，
+故\(\triangle ABC\)为等边三角形，\par
+所以\(\sin C - \sin B = 0\)，
+而\(\sin B\cos A \neq 0\)，显然不成立，B错误；\par
+C选项，若\(c = 2a\)，又\(b^{2} = ac\)，
+故\(b^{2} = 2a^{2}\)，则\(b = \sqrt{2}a\)，
+\(\cos C = \frac{a^{2} + b^{2} - c^{2}}{2ab} = \frac{- a^{2}}{2\sqrt{2}a^{2}} = - \frac{\sqrt{2}}{4} > - \frac{1}{2}\)，\par
+又\(C \in \left( 0,\pi \right)\)，
+又\(y = \cos x\)在\(\left( 0,\pi \right)\)上单调递减，
+故\(C < \frac{2\pi}{3}\)，C错误；\par
+D选项，若\(C = \frac{\pi}{2}\)，
+则\(c^{2} = a^{2} + b^{2} = a^{2} + ac\)，
+即\(\left( \frac{a}{c} \right)^{2} + \frac{a}{c} = 1\)，\par
+解得\(\frac{a}{c} = \frac{\sqrt{5} - 1}{2}\)，
+由正弦定理得\(\frac{a}{c} = \frac{\sin A}{\sin C} = \frac{\sqrt{5} - 1}{2}\)，
+故\(\sin A = \frac{\sqrt{5} - 1}{2}\)，D正确}
+\end{question}
+
+\begin{question}
+正方体\(ABCD - A_{1}B_{1}C_{1}D_{1}\)中，\(AB = 2\)，\(E\)是棱\(AB\)上的动点(含端点)，则(    )
+\begin{choices}
+  \item \(A_{1}E + EC\)的最小值为\(\frac{1}{3}\)
+  \item 若\(E\)是棱\(AB\)的中点，则点\(A_{1}\)到平面\(EB_{1}D\)的距离为\(\frac{2\sqrt{6}}{3}\)
+  \item 记四棱锥\(A_{1} - ABCD\)外接球的球心为\(O\)，则直线\(OE\)与平面\(ABCD\)所成角的正切值的取值范围为\(\lbrack\frac{\sqrt{2}}{2},1\rbrack\)
+  \item 若\(M\)，\(N\)分别是棱\(BC\)，\(CC_{1}\)的中点，则\(\overrightarrow{NE}\)在\(\overrightarrow{NM}\)上的投影向量的模长为定值
+\end{choices}
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q10-img2 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png width=30% inline=false question_index=10 sub_index=1
+% CONTEXT_BEFORE: 为\(O\)，则直线\(OE\)与平面\(ABCD\)所成角的正切值的取值范围为\(\lbrack\frac{\sqrt{2}}{2},1\rbrack\)   [ITEM] 若\(M\)，\(N\)分别是棱\(BC\)，\(CC_{1}\)的中点，则\(\overrightarrow{NE}\)在\(\overrightarrow{NM}\)上的投影向量的模长为定值 [END choices}
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png} [END center}   [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png
+  % VARIABLES: A, AA_, AB, ABCD, AE, A_, B, BC, B_, C, CC_, C_, D, DA, DB_, DC, DD_, DE, D_, E, EB_, EC, EO, F, M, N, NE, NM, O, OE, OEO_, OF, OO_, O_, S_, V_, d, x, y, z
+  % 示例：三角形 ABC
+  \coordinate (A) at (0,0);
+  \coordinate (B) at (3,0);
+  \coordinate (C) at (1.2,2);
+  \draw (A) -- (B) -- (C) -- cycle;
+  \node[below left] at (A) {$A$};
+  \node[below right] at (B) {$B$};
+  \node[above] at (C) {$C$};
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q10-img2
+\end{center}
+
+
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q10-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png width=30% inline=false question_index=10 sub_index=1
+% CONTEXT_BEFORE: ghtarrow{NE}\)在\(\overrightarrow{NM}\)上的投影向量的模长为定值 [END choices}  [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png} [END center}
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png} [END center}  \topics{求点面距离；空间向量模长的坐标表示；求线面角；空间向量数量积的应用} \difficulty{0.4} \answer
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png
+  % VARIABLES: A, AA_, AB, ABCD, AE, A_, B, BC, B_, C, CC_, C_, D, DA, DB_, DC, DD_, DE, D_, E, EB_, EC, EO, F, M, N, NE, NM, O, OE, OEO_, OF, OO_, O_, S_, V_, d, x, y, z
+  % 示例：三角形 ABC
+  \coordinate (A) at (0,0);
+  \coordinate (B) at (3,0);
+  \coordinate (C) at (1.2,2);
+  \draw (A) -- (B) -- (C) -- cycle;
+  \node[below left] at (A) {$A$};
+  \node[below right] at (B) {$B$};
+  \node[above] at (C) {$C$};
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q10-img1
+\end{center}
+
+
+\topics{求点面距离；空间向量模长的坐标表示；求线面角；空间向量数量积的应用}
+\difficulty{0.4}
+\answer{BCD}
+\explain{对于A，
+将平面\(AA_{1}B_{1}B\)沿\(AB\)翻折至与平面\(ABCD\)共面，
+如图所示，\par
+则\(A_{1}E + EC \geq A_{1}C = \sqrt{4^{2} + 2^{2}} = 2\sqrt{5}\)，
+故A错误；\par
+对于B，若\(E\)是棱\(AB\)的中点，则\(DE = B_{1}E\)，
+即\(\triangle DB_{1}E\)是等腰三角形，\par
+设\(DB_{1}\)的中点为\(O\)，
+则\(DE = B_{1}E = \sqrt{5}\)，
+\(DB_{1} = 2\sqrt{3}\)，\par
+所以\(EO = \sqrt{DE^{2} - \left( \frac{1}{2}DB_{1} \right)^{2}} = \sqrt{2}\)，\par
+因为\(V_{A_{1} - EB_{1}D} = V_{D - A_{1}EB_{1}}\)，
+设点\(A_{1}\)到平面\(EB_{1}D\)的距离为\(d\)，\par
+则\(d = \frac{3V_{D - A_{1}EB_{1}}}{S_{\Delta DB_{1}E}} = \frac{2 \times \frac{1}{2} \times 2 \times 2}{\frac{1}{2} \times 2\sqrt{3} \times \sqrt{2}} = \frac{2\sqrt{6}}{3}\)，
+故B正确；\par
+对于C，
+四棱锥\(A_{1} - ABCD\)外接球的球心即为该正方体的外接球球心，
+即为点\(O\)，\par
+设点\(O\)在平面\(ABCD\)的投影点为\(O_{1}\)，
+边\(AB\)的中点为\(F\)，
+连接\(O_{1}F,O_{1}E,OF,OE\)，\par
+则直线\(OE\)与平面\(ABCD\)所成角为\(\angle OEO_{1}\)，
+\(\tan\angle OEO_{1} = \frac{OO_{1}}{O_{1}E} = \frac{1}{O_{1}E}\)，
+\(1 \leq O_{1}E \leq \sqrt{2}\)，\par
+当点\(E\)与点\(F\)重合时，
+直线\(OE\)与平面\(ABCD\)所成角最大，\par
+此时\(OO_{1} = 1\)，\(O_{1}E = 1\)，
+其所成角正切值为\(\frac{OO_{1}}{O_{1}E} = 1\)，\par
+当点\(E\)与点\(A\)或点\(B\)重合时，
+直线\(OE\)与平面\(ABCD\)所成角最小，\par
+此时\(OO_{1} = 1\)，\(O_{1}E = \sqrt{2}\)，
+其正切值为\(\frac{OO_{1}}{O_{1}E} = \frac{\sqrt{2}}{2}\)，\par
+所以直线\(OE\)与平面\(ABCD\)所成角的正切值的取值范围为\(\left\lbrack \frac{\sqrt{2}}{2},1 \right\rbrack\)，
+故C正确；\par
+对于D，
+记向量\(\overrightarrow{NE}\)与\(\overrightarrow{NM}\)的夹角为\(\theta\)，\par
+则\(\overrightarrow{NE}\)在\(\overrightarrow{NM}\)上的投影向量的模长\(\left| \left| \overrightarrow{NE} \right|\cos\theta \right| = \left| \overrightarrow{NE} \right|\frac{\left| \overrightarrow{NE} \cdot \overrightarrow{NM} \right|}{\left| \overrightarrow{NE} \right| \cdot \left| \overrightarrow{NM} \right|} = \frac{\left| \overrightarrow{NE} \cdot \overrightarrow{NM} \right|}{\left| \overrightarrow{NM} \right|}\)，\par
+以\(D\)点为坐标原点，\(DA\)所在直线为\(x\)轴，
+\(DC\)所在直线为\(y\)轴，\(DD_{1}\)所在直线为\(z\)轴，
+建立空间直角坐标系，\par
+设\(AE = x\)，则\(E(2,x,0)\)，\(N(0,2,1)\)，
+\(M(1,2,0)\)，\par
+\(\overrightarrow{NE} = (2,x - 2, - 1)\)，
+\(\overrightarrow{NM} = (1,0, - 1)\)，
+\(\frac{\left| \overrightarrow{NE} \cdot \overrightarrow{NM} \right|}{\left| \overrightarrow{NM} \right|} = \frac{3\sqrt{2}}{2}\)为定值，
+故D正确}
+\end{question}
+
+\begin{question}
+已知函数\(f(x) = \left\{ \begin{array}{r}
+\mathrm{e}^{x},x \leq 0 \\
+\ln x + 1,x > 0
+\end{array} \right.\)，方程\(f(f(x)) = m\)有三个不同的实根\(x_{1}\)，\(x_{2}\)，\(x_{3}\)，则(    )
+\begin{choices}
+  \item 方程\(f(x) = m\)有两个不同的实根
+  \item \(m \in \lbrack 1,\text{e}\rbrack\)
+  \item \(m - 1\)是方程\(f(f(x)) = m\)的一个根
+  \item \(x_{1} + x_{2} + x_{3} < \text{e} + \frac{1}{\text{e}}\)
+\end{choices}
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q11-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png width=30% inline=false question_index=11 sub_index=1
+% CONTEXT_BEFORE: es}   [ITEM] 方程\(f(x) = m\)有两个不同的实根   [ITEM] \(m \in \lbrack 1,\text{e}\rbrack\)   [ITEM] \(m - 1\)是方程\(f(f(x)) = m\)的一个根   [ITEM] \(x_{1} + x_{2} + x_{3} < \text{e} + \frac{1}{\text{e}}\) [END choices}
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png} [END center}  \topics{函数与方程的综合应用；根据函数零点的个数求参数范围；用导数判断或证明已知函数的单调性} \difficulty{0.4
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png
+  % VARIABLES: array, e, f, g, m, r, t, t_, x, x_
+  % 示例：坐标轴和示意曲线（请根据题意替换函数表达式）
+  \draw[->] (-3,0) -- (3,0) node[right] {$x$};
+  \draw[->] (0,-2) -- (0,2) node[above] {$y$};
+  % 示例曲线（抛物线）
+  \draw[domain=-1.5:1.5, smooth, variable=\x, blue] plot ({\x}, {\x*\x});
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q11-img1
+\end{center}
+
+
+\topics{函数与方程的综合应用；根据函数零点的个数求参数范围；用导数判断或证明已知函数的单调性}
+\difficulty{0.4}
+\answer{ACD}
+\explain{令\(t = f(x)\)，考虑\(f(t) = m\)的解.\par
+\(f(t)\)的图象如图所示：\par
+对于A，
+因为\(f\left\lbrack f(x) \right\rbrack = m\)有3个不同的解，
+故\(f(t) = m\)有两个不同的解\(t_{1},t_{2}\)，\par
+且\(t_{1} \leq 0\)，\(0 < t_{2} \leq 1\)，
+故A正确.\par
+对于B，由A的分析可得\(0 < m \leq 1\)，故B错误.\par
+对于C，
+由A的分析结合图象可得：\(m = \mathrm{e}^{t_{1}} = \ln t_{2} + 1\)有两个不同的解，\par
+故\(m - 1 = \ln t_{2} \leq 0\)且\(m - 1 = \mathrm{e}^{t_{1}} - 1 \leq 0\)，
+故\(f\left( f(m - 1) \right) = f\left( \mathrm{e}^{m - 1} \right) = 1 + \ln\mathrm{e}^{m - 1} = m\)，\par
+故\(m - 1\)是方程\(f(f(x)) = m\)的一个根，故C正确.\par
+对于D，由A的分析可得\(f(x) = t_{2}\)有两个不同的解，
+不妨设为\(x_{1},x_{2}\)，\par
+\(f(x) = t_{1}\)有唯一解，不妨设为\(x_{3}\)，\par
+则\(\mathrm{e}^{x_{1}} = \ln x_{2} + 1 = t_{2}\)，
+\(\ln x_{3} + 1 = t_{1}\)，
+故\(x_{1} = \ln t_{2},x_{2} = \mathrm{e}^{t_{2} - 1},x_{3} = \mathrm{e}^{t_{1} - 1}\)，\par
+故\(x_{1} + x_{2} + x_{3} = \ln t_{2} + \mathrm{e}^{t_{2} - 1} + \mathrm{e}^{t_{1} - 1}\)，\par
+而\(m = \mathrm{e}^{t_{1}} = \ln t_{2} + 1\)即\(t_{1} = \ln m,t_{2} = \mathrm{e}^{m - 1}\)，\par
+所以\(x_{1} + x_{2} + x_{3} = m - 1 + \mathrm{e}^{\mathrm{e}^{m - 1} - 1} + \mathrm{e}^{\ln m - 1} = m - 1 + \mathrm{e}^{\mathrm{e}^{m - 1} - 1} + \frac{m}{\text{e}}\)，\par
+记\(g(m) = m - 1 + \mathrm{e}^{\mathrm{e}^{m - 1} - 1} + \frac{m}{\text{e}}\)，
+则\(g'(m) = 1 + \mathrm{e}^{\mathrm{e}^{m - 1} - 1} \times \mathrm{e}^{m - 1} + \frac{1}{\text{e}} > 0\)，\par
+故\(g(m)\)在\((0,1\rbrack\)上单调递增，
+故\(g(m) \leq g(1) = \mathrm{e}^{- 1} + 1 < \mathrm{e}^{- 1} + \text{e}\)，
+D正确}
+\end{question}
+
+\section{填空题}
+
+\begin{question}
+等差数列\(\left\{ a_{n} \right\}\)的公差为2，
+记前\(n\)项的和为\(S_{n}\)，若\(S_{11} = 11\)，
+则\(a_{1} =\)
+.
+\topics{等差数列通项公式的基本量计算；等差数列前n项和的基本量计算}
+\difficulty{0.85}
+\answer{\(- 9\)}
+\explain{由等差数列的求和公式得：\(S_{11} = \frac{11(a_{1} + a_{11})}{2} = 11a_{6} = 11\)，\par
+\(\therefore a_{6} = 1\)，
+因为等差数列的公差:\(d = 2\),\par
+又由等差数列的通项公式可得：\(a_{6} = a_{1} + 5d = 1\)，
+所以解得\(a_{1} = - 9\).\(- 9\)}
+\end{question}
+
+\begin{question}
+平面直角坐标系中，
+直线\(y = a\)与\(y\)轴和曲线\(y = 2\ln x\)的交点分别为\(A,B\)，
+若曲线\(y = 2\ln x\)在\(B\)点处的切线交\(y\)轴于\(C\)点，
+则\(|AC| =\)
+.
+\topics{基本初等函数的导数公式；求在曲线上一点处的切线方程(斜率)}
+\difficulty{0.65}
+\answer{\(2\)}
+\explain{由直线\(y = a\)与\(y\)轴及曲线\(y = 2\ln x\)的交点分别为\(A,B\)，
+可得\(A(0,a),B(\mathrm{e}^{\frac{a}{2}},a)\)，\par
+又由\(y = 2\ln x\)，可得\(y' = \frac{2}{x}\)，
+则\(y'|_{x = \mathrm{e}^{\frac{a}{2}}} = \frac{2}{\mathrm{e}^{\frac{a}{2}}}\)，\par
+所以曲线\(y = 2\ln x\)在\(B\)点处的切线方程为\(y - a = \frac{2}{e^{\frac{a}{2}}}(x - e^{\frac{a}{2}})\)，\par
+令\(x = 0\)，可得\(y = a - 2\)，
+即\(C(0,a - 2)\)，
+所以\(|AC| = \left| a - (a - 2) \right| = 2\).\(2\).}
+\end{question}
+
+\begin{question}
+已知双曲线\(C:\frac{x^{2}}{a^{2}} - \frac{y^{2}}{b^{2}} = 1\)(\(a > 0\)，
+\(b > 0\))的左右焦点分别为\(F_{1}\)，\(F_{2}\)，
+直线\(y = x - \sqrt{a^{2} + b^{2}}\)与\(C\)的右支交于\(A\)，
+\(B\)两点，\(P\)，
+\(Q\)分别为\(\triangle AF_{1}F_{2}\)，
+\(\triangle BF_{1}F_{2}\)的内心，
+若\(|PQ| = \sqrt{2}a\)，则\(C\)的离心率为
+.
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q14-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png width=30% inline=false question_index=14 sub_index=1
+% CONTEXT_BEFORE: ))的左右焦点分别为\(F_{1}\)，\(F_{2}\)， 直线\(y = x - \sqrt{a^{2} + b^{2}}\)与\(C\)的右支交于\(A\)， \(B\)两点，\(P\)， \(Q\)分别为\(\triangle AF_{1}F_{2}\)， \(\triangle BF_{1}F_{2}\)的内心， 若\(|PQ| = \sqrt{2}a\)，则\(C\)的离心率为 .
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png} [END center}  \topics{求双曲线的离心率或离心率的取值范围} \difficulty{0.4} \answer{\(\frac{3}{2}\)
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png
+  % VARIABLES: A, AB, AF_, AH, AI, B, BF_, C, F_, H, HF_, I, IF_, J, JF_, P, PF_, PJ, PQ, Q, QF_, QJ, a, b, c, e, m, x, y
+  % 示例：三角形 ABC
+  \coordinate (A) at (0,0);
+  \coordinate (B) at (3,0);
+  \coordinate (C) at (1.2,2);
+  \draw (A) -- (B) -- (C) -- cycle;
+  \node[below left] at (A) {$A$};
+  \node[below right] at (B) {$B$};
+  \node[above] at (C) {$C$};
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q14-img1
+\end{center}
+
+
+\topics{求双曲线的离心率或离心率的取值范围}
+\difficulty{0.4}
+\answer{\(\frac{3}{2}\)}
+\explain{由题意，
+直线\(y = x - \sqrt{a^{2} + b^{2}} = x - c\)，则直线过\(F_{2}\)，\par
+如图，
+设\(\triangle AF_{1}F_{2}\)内切圆与各边的切点为\(H\)，\(I\)，
+\(J\)，\par
+则\(\left| AF_{1} \right| - \left| AF_{2} \right| = (|AH| + \left| HF_{1} \right|) - (|AI| + \left| IF_{2} \right|) = \left| HF_{1} \right| - \left| IF_{2} \right| = \left| F_{1}J \right| - \left| JF_{2} \right| = 2a\)，\par
+设\(J(m,0)\)，则\(m = a\)，即\(P\)点的横坐标为\(a\)，\par
+同理可得\(Q\)点的横坐标为\(a\).\par
+则\(PQ\)的直线方程为\(x = a\)，
+又直线\(AB\)的倾斜角为\(\frac{\pi}{4}\)，\par
+因为\(\angle PF_{2}F_{1} = \frac{1}{2}(\pi - \frac{\pi}{4}) = \frac{3\pi}{8}\)，
+\(|PJ| = \left| JF_{2} \right|\tan\frac{3\pi}{8}\)，\par
+\(\angle QF_{2}F_{1} = \frac{\pi}{2} - \frac{3\pi}{8} = \frac{\pi}{8}\)，
+\(|QJ| = \left| JF_{2} \right|\tan\frac{\pi}{8}\)，\par
+所以\(|PQ| = \left| JF_{2} \right|(\tan\frac{\pi}{8} + \tan\frac{3\pi}{8}) = (c - a)(\frac{\sin\frac{\pi}{8}}{\cos\frac{\pi}{8}} + \frac{\sin\frac{3\pi}{8}}{\cos\frac{3\pi}{8}}) = (c - a)(\frac{\sin\frac{\pi}{8}}{\cos\frac{\pi}{8}} + \frac{\cos\frac{\pi}{8}}{\sin\frac{\pi}{8}})= \frac{(c - a)}{\sin\frac{\pi}{8}\cos\frac{\pi}{8}} = \frac{(c - a)}{\frac{1}{2}\sin\frac{\pi}{4}} = 2\sqrt{2}(c - a)\)，\par
+又\(|PQ| = \sqrt{2}a\)，
+则\(\sqrt{2}a = 2\sqrt{2}(c - a)\)，\par
+得\(2c = 3a\)，
+\(e = \frac{c}{a} = \frac{3}{2}\).\(\frac{3}{2}\).}
+\end{question}
+
+\section{解答题}
+
+\begin{question}
+如图，在直三棱柱\(ABC - A_{1}B_{1}C_{1}\)中，
+\(AA_{1} = AB = \frac{1}{2}AC = 2\)，
+\(AB\bot BC\).
+\begin{enumerate}[label=(\arabic*)]
+  \item 求证：\(AB_{1}\bot\)平面\(A_{1}BC\)；
+  \item 求平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角的余弦值.
+\end{enumerate}
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q15-img2 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png width=30% inline=false question_index=15 sub_index=1
+% CONTEXT_BEFORE: \)中， \(AA_{1} = AB = \frac{1}{2}AC = 2\)， \(AB\bot BC\). [BEGIN enumerate}[label=(\arabic*)]   [ITEM] 求证：\(AB_{1}\bot\)平面\(A_{1}BC\)；   [ITEM] 求平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角的余弦值. [END enumerate}
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png} [END center}   [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png
+  % VARIABLES: A, AA_, AB, ABC, AB_, AC, ACC_, AE, A_, B, BA, BB_, BC, B_, C, C_, E, EA, EB_, array, r, x, y, z
+  % 示例：正方形，顶点标记 A,B,C,D
+  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
+  \node[below left] at (0,0) {$A$};
+  \node[below right] at (2,0) {$B$};
+  \node[above right] at (2,2) {$C$};
+  \node[above left] at (0,2) {$D$};
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q15-img2
+\end{center}
+
+
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q15-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png width=30% inline=false question_index=15 sub_index=1
+% CONTEXT_BEFORE: [ITEM] 求平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角的余弦值. [END enumerate}  [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png} [END center}
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png} [END center}  \topics{证明线面垂直；面面角的向量求法；求二面角} \difficulty{0.65} \answer{(1)证明见解析 (2
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png
+  % VARIABLES: A, AA_, AB, ABC, AB_, AC, ACC_, AE, A_, B, BA, BB_, BC, B_, C, C_, E, EA, EB_, array, r, x, y, z
+  % 示例：正方形，顶点标记 A,B,C,D
+  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
+  \node[below left] at (0,0) {$A$};
+  \node[below right] at (2,0) {$B$};
+  \node[above right] at (2,2) {$C$};
+  \node[above left] at (0,2) {$D$};
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q15-img1
+\end{center}
+
+
+\topics{证明线面垂直；面面角的向量求法；求二面角}
+\difficulty{0.65}
+\answer{(1)证明见解析
+(2)\(\frac{\sqrt{6}}{4}\)}
+\explain{(1)在直三棱柱\(ABC - A_{1}B_{1}C_{1}\)中，
+\(AA_{1}\bot\)平面\(ABC\)，
+\(BC \subset\)平面\(ABC\)，所以\(AA_{1}\bot BC\).\par
+又\(AB\bot BC\)，\(AA_{1} \cap AB = A\)，
+所以\(BC\bot\)平面\(AA_{1}B_{1}B\)，\par
+\(AB_{1} \subset\)平面\(AA_{1}B_{1}B\)，
+所以\(BC\bot AB_{1}\).\par
+又\(AA_{1} = AB\)，
+所以四边形\(AA_{1}B_{1}B\)为正方形，
+从而\(A_{1}B\bot AB_{1}\).\par
+因为\(A_{1}B \cap BC = B\)，
+\(A_{1}B,BC \subset\)平面\(A_{1}BC\)，
+所以\(AB_{1}\bot\)平面\(A_{1}BC\).\par
+(2)法一：易知\(BB_{1},BA,BC\)两两垂直，以\(B\)为坐标原点，
+\(BC\)所在直线为\(x\)轴，\(AB\)所在直线为\(y\)轴，
+\(BB_{1}\)所在直线为\(z\)轴，\par
+建立如图空间直角坐标系：\par
+则\(B(0,0,0)\)，\(A(0,2,0)\)，
+\(C(2\sqrt{3},0,0)\)，\(A_{1}(0,2,2)\)，
+\(B_{1}(0,0,2)\)，\par
+从而\(\overrightarrow{AB_{1}} = (0, - 2,2)\)，
+\(\overrightarrow{AA_{1}} = (0,0,2)\)，
+\(\overrightarrow{AC} = (2\sqrt{3}, - 2,0)\).\par
+设平面\(A_{1}ACC_{1}\)的法向量为\(\overrightarrow{\eta} = (x,y,z)\)，
+则\par
+\(\left\{ \begin{array}{r}
+\overrightarrow{\eta} \cdot \overrightarrow{AA_{1}} = 0 \\
+\overrightarrow{\eta} \cdot \overrightarrow{AC} = 0
+\end{array} \right. \Rightarrow \left\{ \begin{array}{r}
+2z = 0 \\
+2\sqrt{3}x - 2y = 0
+\end{array} \right.\)，不妨取\(\overrightarrow{\eta} = (1,\sqrt{3},0)\)，\par
+由(1)可知，平面\(A_{1}BC\)的法向量为\(\overrightarrow{AB_{1}}\)，设平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角为\(\theta\)，\par
+则\(\cos\theta = \frac{\left| \overrightarrow{\eta} \cdot \overrightarrow{AB_{1}} \right|}{\left| \overrightarrow{\eta} \right| \cdot \left| \overrightarrow{AB_{1}} \right|} = \frac{2\sqrt{3}}{2 \times 2\sqrt{2}} = \frac{\sqrt{6}}{4}\).\par
+法二：过\(B_{1}\)作\(A_{1}C_{1}\)的垂线，垂足为\(E\)，连接\(AE\)，\par
+%
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image8.png}
+  \(\because\)平面\(A_{1}B_{1}C_{1}\bot\)平面\(AA_{1}C_{1}C\)，\(B_{1}E\bot A_{1}C_{1}\)，\(\therefore B_{1}E\bot\)平面\(ACC_{1}A_{1}\)，\par
+由(1)知，\(AB_{1}\bot\)平面\(A_{1}BC\)，\(\therefore\angle AB_{1}E\)的余弦值的绝对值即为所求.\par
+在\(\triangle AB_{1}E\)中，\(AB_{1}^{2} = AB^{2} + BB_{1}^{2} = 8\)，\(AE^{2} = A_{1}E^{2} + AA_{1}^{2} = 5\)，\par
+\(EB_{1} = \frac{A_{1}B_{1} \times C_{1}B_{1}}{A_{1}C_{1}} = \sqrt{3}\)，所以\(EB_{1}^{2} + AE^{2} = AB_{1}^{2}\)，即\(EB_{1}\bot EA\).\par
+设平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角为\(\theta\)，\(\theta = \angle AB_{1}E\)，\par
+则\(\cos\theta = \frac{B_{1}E}{AB_{1}} = \frac{\sqrt{3}}{2\sqrt{2}} = \frac{\sqrt{6}}{4}\).}
+\end{question}
+
+\begin{question}
+如图，正方形\(ABCD\)的边长为\(a_{1}\)，
+取正方形\(ABCD\)各边的中点\(E\)，\(F\)，\(G\)，\(H\)，
+作第2个正方形\(EFGH\)，其边长记为\(a_{2}\)；
+然后再取正方形\(EFGH\)各边的中点\(I\)，\(J\)，\(K\)，
+\(L\)，作第3个正方形\(IJKL\)，其边长记为\(a_{3}\)；
+依此方法一直继续下去，
+则记第\(n(n \in \mathbb{N}^{*})\)个正方形的边长为\(a_{n}\).已知\(a_{1} = \frac{\sqrt{2}}{2}\)，
+\(b_{n} = - \log_{2}a_{n}^{2}\).
+\begin{enumerate}[label=(\arabic*)]
+  \item 求\(a_{n}\)，\(b_{n}\)；
+  \item 记第\(n\)个正方形区域未被第\(n + 1\)个正方形区域覆盖的面积为\(S_{n}\)，
+求使得\(S_{1} + S_{2} + \cdots + S_{n} \geq \frac{2}{b_{n}}\)成立的\(n\)的最小值.
+\end{enumerate}
+
+\begin{center}
+% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q16-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png width=30% inline=false question_index=16 sub_index=1
+% CONTEXT_BEFORE: erate}[label=(\arabic*)]   [ITEM] 求\(a_{n}\)，\(b_{n}\)；   [ITEM] 记第\(n\)个正方形区域未被第\(n + 1\)个正方形区域覆盖的面积为\(S_{n}\)， 求使得\(S_{1} + S_{2} + \cdots + S_{n} \geq \frac{2}{b_{n}}\)成立的\(n\)的最小值. [END enumerate}
+% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png} [END center}  \topics{写出等比数列的通项公式；数列求和的其他方法；根据数列的单调性求参数；由定义判定等比数列} \difficulty{0.
+\begin{tikzpicture}[scale=1.0]
+  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png
+  % VARIABLES: ABCD, E, EFGH, F, G, H, I, IJKL, J, K, L, N, S_, a_, b_, f, n
+  % 示例：正方形，顶点标记 A,B,C,D
+  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
+  \node[below left] at (0,0) {$A$};
+  \node[below right] at (2,0) {$B$};
+  \node[above right] at (2,2) {$C$};
+  \node[above left] at (0,2) {$D$};
+\end{tikzpicture}
+% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q16-img1
+\end{center}
+
+
+\topics{写出等比数列的通项公式；数列求和的其他方法；根据数列的单调性求参数；由定义判定等比数列}
+\difficulty{0.65}
+\answer{(1)\(a_{n} = {(\frac{\sqrt{2}}{2})}^{n}\)，\(b_{n} = n\)
+(2)\(5\)}
+\explain{(1)由题意，
+\({(\frac{a_{n}}{2})}^{2} + {(\frac{a_{n}}{2})}^{2} = a_{n + 1}^{2}\)，
+即\(a_{n + 1} = \frac{\sqrt{2}}{2}a_{n}\)，\par
+所以\(\left\{ a_{n} \right\}\)为等比数列，
+公比为\(\frac{\sqrt{2}}{2}\)，
+\(a_{1} = \frac{\sqrt{2}}{2}\)，
+所以\(a_{n} = {(\frac{\sqrt{2}}{2})}^{n}\).\par
+所以\(a_{n}^{2} = {(\frac{1}{2})}^{n}\)，
+\(b_{n} = - \log_{2}a_{n}^{2} = n\)，
+\(n \in \mathbb{N}^{*}\).\par
+(2)由题意，
+\(S_{n} = a_{n}^{2} - a_{n + 1}^{2} = {(\frac{1}{2})}^{n} - {(\frac{1}{2})}^{n + 1}\)，\par
+\(\therefore S_{1} + S_{2} + \cdots + S_{n} = a_{1}^{2} - a_{2}^{2} + a_{2}^{2} - a_{3}^{2} + \cdots a_{n}^{2} - a_{n + 1}^{2} = a_{1}^{2} - a_{n + 1}^{2} = \frac{1}{2} - {(\frac{1}{2})}^{n + 1}\)，\par
+\(\therefore\frac{1}{2} - {(\frac{1}{2})}^{n + 1} \geq \frac{2}{n}\)，
+\(\therefore\frac{2}{n} + {(\frac{1}{2})}^{n + 1} - \frac{1}{2} \leq 0\)\par
+设\(f(n) = \frac{2}{n} + {(\frac{1}{2})}^{n + 1} - \frac{1}{2}\)，
+则\(f(n)\)为单调递减数列，\par
+且\(f(5) = \frac{1}{64} - \frac{1}{10} < 0\)，
+\(f(4) = \frac{1}{32} > 0\)\par
+又\(n \in \mathbb{N}^{*}\)，
+所以\(f(n) \leq 0\) \(\Rightarrow n \geq 5\).\par
+\(\therefore n\)的最小值是5.}
+\end{question}
+
+\begin{question}
+已知函数\(f(x) = 1 - \cos x - \frac{x^{2}}{2}\)，
+\(x \in ( - \frac{\pi}{2},\frac{\pi}{2})\).
+\begin{enumerate}[label=(\arabic*)]
+  \item 判断函数\(f(x)\)的单调性；
+  \item 若\(g(x) = x - \ln(\cos x) + \frac{\pi}{4}\)，
+证明：\(g(x) > f(x)\)；
+  \item 证明：\(\sum_{k = 2}^{n}\cos\frac{2}{k} > n - 3\)(\(n \geq 2\)，
+\(n \in \mathbb{N}^{*}\)).
+\end{enumerate}
+\topics{利用导数证明不等式；用导数判断或证明已知函数的单调性；放缩法}
+\difficulty{0.4}
+\answer{(1)\(f(x)\)在\(( - \frac{\pi}{2},0)\)单调递增，\(f(x)\)在\((0,\frac{\pi}{2})\)单调递减
+(2)证明见解析
+(3)证明见解析}
+\explain{(1)\(f'(x) = \sin x - x\)，
+令\(t(x) = f'(x) = \sin x - x\)，\par
+\(t'(x) = \cos x - 1 \leq 0\)在\(x \in ( - \frac{\pi}{2},\frac{\pi}{2})\)恒成立.\par
+\(\therefore f'(x)\)在\(( - \frac{\pi}{2},\frac{\pi}{2})\)上单调递减.\par
+\(\therefore\) \(x \in (0,\frac{\pi}{2})\)，
+\(f'(x) < f'(0) = 0\)；
+\(x \in ( - \frac{\pi}{2},0)\)，\(f'(x) > 0\).\par
+故\(f(x)\)在\(( - \frac{\pi}{2},0)\)上单调递增，
+\(f(x)\)在\((0,\frac{\pi}{2})\)上单调递减.\par
+(2)法一：据(1)可知，\(f(x) \leq f(0) = 0\)恒成立.\par
+\(\because g'(x) = 1 + \frac{\sin x}{\cos x} = 1 + \tan x\)，\par
+当\(x \in \left( - \frac{\pi}{2}, - \frac{\pi}{4} \right)\)时，
+\(g'(x) < 0\)，
+当\(x \in \left( - \frac{\pi}{4},\frac{\pi}{2} \right)\)时，
+\(g'(x) > 0\)，\par
+\(\therefore g(x)\)在\(( - \frac{\pi}{2}, - \frac{\pi}{4})\)上单调递减，
+在\(( - \frac{\pi}{4},\frac{\pi}{2})\)上单调递增；\par
+\(\therefore g(x) \geq g( - \frac{\pi}{4}) = \frac{1}{2}\ln 2\)，
+\(\therefore g(x) \geq \frac{1}{2}\ln 2 > 0\)，
+则\(g(x) > f(x)\)成立.\par
+法二：要证\(g(x) > f(x)\)，
+即证\(g(x) - f(x) > 0\).\par
+令\(m(x) = \ln x - x - 1\)，
+\(m'(x) = \frac{1}{x} - 1 = \frac{1 - x}{x}\)，\par
+当\(x > 1\)时，\(m'(x) < 0\)，
+函数\(m(x)\)在\((1, + \infty)\)上单调递减，\par
+当\(x < 1\)时，\(m'(x) > 0\)，
+函数\(m(x)\)在\((0,1)\)上单调递增，\par
+\(\because\) \(m(1) = - 2\)，
+\(\therefore m(x) \leq - 2\)，
+即\(\ln x - x \leq - 1\).\par
+令\(h(x) = g(x) - f(x) = x - \ln(\cos x) + \cos x + \frac{1}{2}x^{2} - 1 + \frac{\pi}{4}\)，\par
+即\(h(x) = \frac{1}{2}x^{2} + x + \cos x - \ln(\cos x) + \frac{\pi}{4} - 1\)，\par
+令\(y_{1} = \frac{1}{2}x^{2} + x = \frac{1}{2}(x + 1)^{2} - \frac{1}{2}\)，
+所以\(y_{1} \geq - \frac{1}{2}\)，\par
+根据\(\ln x - x \leq - 1\)，
+\(\therefore\cos x - \ln(\cos x) \geq 1\)，\par
+\(\therefore h(x) > - \frac{1}{2} + 1 + \frac{\pi}{4} - 1 = - \frac{1}{2} + \frac{\pi}{4} > 0\)，\par
+\(\therefore g(x) > f(x)\)成立.\par
+(3)据(1)可知，
+\(f(x) = 1 - \cos x - \frac{x^{2}}{2} \leq 0 \Leftrightarrow \cos x \geq 1 - \frac{x^{2}}{2}\)，
+令\(x = \frac{2}{k}\)，
+则\(\cos\frac{2}{k} \geq 1 - \frac{2}{k^{2}}\)，\par
+\(\cos\frac{2}{k} \geq 1 - \frac{2}{k^{2}} > 1 - \frac{2}{(k - 1)k} = 1 - 2(\frac{1}{(k - 1)} - \frac{1}{k})\)(\(k \geq 2\)，
+\(k \in \mathbb{N}^{*}\)).\par
+\(\sum_{k = 2}^{n}\cos\frac{2}{k} = \cos 1 + \cos\frac{2}{3} + \cos\frac{2}{4} + \cos\frac{2}{5} + \cdots + \cos\frac{2}{n}\)，\par
+\(\cos 1 = \cos\frac{2}{2} > 1 - 2(\frac{1}{1} - \frac{1}{2})\)，
+\(\text{\quad}\cos\frac{2}{3} > 1 - 2(\frac{1}{2} - \frac{1}{3})\)，
+...，
+\(\cos\frac{2}{n} > 1 - 2(\frac{1}{n - 1} - \frac{1}{n})\)，\par
+相加可得：\(\cos 1 + \cos\frac{2}{3} + \cdots + \cos\frac{2}{n} > (n - 1) - 2(1 - \frac{1}{n}) = n - 3 + \frac{2}{n}\)，\par
+因为\(n \geq 2\)，则\(\frac{2}{n} > 0\)，
+\(n - 3 + \frac{2}{n} > n - 3\)，
+所以\(\sum_{k = 2}^{n}\cos\frac{2}{k} > n - 3\)，\par
+故\(\sum_{k = 2}^{n}\cos\frac{2}{k} > n - 3\)对\(n \geq 2\)，
+\(n \in N^{*}\)恒成立.}
+\end{question}
+
+\begin{question}
+已知一个大盒子内装有6个黄乒乓球，
+\(x(2 \leq x \leq 8)\)个白乒乓球.
+\begin{enumerate}[label=(\arabic*)]
+  \item 现甲乙两人从盒中进行随机摸球游戏：甲，乙两人轮流交替摸球，每次摸取一球，
+甲先摸球，直到两人中有一人摸到白乒乓球时游戏结束，每次摸出的小球均不再放回，
+且甲乙摸球相互独立.已知乙在第1次恰好摸到白乒乓球的概率为\(\frac{3}{14}\).
+
+(i)求\(x\)的值；
+
+(ii)记\(\xi\)表示游戏结束时甲摸球的次数，
+求\(\xi\)的分布列和期望.
+  \item 整理盒中小球时，需将所有乒乓球排成一排，
+要求每个黄乒乓球至少与另一个黄乒乓球相邻.记不超过3个黄乒乓球排在一起的概率为\(p\)，
+若\(p > \frac{1}{2}\)，求\(x\)的最小值.
+\end{enumerate}
+\topics{写出简单离散型随机变量分布列；求离散型随机变量的均值；计算古典概型问题的概率；相邻问题的排列问题}
+\difficulty{0.4}
+\answer{(1)(i)2；(ii)分布列见解析，\(\frac{25}{14}\)；
+(2)\(6\).}
+\explain{(1)(i)由题意，
+乙第一次恰好摸到白球的概率为\(\frac{C_{6}^{1}C_{x}^{1}}{C_{6 + x}^{1}C_{5 + x}^{1}} = \frac{3}{14}\)，\par
+即\(x^{2} - 17x + 30 = 0\)，
+解得\(x = 2\)或\(x = 15\)，\par
+因为\(2 \leq x \leq 8\)，所以\(x = 2\).\par
+(ii)根据游戏规则，\(\xi\)的取值可能为1，2，3，4，\par
+\(P(\xi = 1) = \frac{C_{2}^{1}}{C_{8}^{1}} + \frac{C_{6}^{1}}{C_{8}^{1}} \cdot \frac{C_{2}^{1}}{C_{7}^{1}} = \frac{1}{4} + \frac{3}{14} = \frac{13}{28}\)；\par
+\(P(\xi = 2) = \frac{C_{6}^{2}}{C_{8}^{2}}\frac{C_{2}^{1}}{C_{6}^{1}} + \frac{C_{6}^{3}}{C_{8}^{3}} \cdot \frac{C_{2}^{1}}{C_{5}^{1}} = \frac{5}{28} + \frac{1}{7} = \frac{9}{28}\)；\par
+\(P(\xi = 3) = \frac{C_{6}^{4}}{C_{8}^{4}}\frac{C_{2}^{1}}{C_{4}^{1}} + \frac{C_{6}^{5}}{C_{8}^{5}} \cdot \frac{C_{2}^{1}}{C_{3}^{1}} = \frac{3}{28} + \frac{1}{14} = \frac{5}{28}\)；\par
+\(P(\xi = 4) = \frac{C_{6}^{6}}{C_{8}^{6}}\frac{C_{2}^{1}}{C_{2}^{1}} = \frac{1}{28}\)；\par
+所以\(\xi\)的分布列为\par
+\begin{center}
+\begin{tabular}{|c|c|c|c|c|}
+\hline
+\hline
+\(\xi\) & 1 & 2 & 3 & 4 \\
+\hline
+\(P\) & \(\frac{13}{28}\) & \(\frac{9}{28}\) & \(\frac{5}{28}\) & \(\frac{1}{28}\) \\
+\hline
+\end{tabular}
+\end{center}\par
+\(E(\xi) = 1 \times \frac{13}{28} + 2 \times \frac{9}{28} + 3 \times \frac{5}{28} + 4 \times \frac{1}{28} = \frac{25}{14}\).\par
+(2)整理乒乓球时，要使得至少2个黄球相邻，则有"黄黄---黄黄---黄黄"，
+"黄黄黄---黄黄黄"，"黄黄---黄黄黄黄"，"黄黄黄黄---黄黄"，
+"黄黄黄黄黄黄"5种情况.\par
+可以先排列白球，通过插空法，让黄球排列在白球与白球之间的空位上.\par
+所以"黄黄---黄黄---黄黄"有\(C_{x + 1}^{3}\)种排法；\par
+"黄黄黄---黄黄黄"，"黄黄---黄黄黄黄"，
+"黄黄黄黄---黄黄"均有\(C_{x + 1}^{2}\)种排法，
+总共\(3C_{x + 1}^{2}\)种；\par
+"黄黄黄黄黄黄"有\(C_{x + 1}^{1}\)种排法.\par
+不超过3个黄球排在一起的情况只能为"黄黄---黄黄---黄黄"与"黄黄黄---黄黄黄"两种情况，\par
+所以\(p = \frac{C_{x + 1}^{3} + C_{x + 1}^{2}}{C_{x + 1}^{3} + 3C_{x + 1}^{2} + C_{x + 1}^{1}} = \frac{x^{2} + 2x}{x^{2} + 8x + 6} > \frac{1}{2}\)，
+即有\(x^{2} - 4x - 6 > 0\)，\par
+解得\(x > 2 + \sqrt{10}\)或\(x < 2 - \sqrt{10}\)(舍去)，
+所以\(x\)的最小值为6.}
+\end{question}
+
+\begin{question}
+已知椭圆\(E:\frac{x^{2}}{a^{2}} + y^{2} = 1(a > 1)\)的右焦点为\(F(1,0)\)，
+\(P\)为椭圆\(E\)上的动点.
+\begin{enumerate}[label=(\arabic*)]
+  \item 求椭圆\(E\)的方程；
+  \item 已知\(A\)，\(B\)为椭圆\(E\)上的两个动点，
+且直线\(AB\)经过点\(F\)，
+记线段\(AB\)的中点为\(C\)，\(O\)为坐标原点.
+
+(i)若平行四边形\(OACB\)的面积为定值，求此定值；
+
+(ii)记\(C\)关于原点对称的点为\(D\)，证明：\(A\)，\(B\)，\(C\)，\(D\)四点共圆.
+\end{enumerate}
+\topics{椭圆中的定值问题；根据a；b；c求椭圆标准方程；椭圆中三角形(四边形)的面积}
+\difficulty{0.4}
+\answer{(1)\(\frac{x^{2}}{2} + y^{2} = 1\)
+(2)(i)\(\frac{\sqrt{6}}{2}\)；(ii)证明见解析}
+\explain{(1)由题意，
+当\(P\)在短轴顶点时\(S_{\triangle OFP}\)最大，
+此时\(S_{\triangle OFP} = \frac{1}{2}\sqrt{a^{2} - 1} = \frac{1}{2}\)，\par
+解得\(a^{2} = 2\)，
+所以椭圆方程为：\(\frac{x^{2}}{2} + y^{2} = 1\)；\par
+(2)(i)由题意可得，直线\(l\)的斜率存在，
+设\(A(x_{1},y_{1})\)，\(B(x_{2},y_{2})\)，
+直线\(l\)的斜率为\(k\).\par
+直线\(AB\)的方程为\(y = k(x - 1)\)，
+代入\(\frac{x^{2}}{2} + y^{2} = 1\)，
+得\((2k^{2} + 1)x^{2} - 4k^{2}x + 2k^{2} - 2 = 0\)，\par
+其中\(\Delta = 16k^{4} - 4(2k^{2} + 1)(2k^{2} - 2) = 8k^{2} + 8 > 0\)，
+\(x_{1} + x_{2} = \frac{4k^{2}}{2k^{2} + 1}\)，
+\(x_{1}x_{2} = \frac{2k^{2} - 2}{2k^{2} + 1}\)，\par
+\(y_{1} + y_{2} = k(x_{1} + x_{2}) - 2k = - \frac{2k}{2k^{2} + 1}\)，\par
+从而\(C(\frac{4k^{2}}{2k^{2} + 1},\frac{- 2k}{2k^{2} + 1})\).因为\(C\)点在椭圆上，
+代入椭圆方程得\(\frac{8k^{4}}{\left( 2k^{2} + 1 \right)^{2}} + \frac{4k^{2}}{\left( 2k^{2} + 1 \right)^{2}} = 1\)，\par
+即\(k^{4} = \frac{1}{4}\)，
+解得\(k^{2} = \frac{1}{2}\)，
+所以\(x_{1} + x_{2} = 1\)，
+\(x_{1}x_{2} = - \frac{1}{2}\).\par
+所以\(|AB| = \sqrt{1 + k^{2}}\left| x_{1} - x_{2} \right| = \sqrt{1 + k^{2}} \cdot \sqrt{{(x_{1} + x_{2})}^{2} - 4x_{1}x_{2}} = \frac{3\sqrt{2}}{2}\)，\par
+又点\(O\)到直线\(AB\)的距离为\(d = \frac{|k|}{\sqrt{1 + k^{2}}} = \frac{\sqrt{3}}{3}\)，\par
+所以平行四边形\(OACB\)的面积\(S = |AB| \cdot d = \frac{3\sqrt{2}}{2} \times \frac{\sqrt{3}}{3} = \frac{\sqrt{6}}{2}\).\par
+(ii)法一：由(i)可知\(C(1, - k)\)，
+\(C\)关于\(O\)的对称点为\(D( - 1,k)\)，
+\(A(x_{1},k(x_{1} - 1))\)，
+\(B(x_{2},k(x_{2} - 1))\)，\par
+因为\(x_{1} + x_{2} = 1\)，
+\(x_{1}x_{2} = - \frac{1}{2}\)，\par
+即\(A(x_{1}, - kx_{2})\)，
+\(B(x_{2}, - kx_{1}) \cdot \overrightarrow{CA} = (x_{1} - 1,k - kx_{2}) = ( - x_{2},kx_{1})\)，
+\(\overrightarrow{CB} = ( - x_{1},kx_{2})\)，\par
+所以\(\overrightarrow{CA} \cdot \overrightarrow{CB} = (1 + k^{2})x_{1}x_{2} = - \frac{3}{4}\)，\par
+\(\left| \overrightarrow{CA} \right| \cdot \left| \overrightarrow{CB} \right| = \sqrt{x_{2}^{2} + k^{2}x_{1}^{2}} \cdot \sqrt{x_{1}^{2} + k^{2}x_{2}^{2}} = \sqrt{(1 + k^{4})x_{1}^{2}x_{2}^{2} + k^{2}(x_{1}^{4} + x_{2}^{4})} = \sqrt{\frac{5}{16} + \frac{1}{2}(x_{1}^{4} + x_{2}^{4})}\)\par
+又\(\overrightarrow{DA} = (x_{1} + 1, - k(x_{2} + 1))\)，
+\(\overrightarrow{DB} = (x_{2} + 1, - k(x_{1} + 1))\)，\par
+所以\(\overrightarrow{DA} \cdot \overrightarrow{DB} = (1 + k^{2})(x_{1} + 1)(x_{2} + 1) = \frac{9}{4}\)，\par
+\(\left| \overrightarrow{DA} \right| \cdot \left| \overrightarrow{DB} \right| = \sqrt{{(x_{1} + 1)}^{2} + k^{2}{(x_{2} + 1)}^{2}} \cdot \sqrt{{(x_{2} + 1)}^{2} + k^{2}{(x_{1} + 1)}^{2}} = \sqrt{\frac{45}{16} + \frac{1}{2}({(x_{1} + 1)}^{4} + {(x_{2} + 1)}^{4})}\)，\par
+根据\(x_{1} + x_{2} = 1\)，
+\(x_{1}x_{2} = - \frac{1}{2}\)，
+不妨设\(x_{1} = \frac{\sqrt{3} + 1}{2}\)，
+\(x_{2} = \frac{1 - \sqrt{3}}{2}\)，\par
+计算可得\({(1 + x_{1})}^{2} = 3x_{1}^{2}\)，
+\({(1 + x_{1})}^{4} = 9x_{1}^{4}\)，
+\({(1 + x_{2})}^{2} = 3x_{2}^{2}\)，
+\({(1 + x_{2})}^{4} = 9x_{2}^{4}\)，\par
+所以\(\left| \overrightarrow{DA} \right| \cdot \left| \overrightarrow{DB} \right| = 3\left| \overrightarrow{CA} \right| \cdot \left| \overrightarrow{CB} \right|\)，
+所以\(\cos\langle\overrightarrow{CA},\overrightarrow{CB}\rangle = \frac{\overrightarrow{CA} \cdot \overrightarrow{CB}}{\left| \overrightarrow{CA} \right| \cdot \left| \overrightarrow{CB} \right|} = - \cos\langle\overrightarrow{DA},\overrightarrow{DB}\rangle\)，\par
+所以\(\angle ACB + \angle ADB = \pi\).\par
+根据对角互补的四边形为圆的内接四边形，可知\(A\)，\(B\)，\(C\)，
+\(D\)四点共圆.\par
+法二：曲线系解法\par
+由(1)(2)得\(l_{AB}:y = k(x - 1)\)即\(kx - y - k = 0\)，
+\(l_{CD}:y = - \frac{1}{2k}x\)即\(x + 2ky = 0\)，\par
+所以过\(A\)，\(B\)，\(C\)，
+\(D\)的二次曲线系为\(\frac{1}{2}x^{2} + y^{2} - 1 + \lambda(kx - y - k)(x + 2ky) = 0\)，
+\(\lambda \in \mathbb{R}\)，\par
+\(x^{2}\)，\(y^{2}\)，
+*xy*的系数依次为\(\frac{1}{2} + \lambda k\)，
+\(1 - 2\lambda k\)，\(\lambda(2k^{2} - 1)\)，\par
+由(2)得\(k^{2} = \frac{1}{2}\)，
+\(\therefore xy\)的系数\(\lambda(2k^{2} - 1) = 0\)，\par
+又令\(\frac{1}{2} + \lambda k = 1 - 2\lambda k\)，
+得\(\lambda k = \frac{1}{6}\)，
+\(\therefore\lambda = \frac{1}{6k} = \pm \frac{\sqrt{2}}{6}\)，
+\(\therefore\lambda\)存在.\par
+\(\therefore A\)，\(B\)，\(C\)，\(D\)四点共圆.\par
+注：曲线系设法不同，\(\lambda\)的取值不同，因此，
+只需\(\lambda\)有解即可.}
+\end{question}
