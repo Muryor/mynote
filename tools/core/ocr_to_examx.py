@@ -2748,6 +2748,7 @@ def fix_spurious_items_in_enumerate(text: str) -> str:
     保守策略：
     - 只合并那些不以小问编号（如 "①②" 或 "(1)(2)"）开头的 \item
     - 如果 \item 内容以 "求"、"证明"、"设" 等动词开头，保留为独立 \item
+    - 🆕 v1.9.12：对使用 label=(\arabic*) 的 enumerate 不处理（已正确格式化）
     """
     import re
     
@@ -2773,6 +2774,8 @@ def fix_spurious_items_in_enumerate(text: str) -> str:
     
     in_enumerate = False
     enumerate_depth = 0
+    # 🆕 v1.9.12：跟踪是否在 label=(\arabic*) 风格的 enumerate 中
+    in_labeled_enumerate = False
     pending_item = None  # 待合并的 \item 行
     
     while i < n:
@@ -2787,6 +2790,9 @@ def fix_spurious_items_in_enumerate(text: str) -> str:
             result.append(line)
             in_enumerate = True
             enumerate_depth += 1
+            # 🆕 v1.9.12：检测是否是 label= 风格的 enumerate
+            if 'label=' in line:
+                in_labeled_enumerate = True
             i += 1
             continue
         
@@ -2798,11 +2804,18 @@ def fix_spurious_items_in_enumerate(text: str) -> str:
             enumerate_depth -= 1
             if enumerate_depth == 0:
                 in_enumerate = False
+                in_labeled_enumerate = False
             i += 1
             continue
         
         # 如果不在 enumerate 中，直接输出
         if not in_enumerate:
+            result.append(line)
+            i += 1
+            continue
+        
+        # 🆕 v1.9.12：如果在 label= 风格的 enumerate 中，不做合并处理
+        if in_labeled_enumerate:
             result.append(line)
             i += 1
             continue
@@ -2955,6 +2968,60 @@ def fix_bold_math_symbols(text: str) -> str:
     # 模式：*\(单个大写字母\)* → \(\mathbf{字母}\)
     # 只匹配单个大写字母，避免误伤其他粗体数学表达式
     text = re.sub(r'\*\\\(([A-Z])\\\)\*', r'\\(\\mathbf{\1}\\)', text)
+    
+    return text
+
+
+def fix_overset_arrow_vectors(text: str) -> str:
+    r"""🆕 v1.9.10：修复 \overset{arrow}{...} 向量符号错误
+    
+    问题来源：
+    - Pandoc 或 OCR 将向量符号转换为 \overset{arrow}{a} 或 \overset{\rightarrow}{a}
+    - 这不是有效的 LaTeX 命令，会导致编译失败
+    
+    保守策略：
+    - 只处理明确的 \overset{arrow}{...} 和 \overset{\rightarrow}{...} 模式
+    - 转换为标准的 \vec{...} 符号
+    - 不影响其他 \overset 用法（如 \overset{def}{=}）
+    
+    常见问题模式：
+    - \overset{arrow}{a} → \vec{a}
+    - \overset{\rightarrow}{a} → \vec{a}
+    - \overset{arrow}{AB} → \overrightarrow{AB}（多字符用 overrightarrow）
+    
+    注意：这是保守修复，只处理向量相关的 overset 模式
+    """
+    import re
+    
+    # 模式1：\overset{arrow}{单个字母} → \vec{字母}
+    # 匹配 \overset{arrow}{a} 或 \overset{arrow}{x} 等单字符
+    text = re.sub(
+        r'\\overset\{arrow\}\{([a-zA-Z])\}',
+        r'\\vec{\1}',
+        text
+    )
+    
+    # 模式2：\overset{\rightarrow}{单个字母} → \vec{字母}
+    text = re.sub(
+        r'\\overset\{\\rightarrow\}\{([a-zA-Z])\}',
+        r'\\vec{\1}',
+        text
+    )
+    
+    # 模式3：\overset{arrow}{多字符} → \overrightarrow{多字符}
+    # 匹配 \overset{arrow}{AB} 或 \overset{arrow}{PQ} 等多字符（2个或更多）
+    text = re.sub(
+        r'\\overset\{arrow\}\{([a-zA-Z_][a-zA-Z0-9_]+)\}',
+        r'\\overrightarrow{\1}',
+        text
+    )
+    
+    # 模式4：\overset{\rightarrow}{多字符} → \overrightarrow{多字符}
+    text = re.sub(
+        r'\\overset\{\\rightarrow\}\{([a-zA-Z_][a-zA-Z0-9_]+)\}',
+        r'\\overrightarrow{\1}',
+        text
+    )
     
     return text
 
@@ -4664,6 +4731,7 @@ def handle_subquestions(content: str) -> str:
     🆕 v1.7：统一小问编号格式，不添加 \mathrm
     🆕 v1.9：保留题干前导文本并自动包裹 enumerate
     🆕 v1.9.11：保护数学模式中的 (数字)，避免错误分割
+    🆕 v1.9.12：支持英文句号作为分隔符（2025-12-02）
     
     保护策略：
     1. 只匹配"行首"或"前面是空白/标点/换行"的 (数字)
@@ -4675,12 +4743,13 @@ def handle_subquestions(content: str) -> str:
     # 🆕 保守策略：只匹配看起来像小问编号的 (数字)
     # 小问编号特征：
     # - 在行首或前面是空白字符
-    # - 或者前面是中文标点符号（。；：）
+    # - 或者前面是中英文标点符号（。.；;：:）
     # - 后面通常跟着中文或描述性文字
     
     # 使用更严格的正则表达式来识别小问编号
-    # 匹配：行首的(数字) 或 前面是空白/换行/中文标点的(数字)
-    subq_pattern = r'(?:^|(?<=[\s。；：\n]))(\(\d+\))'
+    # 匹配：行首的(数字) 或 前面是空白/换行/中英文标点的(数字)
+    # 🆕 v1.9.12：添加英文句号 . 分号 ; 冒号 : 作为分隔符
+    subq_pattern = r'(?:^|(?<=[\s。.；;：:\n]))(\(\d+\))'
     
     # 查找所有潜在的小问编号位置
     potential_matches = list(re.finditer(subq_pattern, content, re.MULTILINE))
@@ -5778,6 +5847,9 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     # 🆕 v1.9.9：修复粗体数学符号和希腊字母连写（2025-12-01）
     result = fix_bold_math_symbols(result)  # *\(R\)* → \(\mathbf{R}\)
     result = fix_greek_letter_spacing(result)  # \pir → \pi r
+    
+    # 🆕 v1.9.10：修复向量符号错误（2025-12-02）
+    result = fix_overset_arrow_vectors(result)  # \overset{arrow}{a} → \vec{a}
     
     result = fix_nested_subquestions(result)
     result = fix_spurious_items_in_enumerate(result)

@@ -107,12 +107,73 @@ def apply_plan(tex: str, plan: Optional[dict]) -> str:
     return tex
 
 
+def remove_consecutive_duplicate_lines(tex: str, min_length: int = 20) -> str:
+    r"""🆕 v1.0.1：移除连续重复的行（保守策略）
+    
+    问题场景：
+    OCR 或 Pandoc 转换有时会产生连续的重复行，例如：
+      所以\(a_{n} = 2 \times 4^{n - 1}\)；
+      所以\(a_{n} = 2 \times 4^{n - 1}\)；
+    
+    保守策略：
+    1. 只移除完全相同的连续行
+    2. 行长度必须大于 min_length（避免误删短行如 "\par"）
+    3. 保留第一行，移除后续重复行
+    4. 不处理空行和只有空白的行
+    
+    Args:
+        tex: 输入的 LaTeX 文本
+        min_length: 最小行长度阈值，短于此长度的行不检测
+        
+    Returns:
+        去除重复行后的文本
+    """
+    if not tex:
+        return tex
+    
+    lines = tex.split('\n')
+    result = []
+    prev_line = None
+    removed_count = 0
+    
+    for line in lines:
+        stripped = line.strip()
+        
+        # 空行或只有空白的行：直接保留
+        if not stripped:
+            result.append(line)
+            prev_line = None  # 重置，空行不参与重复检测
+            continue
+        
+        # 太短的行：直接保留（如 \par, \end{...} 等）
+        if len(stripped) < min_length:
+            result.append(line)
+            prev_line = stripped
+            continue
+        
+        # 检查是否与上一行完全相同
+        if prev_line and stripped == prev_line:
+            # 重复行，跳过
+            removed_count += 1
+            continue
+        
+        # 非重复行，保留
+        result.append(line)
+        prev_line = stripped
+    
+    if removed_count > 0:
+        print(f"  ✅ 移除了 {removed_count} 行重复内容")
+    
+    return '\n'.join(result)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Agent-style deterministic refine for examx TeX")
     ap.add_argument("input", help="Input .tex from ocr_to_examx")
     ap.add_argument("output", help="Output .tex after refinement")
     ap.add_argument("--plan", help="JSON/YAML edit plan file", default=None)
     ap.add_argument("--create-tikz", help="Create tikz files and replace placeholders", action="store_true")
+    ap.add_argument("--no-dedup", help="Skip duplicate line removal", action="store_true")
     args = ap.parse_args()
 
     in_tex = Path(args.input)
@@ -123,6 +184,10 @@ def main():
 
     # Optionally create tikz inputs
     tex, created = replace_tikz_blocks(tex, out_tex, create_tikz=args.create_tikz)
+
+    # 🆕 v1.0.1：移除连续重复行（默认启用）
+    if not args.no_dedup:
+        tex = remove_consecutive_duplicate_lines(tex)
 
     # Optionally apply a plan (search/replace style)
     plan = load_plan(Path(args.plan)) if args.plan else None
