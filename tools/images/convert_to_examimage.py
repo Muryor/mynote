@@ -1,36 +1,47 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-convert_to_examimage.py - 转换图片路径为 \examimage 宏
+convert_to_examimage.py - 转换图片为相对路径 + \setexamdir
 
 功能：
-1. 将 \begin{center}\includegraphics[...]{path}\end{center} 转为 \examimage{full_path}{width}
-2. 复制图片到试卷目录的 images/media/ 下
-3. 使用从项目根目录开始的完整路径（如 content/exams/auto/.../images/media/xxx.png）
+1. 在试卷开头插入 \setexamdir{试卷目录}
+2. 将 \includegraphics 转换为 \examimage{相对路径}{宽度}
+3. 图片使用相对于试卷目录的路径（如 images/media/image1.png）
+
+优势：
+- 移动整个试卷目录后仍能正常编译
+- 组卷时只需更新 \setexamdir 即可
 
 用法：
-    python3 tools/images/convert_to_examimage.py <exam_tex> [--dry-run]
+    python3 tools/images/convert_to_examimage.py [--dry-run] <tex_file>...
 
 示例：
     # 预览
-    python3 tools/images/convert_to_examimage.py \
-        content/exams/auto/hubei_enshi_2026_q1/converted_exam.tex --dry-run
-    
+    python3 tools/images/convert_to_examimage.py --dry-run \
+        content/exams/auto/hubei_enshi_2026_q1/converted_exam.tex
+
     # 执行转换
     python3 tools/images/convert_to_examimage.py \
-        content/exams/auto/hubei_enshi_2026_q1/converted_exam.tex
+        content/exams/auto/*/converted_exam.tex
 """
 
 import re
+import sys
 import shutil
-import argparse
 from pathlib import Path
 
 
+def get_project_root() -> Path:
+    """获取项目根目录（包含 build.sh 的目录）"""
+    current = Path(__file__).resolve().parent
+    while current != current.parent:
+        if (current / "build.sh").exists():
+            return current
+        current = current.parent
+    return Path.cwd()
+
+
 # 匹配 center 包裹的 includegraphics（支持多种格式）
-# 格式1: \begin{center}\n\includegraphics...\n\end{center}
-# 格式2: \begin{center}\n% IMAGE_TODO...\n\includegraphics...\n% IMAGE_TODO_END...\n\end{center}
-# 格式3: \begin{center}\n% PNG: ...\n\includegraphics...\n\end{center}
 CENTER_IMG_PATTERN = re.compile(
     r'\\begin\{center\}\s*\n?'
     r'(?:%[^\n]*\n)*'  # 可选的注释行（IMAGE_TODO, PNG 等）
@@ -41,128 +52,119 @@ CENTER_IMG_PATTERN = re.compile(
 )
 
 
-def convert_exam_images(tex_path: str, dry_run: bool = False):
-    r"""转换试卷中的图片路径为 \examimage 宏"""
-    
-    tex_file = Path(tex_path)
+def extract_relative_path(img_path: str) -> str:
+    """从完整路径提取相对路径（images/media/xxx.png）"""
+    if "images/media/" in img_path:
+        idx = img_path.find("images/media/")
+        return img_path[idx:]
+    elif "images/" in img_path:
+        idx = img_path.find("images/")
+        return img_path[idx:]
+    else:
+        # 只保留文件名，放到 images/media/ 下
+        filename = Path(img_path).name
+        return f"images/media/{filename}"
+
+
+def convert_exam_images(tex_path: str, dry_run: bool = False) -> int:
+    r"""转换试卷中的图片路径为相对路径 + \setexamdir"""
+
+    tex_file = Path(tex_path).resolve()
     if not tex_file.exists():
         print(f"❌ 文件不存在: {tex_path}")
         return 0
-    
-    exam_dir = tex_file.parent
-    
-    # 目标图片目录
-    images_dir = exam_dir / "images" / "media"
-    if not dry_run:
-        images_dir.mkdir(parents=True, exist_ok=True)
-    
+
     content = tex_file.read_text(encoding='utf-8')
     original_content = content
-    
-    print(f"📄 处理试卷: {tex_file}")
-    print(f"📂 图片目录: {images_dir}")
-    if dry_run:
-        print("🔍 预览模式\n")
-    else:
-        print()
-    
-    matches = list(CENTER_IMG_PATTERN.finditer(content))
-    
-    if not matches:
-        print("⚠️  未发现需要转换的图片块")
-        return 0
-    
-    converted = 0
-    copied = 0
-    
-    # 计算试卷目录相对于项目根目录的路径
+    exam_dir = tex_file.parent
+    root = get_project_root()
+
+    # 计算试卷目录相对于项目根的路径
     try:
-        exam_rel_dir = exam_dir.relative_to(Path.cwd())
+        exam_dir_relative = str(exam_dir.relative_to(root))
     except ValueError:
-        exam_rel_dir = exam_dir
-    
+        exam_dir_relative = str(exam_dir)
+
+    print(f"📄 处理: {tex_file.name}")
+    print(f"   目录: {exam_dir_relative}")
+    if dry_run:
+        print("   🔍 预览模式\n")
+
+    matches = list(CENTER_IMG_PATTERN.finditer(content))
+
+    if not matches and '\\setexamdir' in content:
+        print("   ✓ 已转换，跳过\n")
+        return 0
+
+    converted = 0
+
     # 反向替换（避免偏移问题）
     for match in reversed(matches):
         width = match.group(1)
         old_path = match.group(2)
-        filename = Path(old_path).name
-        
-        # 新的完整路径（从项目根目录开始）
-        new_full_path = f"{exam_rel_dir}/images/media/{filename}"
-        full_new_path = exam_dir / "images" / "media" / filename
-        
-        # 源文件路径
-        src_path = Path.cwd() / old_path
-        
-        print(f"  [{len(matches) - converted}] {filename}")
-        print(f"      旧: {old_path}")
-        print(f"      新: {new_full_path}")
-        
+        rel_path = extract_relative_path(old_path)
+
+        print(f"   [{len(matches) - converted}] {Path(old_path).name}")
+        print(f"       旧: {old_path}")
+        print(f"       新: {rel_path}")
+
         if not dry_run:
-            # 复制图片
-            if src_path.exists() and not full_new_path.exists():
-                shutil.copy2(src_path, full_new_path)
-                print(f"      ✓ 复制图片")
-                copied += 1
-            elif full_new_path.exists():
-                print(f"      ✓ 图片已存在")
-            else:
-                print(f"      ⚠️  源图片未找到")
-            
-            # 替换文本
-            new_text = f"\\examimage{{{new_full_path}}}{{{width}}}"
+            new_text = f"\\examimage{{{rel_path}}}{{{width}}}"
             content = content[:match.start()] + new_text + content[match.end():]
-        
+
         converted += 1
-    
-    if not dry_run and converted > 0:
+
+    # 插入 \setexamdir（如果没有）
+    need_setexamdir = '\\setexamdir' not in original_content and converted > 0
+
+    if need_setexamdir:
+        setexamdir_line = f"\\setexamdir{{{exam_dir_relative}}}\n\n"
+
+        if not dry_run:
+            # 在 \examxtitle 之前插入
+            if '\\examxtitle' in content:
+                content = content.replace('\\examxtitle', setexamdir_line + '\\examxtitle')
+            else:
+                # 在文件开头插入
+                content = setexamdir_line + content
+
+        print(f"   + 插入: \\setexamdir{{{exam_dir_relative}}}")
+
+    if not dry_run and (converted > 0 or need_setexamdir):
         # 备份
         bak_file = tex_file.with_suffix('.tex.bak')
         bak_file.write_text(original_content, encoding='utf-8')
-        
+
         # 写入
         tex_file.write_text(content, encoding='utf-8')
-        print(f"\n✅ 转换完成: {converted} 处图片")
-        print(f"📋 备份: {bak_file}")
-        if copied:
-            print(f"📁 复制: {copied} 张图片")
-    elif dry_run:
-        print(f"\n📊 预览: 将转换 {converted} 处图片")
-    
+        print(f"\n   ✅ 转换完成: {converted} 处")
+        print(f"   📋 备份: {bak_file.name}")
+    elif dry_run and converted > 0:
+        print(f"\n   📊 预览: 将转换 {converted} 处")
+
+    print()
     return converted
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description=r'转换图片路径为 \examimage 宏',
-        formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    
-    parser.add_argument(
-        'files',
-        nargs='+',
-        help='要处理的试卷文件'
-    )
-    
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='预览模式，不修改文件'
-    )
-    
-    args = parser.parse_args()
-    
+    args = sys.argv[1:]
+    dry_run = '--dry-run' in args
+    files = [a for a in args if a != '--dry-run']
+
+    if not files:
+        print(__doc__)
+        sys.exit(1)
+
     print("━" * 50)
-    print("🖼️  图片路径转换工具 → \\examimage")
+    print("🖼️  图片路径转换工具（相对路径版）")
     print("━" * 50)
     print()
-    
+
     total = 0
-    for tex_file in args.files:
-        total += convert_exam_images(tex_file, dry_run=args.dry_run)
-        print()
-    
-    print(f"{'预览' if args.dry_run else '处理'}完成，共 {total} 处")
+    for tex_file in files:
+        total += convert_exam_images(tex_file, dry_run)
+
+    print(f"{'预览' if dry_run else '处理'}完成，共 {total} 处转换")
 
 
 if __name__ == '__main__':

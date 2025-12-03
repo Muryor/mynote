@@ -92,17 +92,28 @@ cat word_to_tex/output/debug/*_issues.log | grep "CRITICAL\|ERROR"
 
 ### 5.1 `\examimage` 宏（推荐）
 
-试卷中的图片统一使用 `\examimage` 宏，定义在 `settings/preamble.sty`：
+试卷中的图片统一使用 `\examimage` 宏 + 相对路径，支持移动文件夹后仍能编译。
 
+**试卷文件结构**：
 ```tex
-\examimage{path}{width}      % 居中图片，width 为比例（如 0.30）
-\examimageinline{path}{width} % 行内图片
+\setexamdir{content/exams/auto/exam_2025}  % 设置图片基准目录
+
+\examxtitle{2025年试卷}
+...
+\examimage{images/media/image1.png}{0.4}   % 相对路径
 ```
 
-**示例**：
+**宏定义**（`settings/preamble.sty`）：
 ```tex
-\examimage{content/exams/auto/exam_2025/images/media/image1.png}{0.4}
+\setexamdir{path}           % 设置试卷目录（路径会自动拼接）
+\examimage{relpath}{width}  % 居中图片
+\examimageinline{relpath}{width}  % 行内图片
 ```
+
+**优势**：
+- ✅ 移动整个试卷目录后仍能编译（只需更新 `\setexamdir`）
+- ✅ 组卷时只需更改 `\setexamdir` 即可
+- ✅ 图片路径简洁明了
 
 ### 5.2 转换脚本
 
@@ -110,13 +121,11 @@ cat word_to_tex/output/debug/*_issues.log | grep "CRITICAL\|ERROR"
 # 预览
 python3 tools/images/convert_to_examimage.py --dry-run <tex_file>
 
-# 执行转换（自动复制图片 + 替换路径）
+# 执行转换（自动插入 \setexamdir + 转换路径）
 python3 tools/images/convert_to_examimage.py <tex_file>
 
 # 批量转换所有试卷
-for f in content/exams/auto/*/converted_exam.tex; do
-    python3 tools/images/convert_to_examimage.py "$f"
-done
+python3 tools/images/convert_to_examimage.py content/exams/auto/*/converted_exam.tex
 ```
 
 ### 5.3 IMAGE_TODO 处理（旧流程）
@@ -137,7 +146,7 @@ python3 tools/images/process_images_to_tikz.py --mode template --files <tex_file
 
 | 版本 | 日期 | 更新 |
 |------|------|------|
-| v4.6 | 2025-12-03 | 新增 `\examimage` 宏，统一图片路径处理 |
+| v4.6 | 2025-12-03 | `\examimage` 宏 + 相对路径，支持移动文件夹 |
 | v4.5 | 2025-01-15 | 精简文档，TikZ 流程外链 |
 | v4.4 | 2025-01-15 | convert_images_to_tikz_templates.py v2.0 |
 | v4.2 | 2025-12-01 | 图片自动复制、路径修复 |

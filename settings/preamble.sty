@@ -279,22 +279,29 @@
 % =========================
 % 图片路径处理宏
 % =========================
-% 图片基准目录（组卷脚本可重定义，默认为空即当前目录）
-\providecommand{\imgbasedir}{}
+% 试卷目录变量（用于图片路径拼接）
+\newcommand{\exambasedir}{}
+
+% 设置试卷目录（在试卷开头调用）
+% 用法：\setexamdir{content/exams/auto/exam_2025}
+% 效果：\examimage 会自动拼接路径
+\newcommand{\setexamdir}[1]{%
+  \renewcommand{\exambasedir}{#1/}%
+}
 
 % 统一图片引用宏：居中显示
-% 用法：\examimage{filename}{width_ratio}
-% 示例：\examimage{img1.png}{0.4} 表示宽度为 0.4\textwidth
+% 用法：\examimage{relpath}{width_ratio}
+% 示例：\examimage{images/media/img1.png}{0.4} 表示宽度为 0.4\textwidth
 \newcommand{\examimage}[2]{%
   \begin{center}%
-    \includegraphics[width=#2\textwidth]{\imgbasedir#1}%
+    \includegraphics[width=#2\textwidth]{\exambasedir#1}%
   \end{center}%
 }
 
 % 内联图片宏（不换行）
-% 用法：\examimageinline{filename}{width_ratio}
+% 用法：\examimageinline{relpath}{width_ratio}
 \newcommand{\examimageinline}[2]{%
-  \includegraphics[width=#2\textwidth]{\imgbasedir#1}%
+  \includegraphics[width=#2\textwidth]{\exambasedir#1}%
 }
 
 % =========================
