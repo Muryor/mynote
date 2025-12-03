@@ -48,10 +48,10 @@
 \topics{向量夹角的计算；求投影向量}
 \difficulty{0.65}
 \answer{D}
-\explain{因为\(\overset{arrow}{a}\)在\(\overset{arrow}{b}\)方向上的投影向量为\(2\overset{arrow}{b}\)，
-所以\(\frac{\overset{arrow}{a} \cdot \overset{arrow}{b}}{\left| \overset{\rightarrow}{b} |} \cdot \frac{\overset{arrow}{b}}{\left| \overset{\rightarrow}{b} |} = 2\overset{arrow}{b}\)，\par
-所以\(\overset{arrow}{a} \cdot \overset{arrow}{b} = 2\)，
-所以\(\cos\langle \overset{arrow}{a},\overset{arrow}{b} \rangle = \frac{\overset{arrow}{a} \cdot \overset{arrow}{b}}{\left| \overset{\rightarrow}{a} |\left| \overset{\rightarrow}{b} |} = \frac{2}{\sqrt{1 + 4} \cdot 1} = \frac{2\sqrt{5}}{5}\)}
+\explain{因为\(\vec{a}\)在\(\vec{b}\)方向上的投影向量为\(2\vec{b}\)，
+所以\(\frac{\vec{a} \cdot \vec{b}}{\left| \vec{b} \right|} \cdot \frac{\vec{b}}{\left| \vec{b} \right|} = 2\vec{b}\)，\par
+所以\(\vec{a} \cdot \vec{b} = 2\)，
+所以\(\cos\langle \vec{a},\vec{b} \rangle = \frac{\vec{a} \cdot \vec{b}}{\left| \vec{a} \right|\left| \vec{b} \right|} = \frac{2}{\sqrt{1 + 4} \cdot 1} = \frac{2\sqrt{5}}{5}\)}
 \end{question}
 
 \begin{question}
@@ -122,13 +122,7 @@
 \end{choices}
 
 \begin{center}
-% IMAGE_TODO_START id=anhui_jh10_2026-Q6-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/anhui\\_jh10\\_2026/media/image2.png width=60% inline=false question_index=6 sub_index=1
-% CONTEXT_BEFORE: 6．已知某函数的部分图象如图所示，则该函数的解析式可能为( )
-% CONTEXT_AFTER: > A．$$f(x) = \cos x \cdot \ln\left(
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=anhui_jh10_2026-Q6-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=anhui_jh10_2026-Q6-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/anhui_jh10_2026/media/image2.png}
 \end{center}
 
 \topics{函数奇偶性的定义与判断；函数图像的识别}
@@ -188,7 +182,7 @@
 则\(f(x) = \left| \sqrt{(x - 1)^{2} + 9} - \sqrt{(x - 5)^{2} + 9} \right| = 2\)③或\(f(x) = \left| \sqrt{(x - 1)^{2} + 9} - \sqrt{(x - 5)^{2} + 9} \right| = 4\)④，\par
 解③得\(x = 1\)或\(x = 5\)；\par
 对于④由\(f(x)\)的几何意义：\(x\)轴上的点\(P(x,0)\)到两定点\(A(1,3),B(5,3)\)的距离之差的绝对值.\par
-而\(\left| \right|PA| - |PB| \right| < |AB| = 4\)，
+而\(\left| |PA| - |PB| \right| < |AB| = 4\)，
 可知④无解，\par
 综上，
 方程\(f\left\lbrack f(x) \right\rbrack = 3\sqrt{2} - \sqrt{10}\)的根的个数为\(2\)}
@@ -285,13 +279,7 @@
 \end{choices}
 
 \begin{center}
-% IMAGE_TODO_START id=anhui_jh10_2026-Q11-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/anhui\\_jh10\\_2026/media/image3.png width=60% inline=false question_index=11 sub_index=1
-% CONTEXT_BEFORE: - 1$$，解得：$$x = - 1$$或$$2$$，作出函数$$f(x)$$的大致图象如下：
-% CONTEXT_AFTER: 所以函数$$f(x) = (x + 1){(x - 2)}^{2} - 1$$的图象与直线$$y
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=anhui_jh10_2026-Q11-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=anhui_jh10_2026-Q11-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/anhui_jh10_2026/media/image3.png}
 \end{center}
 
 \topics{求在曲线上一点处的切线方程(斜率)；利用导数研究函数的零点}
@@ -404,13 +392,10 @@ x_{1}x_{2}x_{3} = t - 3
 
 \begin{question}
 已知幂函数\(f(x) = \left( m^{2} - m - 1 \right)x^{m}\)是\(R\)上的偶函数，
-将函数\(y = f(x)\)的图象先向右平移2个单位长度，
-再向下平移一个单位长度得到\(y = g(x)\)的图象.
+将函数\(y = f(x)\)的图象先向右平移2个单位长度，再向下平移一个单位长度得到\(y = g(x)\)的图象.
 \begin{enumerate}[label=(\arabic*)]
-  \item 求函数\(y = g(x)\)的解析式，
-并求函数\(y = 2^{g(x)}\)的值域；
-  \item 设\(a \in R\)，
-解关于\(x\)的不等式：\(g(x) > ax - 4a + 3\).
+  \item 求函数\(y = g(x)\)的解析式，并求函数\(y = 2^{g(x)}\)的值域；
+  \item 设\(a \in R\)，解关于\(x\)的不等式：\(g(x) > ax - 4a + 3\).
 \end{enumerate}
 \topics{函数图象的变换；求指数型复合函数的值域；根据函数是幂函数求参数值；解含有参数的一元二次不等式}
 \difficulty{0.65}
@@ -444,8 +429,7 @@ x_{1}x_{2}x_{3} = t - 3
 且\(a_{1} = 2,a_{n + 1} = 3S_{n} + 2\left( n \in \mathbb{N}^{*} \right)\).
 \begin{enumerate}[label=(\arabic*)]
   \item 求数列\(\left\{ a_{n} \right\}\)的通项公式；
-  \item 设\(b_{n} = \log_{2}a_{n} - 14\)，
-求数列\(\left\{ \left| b_{\text{n}} \right| \right\}\)的前\(n\)项的和\(T_{n}\).
+  \item 设\(b_{n} = \log_{2}a_{n} - 14\)，求数列\(\left\{ \left| b_{\text{n}} \right| \right\}\)的前\(n\)项的和\(T_{n}\).
 \end{enumerate}
 \topics{等差数列前n项和的基本量计算；写出等比数列的通项公式；分组(并项)法求和；利用an与sn关系求通项或项}
 \difficulty{0.65}
@@ -483,8 +467,7 @@ n^{2} - 14n + 98,n \geq 8
 已知函数\(f(x) = (3 - a)\ln x - 3ax + 3a + 6 - \frac{1}{x}\)，
 其中\(a \in R\).
 \begin{enumerate}[label=(\arabic*)]
-  \item 讨论函数\(f(x)\)的单调性；若存在\(x > 0\)，使\(f(x) \geq a^{2}\)成立，
-求实数\(a\)的取值范围.
+  \item 讨论函数\(f(x)\)的单调性；若存在\(x > 0\)，使\(f(x) \geq a^{2}\)成立，求实数\(a\)的取值范围.
 \end{enumerate}
 \topics{利用导数研究能成立问题；利用导数求函数(含参)的单调区间}
 \difficulty{0.4}
@@ -552,12 +535,10 @@ n^{2} - 14n + 98,n \geq 8
 C*所对的边分别为*a，b，c*，
 且\(b\sin A = a + c - b\cos A\).
 \begin{enumerate}[label=(\arabic*)]
-  \item 求角\(B\)的大小；若\(b = 4\)，
-求此时\(\triangle ABC\)的内切圆半径的最大值；
+  \item 求角\(B\)的大小；若\(b = 4\)，求此时\(\triangle ABC\)的内切圆半径的最大值；
   \item 求\(\frac{ac - ab - bc}{b^{2}}\)的取值范围.
 \end{enumerate}
 \topics{正弦定理边角互化的应用}
-\difficulty{0.4}
 \answer{(1)\(B = \frac{\pi}{2}\)
 (2)\(2\sqrt{2} - 2\)
 (3)\(\left( - 1,\frac{1 - 2\sqrt{2}}{2} \right\rbrack\)}
@@ -594,15 +575,12 @@ C*所对的边分别为*a，b，c*，
 若数列\(\left\{ a_{n} \right\}\)满足：对任意\(n \in N^{*}(n \geq 3)\)，
 总存在\(i,j \in N^{*}\)，
 使得\(a_{n} = a_{i} + a_{j}(1 \leq i < j \leq n - 1)\)，
+使得\(a_{n} = a_{i} + a_{j}(1 \leq i < j \leq n - 1)\)，
 则称数列\(\left\{ a_{n} \right\}\)是"可拆数列".
 \begin{enumerate}[label=(\arabic*)]
-  \item 判断数列\(\left\{ 3n \right\}\)是否为"可拆数列"？
-并说明理由；
-  \item 若首项为1的等比数列\(\left\{ a_{n} \right\}\)是"可拆数列"，
-求数列\(\left\{ a_{n} \right\}\)的通项公式；
-  \item 若"可拆数列"\(\left\{ a_{n} \right\}\)是递增数列，
-\(a_{1} = 2,a_{2} = 6\)，
-求使\(a_{n} = 398\)成立的\(n\)的最值.
+  \item 判断数列\(\left\{ 3n \right\}\)是否为"可拆数列"？并说明理由；
+  \item 若首项为1的等比数列\(\left\{ a_{n} \right\}\)是"可拆数列"，求数列\(\left\{ a_{n} \right\}\)的通项公式；
+  \item 若"可拆数列"\(\left\{ a_{n} \right\}\)是递增数列，\(a_{1} = 2,a_{2} = 6\)，求使\(a_{n} = 398\)成立的\(n\)的最值.
 \end{enumerate}
 \topics{写出等比数列的通项公式；数列新定义}
 \difficulty{0.4}

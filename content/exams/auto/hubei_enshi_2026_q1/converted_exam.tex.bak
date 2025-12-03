@@ -221,44 +221,16 @@ D选项，若\(C = \frac{\pi}{2}\)，
 \end{choices}
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q10-img2 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png width=30% inline=false question_index=10 sub_index=1
-% CONTEXT_BEFORE: 为\(O\)，则直线\(OE\)与平面\(ABCD\)所成角的正切值的取值范围为\(\lbrack\frac{\sqrt{2}}{2},1\rbrack\)   [ITEM] 若\(M\)，\(N\)分别是棱\(BC\)，\(CC_{1}\)的中点，则\(\overrightarrow{NE}\)在\(\overrightarrow{NM}\)上的投影向量的模长为定值 [END choices}
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png} [END center}   [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png
-  % VARIABLES: A, AA_, AB, ABCD, AE, A_, B, BC, B_, C, CC_, C_, D, DA, DB_, DC, DD_, DE, D_, E, EB_, EC, EO, F, M, N, NE, NM, O, OE, OEO_, OF, OO_, O_, S_, V_, d, x, y, z
-  % 示例：三角形 ABC
-  \coordinate (A) at (0,0);
-  \coordinate (B) at (3,0);
-  \coordinate (C) at (1.2,2);
-  \draw (A) -- (B) -- (C) -- cycle;
-  \node[below left] at (A) {$A$};
-  \node[below right] at (B) {$B$};
-  \node[above] at (C) {$C$};
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q10-img2
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png}
 \end{center}
+
 
 
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q10-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png width=30% inline=false question_index=10 sub_index=1
-% CONTEXT_BEFORE: ghtarrow{NE}\)在\(\overrightarrow{NM}\)上的投影向量的模长为定值 [END choices}  [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image2.png} [END center}
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png} [END center}  \topics{求点面距离；空间向量模长的坐标表示；求线面角；空间向量数量积的应用} \difficulty{0.4} \answer
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png
-  % VARIABLES: A, AA_, AB, ABCD, AE, A_, B, BC, B_, C, CC_, C_, D, DA, DB_, DC, DD_, DE, D_, E, EB_, EC, EO, F, M, N, NE, NM, O, OE, OEO_, OF, OO_, O_, S_, V_, d, x, y, z
-  % 示例：三角形 ABC
-  \coordinate (A) at (0,0);
-  \coordinate (B) at (3,0);
-  \coordinate (C) at (1.2,2);
-  \draw (A) -- (B) -- (C) -- cycle;
-  \node[below left] at (A) {$A$};
-  \node[below right] at (B) {$B$};
-  \node[above] at (C) {$C$};
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q10-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image3.png}
 \end{center}
+
 
 
 \topics{求点面距离；空间向量模长的坐标表示；求线面角；空间向量数量积的应用}
@@ -325,20 +297,9 @@ D选项，若\(C = \frac{\pi}{2}\)，
 \end{choices}
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q11-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png width=30% inline=false question_index=11 sub_index=1
-% CONTEXT_BEFORE: es}   [ITEM] 方程\(f(x) = m\)有两个不同的实根   [ITEM] \(m \in \lbrack 1,\text{e}\rbrack\)   [ITEM] \(m - 1\)是方程\(f(f(x)) = m\)的一个根   [ITEM] \(x_{1} + x_{2} + x_{3} < \text{e} + \frac{1}{\text{e}}\) [END choices}
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png} [END center}  \topics{函数与方程的综合应用；根据函数零点的个数求参数范围；用导数判断或证明已知函数的单调性} \difficulty{0.4
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png
-  % VARIABLES: array, e, f, g, m, r, t, t_, x, x_
-  % 示例：坐标轴和示意曲线（请根据题意替换函数表达式）
-  \draw[->] (-3,0) -- (3,0) node[right] {$x$};
-  \draw[->] (0,-2) -- (0,2) node[above] {$y$};
-  % 示例曲线（抛物线）
-  \draw[domain=-1.5:1.5, smooth, variable=\x, blue] plot ({\x}, {\x*\x});
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q11-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image4.png}
 \end{center}
+
 
 
 \topics{函数与方程的综合应用；根据函数零点的个数求参数范围；用导数判断或证明已知函数的单调性}
@@ -420,23 +381,9 @@ D正确}
 .
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q14-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png width=30% inline=false question_index=14 sub_index=1
-% CONTEXT_BEFORE: ))的左右焦点分别为\(F_{1}\)，\(F_{2}\)， 直线\(y = x - \sqrt{a^{2} + b^{2}}\)与\(C\)的右支交于\(A\)， \(B\)两点，\(P\)， \(Q\)分别为\(\triangle AF_{1}F_{2}\)， \(\triangle BF_{1}F_{2}\)的内心， 若\(|PQ| = \sqrt{2}a\)，则\(C\)的离心率为 .
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png} [END center}  \topics{求双曲线的离心率或离心率的取值范围} \difficulty{0.4} \answer{\(\frac{3}{2}\)
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png
-  % VARIABLES: A, AB, AF_, AH, AI, B, BF_, C, F_, H, HF_, I, IF_, J, JF_, P, PF_, PJ, PQ, Q, QF_, QJ, a, b, c, e, m, x, y
-  % 示例：三角形 ABC
-  \coordinate (A) at (0,0);
-  \coordinate (B) at (3,0);
-  \coordinate (C) at (1.2,2);
-  \draw (A) -- (B) -- (C) -- cycle;
-  \node[below left] at (A) {$A$};
-  \node[below right] at (B) {$B$};
-  \node[above] at (C) {$C$};
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q14-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image5.png}
 \end{center}
+
 
 
 \topics{求双曲线的离心率或离心率的取值范围}
@@ -475,40 +422,16 @@ D正确}
 \end{enumerate}
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q15-img2 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png width=30% inline=false question_index=15 sub_index=1
-% CONTEXT_BEFORE: \)中， \(AA_{1} = AB = \frac{1}{2}AC = 2\)， \(AB\bot BC\). [BEGIN enumerate}[label=(\arabic*)]   [ITEM] 求证：\(AB_{1}\bot\)平面\(A_{1}BC\)；   [ITEM] 求平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角的余弦值. [END enumerate}
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png} [END center}   [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png
-  % VARIABLES: A, AA_, AB, ABC, AB_, AC, ACC_, AE, A_, B, BA, BB_, BC, B_, C, C_, E, EA, EB_, array, r, x, y, z
-  % 示例：正方形，顶点标记 A,B,C,D
-  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
-  \node[below left] at (0,0) {$A$};
-  \node[below right] at (2,0) {$B$};
-  \node[above right] at (2,2) {$C$};
-  \node[above left] at (0,2) {$D$};
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q15-img2
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png}
 \end{center}
+
 
 
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q15-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png width=30% inline=false question_index=15 sub_index=1
-% CONTEXT_BEFORE: [ITEM] 求平面\(A_{1}BC\)与平面\(A_{1}ACC_{1}\)的夹角的余弦值. [END enumerate}  [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image6.png} [END center}
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png} [END center}  \topics{证明线面垂直；面面角的向量求法；求二面角} \difficulty{0.65} \answer{(1)证明见解析 (2
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png
-  % VARIABLES: A, AA_, AB, ABC, AB_, AC, ACC_, AE, A_, B, BA, BB_, BC, B_, C, C_, E, EA, EB_, array, r, x, y, z
-  % 示例：正方形，顶点标记 A,B,C,D
-  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
-  \node[below left] at (0,0) {$A$};
-  \node[below right] at (2,0) {$B$};
-  \node[above right] at (2,2) {$C$};
-  \node[above left] at (0,2) {$D$};
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q15-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image7.png}
 \end{center}
+
 
 
 \topics{证明线面垂直；面面角的向量求法；求二面角}
@@ -576,21 +499,9 @@ D正确}
 \end{enumerate}
 
 \begin{center}
-% IMAGE_TODO_START id=hubei_enshi_2026_q1-Q16-img1 path=word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png width=30% inline=false question_index=16 sub_index=1
-% CONTEXT_BEFORE: erate}[label=(\arabic*)]   [ITEM] 求\(a_{n}\)，\(b_{n}\)；   [ITEM] 记第\(n\)个正方形区域未被第\(n + 1\)个正方形区域覆盖的面积为\(S_{n}\)， 求使得\(S_{1} + S_{2} + \cdots + S_{n} \geq \frac{2}{b_{n}}\)成立的\(n\)的最小值. [END enumerate}
-% CONTEXT_AFTER: [BEGIN center} [IMG][width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png} [END center}  \topics{写出等比数列的通项公式；数列求和的其他方法；根据数列的单调性求参数；由定义判定等比数列} \difficulty{0.
-\begin{tikzpicture}[scale=1.0]
-  % ORIGINAL_IMAGE: word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png
-  % VARIABLES: ABCD, E, EFGH, F, G, H, I, IJKL, J, K, L, N, S_, a_, b_, f, n
-  % 示例：正方形，顶点标记 A,B,C,D
-  \draw (0,0) -- (2,0) -- (2,2) -- (0,2) -- cycle;
-  \node[below left] at (0,0) {$A$};
-  \node[below right] at (2,0) {$B$};
-  \node[above right] at (2,2) {$C$};
-  \node[above left] at (0,2) {$D$};
-\end{tikzpicture}
-% IMAGE_TODO_END id=hubei_enshi_2026_q1-Q16-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/hubei_enshi_2026_q1/media/image9.png}
 \end{center}
+
 
 
 \topics{写出等比数列的通项公式；数列求和的其他方法；根据数列的单调性求参数；由定义判定等比数列}
@@ -727,7 +638,6 @@ D正确}
 所以\(\xi\)的分布列为\par
 \begin{center}
 \begin{tabular}{|c|c|c|c|c|}
-\hline
 \hline
 \(\xi\) & 1 & 2 & 3 & 4 \\
 \hline

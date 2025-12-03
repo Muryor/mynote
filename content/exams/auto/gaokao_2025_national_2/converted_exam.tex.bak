@@ -95,12 +95,7 @@ x - 1 \neq 0
 \end{choices}
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q6-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image2.png width=60% inline=false question_index=6 sub_index=1
-% CONTEXT_BEFORE: |AB| = x_{A} + {2} = 4 + 1 = 5$$. 
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q6-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q6-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image2.png}
 \end{center}
 
 \topics{根据抛物线方程求焦点或准线；抛物线的焦半径公式}
@@ -237,22 +232,12 @@ q = - \frac{1}{3}
 \end{choices}
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q11-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image3.png width=60% inline=false question_index=11 sub_index=1
-% CONTEXT_AFTER: 方法二：因为$$\tan\angle MOA_{2} = {a}$$，因为双曲线
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q11-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q11-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image3.png}
 \end{center}
 
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q11-img2 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image4.png width=60% inline=false question_index=11 sub_index=1
-% CONTEXT_AFTER: 方法三：在$$\triangle OMA_{2}$$利用余弦定理知，$$\left|
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q11-img2)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q11-img2
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image4.png}
 \end{center}
 
 \topics{用定义求向量的数量积；已知数量积求模；双曲线的对称性；求双曲线的离心率或离心率的取值范围}
@@ -331,13 +316,7 @@ y_{0} = b
 \(\text{cm}\)．
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q14-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image5.png width=60% inline=false question_index=14 sub_index=1
-% CONTEXT_BEFORE: 、球的截面的性质及计算 【分析】根据圆柱与球的性质以及球的体积公式可求出球的半径； 【详解】
-% CONTEXT_AFTER: 圆柱的底面半径为$$4$$，设铁球的半径为r，且$$r < 4$$，
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q14-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q14-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image5.png}
 \end{center}
 
 \topics{圆柱的结构特征辨析；球的截面的性质及计算}
@@ -387,12 +366,7 @@ y_{0} = b
 \end{enumerate}
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q16-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image6.png width=60% inline=false question_index=16 sub_index=1
-% CONTEXT_AFTER: 由题设直线$$AB$$的斜率不为0，故设直线$$l:x = t(y + 2)$$，$$A\lef
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q16-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q16-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image6.png}
 \end{center}
 
 \topics{根据a；b；c求椭圆标准方程；根据离心率求椭圆的标准方程；椭圆中三角形(四边形)的面积}
@@ -430,24 +404,12 @@ x^{2} + 2y^{2} = 4
 \end{enumerate}
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q17-img1 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image7.png width=60% inline=false question_index=17 sub_index=1
-% CONTEXT_BEFORE: $$，使得面$$EFD'A'$$与面EFCB所成的二面角为$$60{^\circ}$$．
-% CONTEXT_AFTER: (1)证明：$$A'B//$$平面$$CD'F$$； (2)求面$$BCD'$$与面$$EFD
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q17-img1)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q17-img1
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image7.png}
 \end{center}
 
 
 \begin{center}
-% IMAGE_TODO_START id=gaokao_2025_national_2-Q17-img2 path=/Users/muryor/code/mynote/word\\_to\\_tex/output/figures/gaokao\\_2025\\_national\\_2/media/image8.png width=60% inline=false question_index=17 sub_index=1
-% CONTEXT_BEFORE: \subset$$平面$$A'EB$$，所以$$A'B//$$平面$$CD'F$$． (2)
-% CONTEXT_AFTER: 因为$$\angle DAB = 90{^\circ}$$，所以$$AD\bot AB$$，又因
-\begin{tikzpicture}[scale=1.05,>=Stealth,line cap=round,line join=round]
-  % TODO: AI_AGENT_REPLACE_ME (id=gaokao_2025_national_2-Q17-img2)
-\end{tikzpicture}
-% IMAGE_TODO_END id=gaokao_2025_national_2-Q17-img2
+\includegraphics[width=0.30\textwidth]{word_to_tex/output/figures/gaokao_2025_national_2/media/image8.png}
 \end{center}
 
 \topics{证明线面平行；求二面角；面面角的向量求法}

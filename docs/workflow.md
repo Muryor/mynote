@@ -1,6 +1,6 @@
-# LaTeX 试卷流水线指南 (v4.5)
+# LaTeX 试卷流水线指南 (v4.6)
 
-> v4.5 (2025-01-15) | PNG 优先 | TikZ 流程见 [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md)
+> v4.6 (2025-12-03) | PNG 优先 | `\examimage` 宏 | TikZ 流程见 [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md)
 
 ## 快速导航
 
@@ -88,22 +88,45 @@ cat word_to_tex/output/debug/*_issues.log | grep "CRITICAL\|ERROR"
 
 ---
 
-## 五、图片处理（PNG 优先）
+## 五、图片处理
+
+### 5.1 `\examimage` 宏（推荐）
+
+试卷中的图片统一使用 `\examimage` 宏，定义在 `settings/preamble.sty`：
+
+```tex
+\examimage{path}{width}      % 居中图片，width 为比例（如 0.30）
+\examimageinline{path}{width} % 行内图片
+```
+
+**示例**：
+```tex
+\examimage{content/exams/auto/exam_2025/images/media/image1.png}{0.4}
+```
+
+### 5.2 转换脚本
 
 ```bash
 # 预览
-python3 tools/images/process_images_to_tikz.py --mode preview --files <tex_file>
+python3 tools/images/convert_to_examimage.py --dry-run <tex_file>
 
-# 替换为 includegraphics（默认宽度 0.30）
+# 执行转换（自动复制图片 + 替换路径）
+python3 tools/images/convert_to_examimage.py <tex_file>
+
+# 批量转换所有试卷
+for f in content/exams/auto/*/converted_exam.tex; do
+    python3 tools/images/convert_to_examimage.py "$f"
+done
+```
+
+### 5.3 IMAGE_TODO 处理（旧流程）
+
+```bash
+# 替换为 includegraphics
 python3 tools/images/process_images_to_tikz.py --mode include --files <tex_file>
 
 # 生成 TikZ 模板
 python3 tools/images/process_images_to_tikz.py --mode template --files <tex_file>
-```
-
-**路径要求**（从项目根目录）:
-```tex
-\includegraphics[width=0.30\textwidth]{content/exams/auto/exam/images/media/image1.png}
 ```
 
 > TikZ 转换流程见 [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md)
@@ -114,6 +137,7 @@ python3 tools/images/process_images_to_tikz.py --mode template --files <tex_file
 
 | 版本 | 日期 | 更新 |
 |------|------|------|
+| v4.6 | 2025-12-03 | 新增 `\examimage` 宏，统一图片路径处理 |
 | v4.5 | 2025-01-15 | 精简文档，TikZ 流程外链 |
 | v4.4 | 2025-01-15 | convert_images_to_tikz_templates.py v2.0 |
 | v4.2 | 2025-12-01 | 图片自动复制、路径修复 |

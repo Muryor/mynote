@@ -277,6 +277,27 @@
    \end{center}}
 
 % =========================
+% 图片路径处理宏
+% =========================
+% 图片基准目录（组卷脚本可重定义，默认为空即当前目录）
+\providecommand{\imgbasedir}{}
+
+% 统一图片引用宏：居中显示
+% 用法：\examimage{filename}{width_ratio}
+% 示例：\examimage{img1.png}{0.4} 表示宽度为 0.4\textwidth
+\newcommand{\examimage}[2]{%
+  \begin{center}%
+    \includegraphics[width=#2\textwidth]{\imgbasedir#1}%
+  \end{center}%
+}
+
+% 内联图片宏（不换行）
+% 用法：\examimageinline{filename}{width_ratio}
+\newcommand{\examimageinline}[2]{%
+  \includegraphics[width=#2\textwidth]{\imgbasedir#1}%
+}
+
+% =========================
 % MCQ safety net (global)
 % =========================
 \RequirePackage{etoolbox}

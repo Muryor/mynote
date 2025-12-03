@@ -31,7 +31,10 @@
   \item \((2,3)\)
 \end{choices}
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image2.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q2-img1
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image2.png}
+\end{center}
 
 \topics{交并补混合运算}
 \difficulty{0.94}
@@ -251,7 +254,10 @@
 点\(E,F,G\)分别在棱\(AA_{1},AB,AD\)上(不与棱的端点重合)，
 \(M\)为棱\(CC_{1}\)的中点，则下列说法正确的是(    )
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image3.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q11-img1
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image3.png}
+\end{center}
 
 \begin{choices}
   \choice 若平面\(EFG\)与正方体的每条棱的夹角都相同，则直线\(BD\) \(\parallel\)平面\(EFG\)
@@ -260,9 +266,15 @@
   \choice 若二面角\(A - GF - E\)的余弦值为\(\frac{1}{2}\)，二面角\(A - EF - G\)的余弦值为\(\frac{\sqrt{3}}{3}\)，则二面角\(A - EG - F\)的余弦值为\(\frac{\sqrt{15}}{6}\)
 \end{choices}
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image4.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q11-img2
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image4.png}
+\end{center}
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image5.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q11-img3
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image5.png}
+\end{center}
 
 \topics{面面平行证明线面平行；空间位置关系的向量证明；已知线面角求其他量；面面角的向量求法}
 \difficulty{0.4}
@@ -328,7 +340,10 @@ D正确．}
 则双曲线\(C\)的两条渐近线方程为
 ．
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image6.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q13-img1
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image6.png}
+\end{center}
 
 \topics{根据a,b,c齐次式关系求渐近线方程}
 \difficulty{0.65}
@@ -454,10 +469,16 @@ a_{1} = d - \frac{1}{4}
   \end{enumerate}
 \end{enumerate}
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image7.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q17-img1
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image7.png}
+\end{center}
 
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image8.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q17-img2
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image8.png}
+\end{center}
 
 \topics{线面垂直证明线线垂直；空间位置关系的向量证明；线面角的向量求法}
 \difficulty{0.65}
@@ -552,7 +573,10 @@ a_{1} = d - \frac{1}{4}
   \end{enumerate}
 \end{enumerate}
 
-\examimage{content/exams/auto/hunan_yali_2026_mock3/images/media/image9.png}{0.4}
+\begin{center}
+% PNG: hunan_yali_2026_mock3-Q18-img1
+\includegraphics[width=0.4\textwidth]{content/exams/auto/hunan_yali_2026_mock3/images/image9.png}
+\end{center}
 
 \topics{根据a；b；c求椭圆标准方程；求双曲线的焦点坐标；求椭圆中的参数及范围；由弦中点求弦方程或斜率}
 \difficulty{0.4}

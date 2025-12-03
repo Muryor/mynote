@@ -126,7 +126,11 @@ e^{x} + \ln(x + 1),x \geq 0
   \item 8
 \end{choices}
 
-\examimage{content/exams/auto/gaokao_2024_national_1/images/media/image2.png}{0.5}
+\begin{center}
+% IMAGE_TODO_START id=gaokao_2024_national_1-Q7-img1 path=image2.png width=60%
+\includegraphics[width=0.5\textwidth]{content/exams/auto/gaokao_2024_national_1/images/media/image2.png}
+% IMAGE_TODO_END id=gaokao_2024_national_1-Q7-img1
+\end{center}
 
 \topics{正弦函数图象的应用；求函数零点或方程根的个数}
 \difficulty{0.65}
@@ -245,7 +249,11 @@ B正确，A错误}
   \item 当点\(\left( x_{0},y_{0} \right)\)在\(C\)上时，\(y_{0} \leq \frac{4}{x_{0} + 2}\)
 \end{choices}
 
-\examimage{content/exams/auto/gaokao_2024_national_1/images/media/image4.png}{0.3}
+\begin{center}
+% IMAGE_TODO_START id=gaokao_2024_national_1-Q11-img2 path=image4.png width=60%
+\includegraphics[width=0.3\textwidth]{content/exams/auto/gaokao_2024_national_1/images/media/image4.png}
+% IMAGE_TODO_END id=gaokao_2024_national_1-Q11-img2
+\end{center}
 
 \topics{由方程研究曲线的性质；求平面轨迹方程}
 \difficulty{0.65}
@@ -282,7 +290,11 @@ B正确，A错误}
 则\(C\)的离心率为
 ．
 
-\examimage{content/exams/auto/gaokao_2024_national_1/images/media/image5.png}{0.3}
+\begin{center}
+% IMAGE_TODO_START id=gaokao_2024_national_1-Q12-img1 path=image5.png width=60%
+\includegraphics[width=0.3\textwidth]{content/exams/auto/gaokao_2024_national_1/images/media/image5.png}
+% IMAGE_TODO_END id=gaokao_2024_national_1-Q12-img1
+\end{center}
 
 \topics{求双曲线的离心率或离心率的取值范围}
 \difficulty{0.65}
@@ -402,7 +414,11 @@ B正确，A错误}
   \item 若过\(P\)的直线\(l\)交\(C\)于另一点\(B\)，且\(\triangle ABP\)的面积为9，求\(l\)的方程．
 \end{enumerate}
 
-\examimage{content/exams/auto/gaokao_2024_national_1/images/media/image6.png}{0.4}
+\begin{center}
+% IMAGE_TODO_START id=gaokao_2024_national_1-Q16-img1 path=image6.png width=60%
+\includegraphics[width=0.4\textwidth]{content/exams/auto/gaokao_2024_national_1/images/media/image6.png}
+% IMAGE_TODO_END id=gaokao_2024_national_1-Q16-img1
+\end{center}
 
 \topics{根据椭圆过的点求标准方程；求椭圆的离心率或离心率的取值范围；椭圆中三角形(四边形)的面积；根据韦达定理求参数}
 \difficulty{0.65}
@@ -516,10 +532,18 @@ y = kx - 3k + \frac{3}{2} \\
   \item 若\(AD\bot DC\)，且二面角\(A - CP - D\)的正弦值为\(\frac{\sqrt{42}}{7}\)，求\(AD\)．
 \end{enumerate}
 
-\examimage{content/exams/auto/gaokao_2024_national_1/images/media/image7.png}{0.35}
+\begin{center}
+% IMAGE_TODO_START id=gaokao_2024_national_1-Q17-img1 path=image7.png width=60%
+\includegraphics[width=0.35\textwidth]{content/exams/auto/gaokao_2024_national_1/images/media/image7.png}
+% IMAGE_TODO_END id=gaokao_2024_national_1-Q17-img1
+\end{center}
 
 
-\examimage{content/exams/auto/gaokao_2024_national_1/images/media/image8.png}{0.35}
+\begin{center}
+% IMAGE_TODO_START id=gaokao_2024_national_1-Q17-img2 path=image8.png width=60%
+\includegraphics[width=0.35\textwidth]{content/exams/auto/gaokao_2024_national_1/images/media/image8.png}
+% IMAGE_TODO_END id=gaokao_2024_national_1-Q17-img2
+\end{center}
 
 \topics{证明线面平行；证明面面垂直；由二面角大小求线段长度或距离}
 \difficulty{0.65}
