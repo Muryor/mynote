@@ -2708,6 +2708,123 @@ def balance_array_and_cases_env(text: str) -> str:
     return ''.join(out_parts)
 
 
+def fix_circled_subquestions_to_nested_enumerate(text: str) -> str:
+    r"""🆕 v1.9.13：将 enumerate 中的 ①②③ 子题转换为嵌套 enumerate
+    
+    问题模式：
+    在 enumerate 环境的某个 \item 下，出现了 ①②③ 形式的子题，但没有被
+    包裹在嵌套的 enumerate 中，导致 LaTeX 编译时出现 "Non-\item content 
+    inside enumerate environment" 警告。
+    
+    输入示例：
+        \begin{enumerate}[label=(\arabic*)]
+          \item 当\(a = 1\)时，求切线方程；
+          \item 若\(f(x)\)有两个极值点\(x_{1},x_{2}\)．
+        
+        ①求\(a\)的取值范围；
+        
+        ②证明：存在\(0 < x_{0} < \frac{2}{a}\)...
+        \end{enumerate}
+    
+    输出示例：
+        \begin{enumerate}[label=(\arabic*)]
+          \item 当\(a = 1\)时，求切线方程；
+          \item 若\(f(x)\)有两个极值点\(x_{1},x_{2}\)．
+            \begin{enumerate}[label=\textcircled{\arabic*}]
+              \item 求\(a\)的取值范围；
+              \item 证明：存在\(0 < x_{0} < \frac{2}{a}\)...
+            \end{enumerate}
+        \end{enumerate}
+    
+    策略：
+    1. 检测 enumerate 环境内的 ①②③ 开头的行
+    2. 将连续的 ①②③ 行包裹在嵌套的 enumerate 中
+    3. 将 ①②③ 替换为 \item
+    """
+    import re
+    
+    lines = text.split('\n')
+    result = []
+    i = 0
+    n = len(lines)
+    
+    # 圆圈数字到普通数字的映射
+    circled_to_num = {'①': '1', '②': '2', '③': '3', '④': '4', '⑤': '5',
+                      '⑥': '6', '⑦': '7', '⑧': '8', '⑨': '9', '⑩': '10'}
+    circled_pattern = re.compile(r'^(\s*)([①②③④⑤⑥⑦⑧⑨⑩])(.*)$')
+    
+    in_enumerate = False
+    enumerate_depth = 0
+    
+    while i < n:
+        line = lines[i]
+        stripped = line.strip()
+        
+        # 跟踪 enumerate 环境
+        if r'\begin{enumerate}' in stripped:
+            enumerate_depth += 1
+            in_enumerate = True
+            result.append(line)
+            i += 1
+            continue
+        
+        if r'\end{enumerate}' in stripped:
+            enumerate_depth -= 1
+            if enumerate_depth == 0:
+                in_enumerate = False
+            result.append(line)
+            i += 1
+            continue
+        
+        # 在 enumerate 内部检测 ① 开头的行
+        if in_enumerate and enumerate_depth == 1:
+            m = circled_pattern.match(line)
+            if m:
+                indent = m.group(1)
+                # 收集连续的 ①②③ 行
+                subq_lines = []
+                while i < n:
+                    current_line = lines[i]
+                    current_stripped = current_line.strip()
+                    
+                    # 检查是否是 ① 开头
+                    cm = circled_pattern.match(current_line)
+                    if cm:
+                        # 转换为 \item
+                        content = cm.group(3)
+                        subq_lines.append(f'{indent}    \\item {content.strip()}')
+                        i += 1
+                    elif current_stripped == '':
+                        # 空行可能在子题之间
+                        # 检查下一行是否还是 ①②③
+                        if i + 1 < n and circled_pattern.match(lines[i + 1]):
+                            i += 1  # 跳过空行
+                            continue
+                        else:
+                            break
+                    elif current_stripped.startswith(r'\end{enumerate}'):
+                        break
+                    elif r'\item' in current_stripped or current_stripped.startswith(r'\begin'):
+                        break
+                    else:
+                        # 可能是上一个子题的续行
+                        if subq_lines:
+                            subq_lines[-1] += ' ' + current_stripped
+                        i += 1
+                
+                # 如果收集到了子题，包裹在嵌套 enumerate 中
+                if subq_lines:
+                    result.append(f'{indent}  \\begin{{enumerate}}[label=(\\arabic*)]')
+                    result.extend(subq_lines)
+                    result.append(f'{indent}  \\end{{enumerate}}')
+                continue
+        
+        result.append(line)
+        i += 1
+    
+    return '\n'.join(result)
+
+
 def fix_nested_subquestions(text: str) -> str:
     r"""🆕 v1.9.6：修复嵌套子题号格式
     
@@ -2874,8 +2991,9 @@ def fix_trig_function_spacing(text: str) -> str:
     - \sinx → \sin x
     - \cosB → \cos B
     - \lnt → \ln t
+    - \sinwt → \sin(\omega t) 或 \sin wt（特殊处理 wt/ωt 格式）
     
-    保守处理：只修复后面紧跟单个字母/变量的情况
+    保守处理：只修复后面紧跟字母/变量的情况
     """
     import re
     
@@ -2884,8 +3002,14 @@ def fix_trig_function_spacing(text: str) -> str:
                   'sinh', 'cosh', 'tanh', 'ln', 'log', 'lg', 'exp']
     
     for func in trig_funcs:
+        # 特殊处理：\sinwt, \coswt 等 → \sin(\omega t), \cos(\omega t)
+        # 这是物理/信号处理中常见的表达式
+        text = re.sub(rf'\\{func}wt\b', rf'\\{func}(\\omega t)', text)
+        text = re.sub(rf'\\{func}ωt\b', rf'\\{func}(\\omega t)', text)
+        
         # 匹配 \func 后紧跟字母（非 { 或空格的情况）
         # 例如 \sinx → \sin x, \cosB → \cos B
+        # 只处理单个字母的情况，避免误改复杂表达式
         pattern = rf'\\{func}([A-Za-z])(?![a-zA-Z])'
         text = re.sub(pattern, rf'\\{func} \1', text)
     
@@ -4012,37 +4136,74 @@ def clean_markdown(text: str) -> str:
 def split_sections(text: str) -> List[Tuple[str, str]]:
     """拆分章节（支持 markdown 标题和加粗格式）
     
-    支持两种格式：
+    支持多种格式：
     1. Markdown 标题：# 一、单选题
     2. 加粗格式：**一、单选题**
+    3. 灵活格式：# 一、选择题：本题共8小题... （会被规范化为 一、单选题）
+    4. 灵活格式：# 二、选择题：本题共3小题，有多项... （会被规范化为 二、多选题）
     """
     lines = text.splitlines()
     sections = []
     current_title = None
     current_lines = []
 
+    # 定义章节匹配模式（更灵活）
+    # 支持：一、选择题/单选题/多选题/填空题/解答题，后面可以有冒号和其他说明
+    section_pattern = r"(一|二|三|四)、(选择题|单选题|多选题|填空题|解答题)"
+    
+    def normalize_section_title(num: str, title: str, full_line: str) -> str:
+        """规范化章节标题"""
+        # 检查是否是多选题（通过内容判断）
+        if title == "选择题":
+            # 检查是否包含"多项"、"多选"等关键词
+            if "多项" in full_line or "多选" in full_line:
+                return f"{num}、多选题"
+            # 第一个选择题默认是单选
+            elif num == "一":
+                return f"{num}、单选题"
+            # 第二个选择题如果有"有多项符合"等描述，是多选
+            else:
+                # 检查上下文，如果有"有多项"等关键词则是多选
+                if "多项" in full_line or "部分选对" in full_line:
+                    return f"{num}、多选题"
+                return f"{num}、单选题"  # 默认单选
+        else:
+            return f"{num}、{title}"
+
     for line in lines:
         stripped = line.strip()
-        # 优先匹配 markdown 标题格式
-        m = re.match(
-            r"^#+\s*(一、单选题|二、单选题|二、多选题|三、填空题|四、解答题)",
-            stripped,
-        )
-        # 如果不匹配，尝试匹配加粗格式 **章节标题**
-        if not m:
-            m = re.match(
-                r"^\*\*(一、单选题|二、单选题|二、多选题|三、填空题|四、解答题)\*\*",
-                stripped,
-            )
         
+        # 匹配 markdown 标题格式：# 一、选择题...
+        m = re.match(r"^#+\s*" + section_pattern, stripped)
         if m:
             if current_title is not None:
                 sections.append((current_title, "\n".join(current_lines).strip()))
                 current_lines = []
-            current_title = m.group(1)
-        else:
+            current_title = normalize_section_title(m.group(1), m.group(2), stripped)
+            continue
+            
+        # 匹配加粗格式：**一、选择题**... 或 **一、选择题：说明文字**
+        # 注意：** 可能紧跟在章节名后，也可能在整行末尾
+        m = re.match(r"^\*\*" + section_pattern + r"(?:\*\*|[^*]*\*\*)", stripped)
+        if m:
             if current_title is not None:
-                current_lines.append(line)
+                sections.append((current_title, "\n".join(current_lines).strip()))
+                current_lines = []
+            current_title = normalize_section_title(m.group(1), m.group(2), stripped)
+            continue
+        
+        # 匹配纯文本格式：一、选择题...（无markdown标记）
+        m = re.match(r"^" + section_pattern, stripped)
+        if m:
+            if current_title is not None:
+                sections.append((current_title, "\n".join(current_lines).strip()))
+                current_lines = []
+            current_title = normalize_section_title(m.group(1), m.group(2), stripped)
+            continue
+            
+        # 非标题行
+        if current_title is not None:
+            current_lines.append(line)
 
     if current_title is not None and current_lines:
         sections.append((current_title, "\n".join(current_lines).strip()))
@@ -5853,6 +6014,10 @@ def convert_md_to_examx(md_text: str, title: str, slug: str = "", enable_issue_d
     
     result = fix_nested_subquestions(result)
     result = fix_spurious_items_in_enumerate(result)
+    
+    # 🆕 v1.9.11：把 ①②③ 子题转为嵌套 enumerate（2025-06-xx）
+    result = fix_circled_subquestions_to_nested_enumerate(result)
+    
     result = fix_keep_questions_together(result)
 
     return result
