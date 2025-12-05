@@ -46,6 +46,7 @@ esac
 ROOT="$(cd "$(dirname "$0")" && pwd)"
 OUT="${ROOT}/output"
 SKIP_ERROR_CLEANUP="${SKIP_ERROR_CLEANUP:-}"  # If set (non-empty), retain .aux artifacts on error for forensic analysis.
+RENAME_OUTPUT="${RENAME_OUTPUT:-}"  # If set (non-empty), auto-rename PDFs using \examxtitle from metadata.tex after build.
 
 # Ensure output directories exist
 ensure_dirs() {
@@ -251,7 +252,7 @@ compile() {
   
   # 运行 latexmk，捕获返回值
   local ret=0
-  latexmk -xelatex -interaction=nonstopmode -file-line-error \
+  latexmk -xelatex -synctex=1 -interaction=nonstopmode -file-line-error \
           -outdir="${OUT}/.aux" "${wrap}" > "${OUT}/build.log" 2>&1 || ret=$?
   
   # Enhanced error classification & handling
@@ -274,7 +275,7 @@ compile() {
     elif grep -Eq "$undefref_pattern" "$logfile" 2>/dev/null; then
       echo "ℹ️  仅检测到未定义引用相关警告，尝试使用 -f 强制完成编译..."
       local ret2=0
-      latexmk -xelatex -f -interaction=nonstopmode -file-line-error \
+      latexmk -xelatex -synctex=1 -f -interaction=nonstopmode -file-line-error \
               -outdir="${OUT}/.aux" "${wrap}" >> "${OUT}/build.log" 2>&1 || ret2=$?
       if [[ $ret2 -ne 0 ]]; then
         echo ""; echo "❌ 强制编译失败 (second pass)"; echo ""
@@ -377,20 +378,27 @@ case "${MODE}" in
   *) usage ;;
 esac
 
-# Optional: if EXAM_TEX is set, call the naming wrapper to copy/rename PDFs
-# This keeps behavior backward-compatible: only triggers when EXAM_TEX is provided.
-if [[ -n "${EXAM_TEX-}" ]]; then
-  SCRIPTS_DIR="$(cd "$(dirname "$0")/scripts" && pwd)"
-  NAMER="$SCRIPTS_DIR/build_named_exam.sh"
-  if [[ -x "$NAMER" ]]; then
-    if [[ "${MODE}" == "teacher" || "${MODE}" == "both" ]]; then
-      SKIP_BUILD=1 "$NAMER" "$EXAM_TEX" teacher || echo "Warning: build_named_exam.sh (teacher) failed" >&2
+# Optional: if RENAME_OUTPUT is set, call the naming wrapper to copy/rename PDFs
+# This keeps behavior backward-compatible: only triggers when RENAME_OUTPUT=1 is provided.
+if [[ -n "${RENAME_OUTPUT-}" ]]; then
+  # Extract examSourceFile from metadata.tex to pass as EXAM_TEX
+  META_FILE="${ROOT}/settings/metadata.tex"
+  if [[ -f "$META_FILE" ]]; then
+    EXAM_TEX=$(grep "^\\\\newcommand{\\\\examSourceFile}" "$META_FILE" | sed -n 's/.*{\(.*\)}/\1/p' | head -1)
+    if [[ -n "$EXAM_TEX" && -f "${ROOT}/${EXAM_TEX}" ]]; then
+      SCRIPTS_DIR="$(cd "$(dirname "$0")/scripts" && pwd)"
+      NAMER="$SCRIPTS_DIR/build_named_exam.sh"
+      if [[ -x "$NAMER" ]]; then
+        if [[ "${MODE}" == "teacher" || "${MODE}" == "both" ]]; then
+          EXAM_TEX="${ROOT}/${EXAM_TEX}" SKIP_BUILD=1 "$NAMER" exam teacher || echo "Warning: build_named_exam.sh (teacher) failed" >&2
+        fi
+        if [[ "${MODE}" == "student" || "${MODE}" == "both" ]]; then
+          EXAM_TEX="${ROOT}/${EXAM_TEX}" SKIP_BUILD=1 "$NAMER" exam student || echo "Warning: build_named_exam.sh (student) failed" >&2
+        fi
+      else
+        echo "Warning: build_named_exam.sh not found or not executable at $NAMER" >&2
+      fi
     fi
-    if [[ "${MODE}" == "student" || "${MODE}" == "both" ]]; then
-      SKIP_BUILD=1 "$NAMER" "$EXAM_TEX" student || echo "Warning: build_named_exam.sh (student) failed" >&2
-    fi
-  else
-    echo "Warning: build_named_exam.sh not found or not executable at $NAMER" >&2
   fi
 fi
 
