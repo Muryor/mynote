@@ -222,7 +222,7 @@ A: 将新的 `*_preprocessed.md` 文件放入 `word_to_tex/output/` 目录，重
 
 ## 相关工具
 
-- `tools/validate_tex.py`: 验证生成的 TeX 文件语法
+- `tools/scripts/validate_tex.py`: 验证生成的 TeX 文件语法
 - `tools/testing/math_sm_comparison.py`: 对比数学公式状态机前后效果
 
 ## 贡献指南

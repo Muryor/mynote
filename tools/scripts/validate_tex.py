@@ -331,11 +331,17 @@ class TeXValidator:
             base_line = content[:match.start()].count("\n") + 1
             lines = block.splitlines()
 
+            in_item = False  # 标记当前是否已经进入某个 \item 的正文
+
             for offset, raw_line in enumerate(lines):
                 line = raw_line.strip()
 
                 # 跳过空行、注释、\item 开头的行
-                if not line or line.startswith('%') or line.startswith(r'\item'):
+                if not line or line.startswith('%'):
+                    continue
+
+                if line.startswith(r'\item'):
+                    in_item = True
                     continue
 
                 # 跳过 enumerate 可选参数行 (例如 [label=(\arabic*)])
@@ -344,6 +350,10 @@ class TeXValidator:
 
                 # 跳过纯 LaTeX 环境标记（如 \begin, \end）
                 if line.startswith(r'\begin') or line.startswith(r'\end'):
+                    continue
+
+                # 如果已经在某个 \item 内部，则允许出现多行正文
+                if in_item:
                     continue
 
                 # 其他实质内容视为可能的问题

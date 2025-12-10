@@ -3,7 +3,7 @@
 
 import sys
 sys.path.insert(0, '/Users/muryor/code/mynote/tools')
-from core.ocr_to_examx import _sanitize_math_block, smart_inline_math, wrap_math_variables, process_text_for_latex
+from core.ocr_to_examx import _sanitize_math_block, smart_inline_math, process_text_for_latex
 
 print("=" * 60)
 print("测试 ocr_to_examx.py 改动")
@@ -34,16 +34,8 @@ print(f"  $(0,1)$ 转换: {not has_dollar_01} (应为True，已转为\\(...\\))"
 print(f"  $(A)!0.5!(B)$ 保留: {has_dollar_AB} (应为True)")
 print()
 
-# 测试3：wrap_math_variables中的TikZ保护
-print("【测试3】wrap_math_variables中TikZ保护")
-test3_input = '$(A)$ 和 $(0,1)$'
-test3_output = wrap_math_variables(test3_input)
-print(f"  输入: {test3_input}")
-print(f"  输出: {test3_output}")
-print()
-
-# 测试4：故选删除
-print("【测试4】更彻底的'故选'删除")
+# 测试3：故选删除
+print("【测试3】更彻底的'故选'删除")
 test4_cases = [
     ('结尾故选', '这是一段文字，故选：A'),
     ('单独一行', '这是一段文字。\n故选：A\n其他内容'),

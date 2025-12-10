@@ -235,7 +235,7 @@ grep -o '\\)' tools/testing/ocr_blackbox_tests/output/gaokao_2025_national_1_con
 3. **查找不匹配位置**：
 ```bash
 # 使用 validate_tex.py 定位问题
-python3 tools/validate_tex.py \
+python3 tools/scripts/validate_tex.py \
     tools/testing/ocr_blackbox_tests/output/gaokao_2025_national_1_converted.tex
 ```
 

@@ -444,7 +444,7 @@ python3 tools/images/process_images_to_tikz.py --mode include --files <tex_file>
 ### validate_tex.py
 
 ```bash
-python3 tools/validate_tex.py <tex_file>
+python3 tools/scripts/validate_tex.py <tex_file>
 ```
 
 **检查项**：花括号配对、定界符平衡、环境平衡、`\explain{}` 空行

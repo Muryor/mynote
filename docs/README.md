@@ -1,7 +1,7 @@
-# 文档导航中心 (v4.2)
+# 文档导航中心 (v4.8)
 
-> **我该看哪个文档？** 根据你的需求快速找到对应文档。  
-> **更新**: 2025-12-01
+> **快速定位**: 根据需求找到对应文档 | [工具架构](../tools/README.md) | [重构报告](../tools/docs/refactoring/REFACTORING_REPORT.md)  
+> **更新**: 2025-12-09 - 工具重构完成，文档优化（减少 token 消耗）
 
 ---
 
@@ -53,100 +53,77 @@
    - 【分析】内容未过滤 → TROUBLESHOOTING.md § 4.1 问题 2
    - 定界符不平衡 → TROUBLESHOOTING.md § 4.2 问题 3
 
-### 场景3: 我需要处理图片（IMAGE_TODO → TikZ）
+### 场景3: 图片处理 (IMAGE_TODO → TikZ)
 
-**图片流水线完整指南**:
+**完整指南**: [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md) | [提示词模板](TIKZ_AGENT_PROMPT.md) | [任务清单](IMAGE_JOBS_FULL.md)
 
-1. **[workflow.md § 九](workflow.md)** - 图片流水线精简概览
-   - 理解 IMAGE_TODO 占位符机制
-   - 了解完整流程：导出 → AI 生成 → 回填
+**快速流程**:
+```bash
+# 1. 导出任务
+python tools/images/export_image_jobs.py --files <tex> --output image_jobs.jsonl
 
-2. **[REFERENCE.md § 2](REFERENCE.md)** - IMAGE_TODO 格式规范
-   - 必需字段：id, path, width, inline
-   - 推荐字段：question_index, sub_index, CONTEXT_BEFORE/AFTER
+# 2. AI 生成（使用 TIKZ_AGENT_PROMPT.md）
+# → generated_tikz.jsonl
 
-3. **[IMAGE_JOBS_FULL.md](IMAGE_JOBS_FULL.md)** - image_jobs.jsonl 完整字段定义
-   - 目录推断逻辑（唯一真理）
-   - 所有字段详细说明（15+ 字段）
+# 3. 写入片段
+python3 tools/images/write_snippets_from_jsonl.py \
+    --jobs-file image_jobs.jsonl --tikz-file generated_tikz.jsonl
 
-4. **[TIKZ_AGENT_PROMPT.md](TIKZ_AGENT_PROMPT.md)** - AI 生成 TikZ 的标准 Prompt
-   - AI 输入/输出格式
-   - TikZ 代码质量要求
+# 4. 回填
+python tools/images/apply_tikz_snippets.py --tex-file <tex>
+```
 
-5. **[dev/IMAGE_PIPELINE_TASKS.md](dev/IMAGE_PIPELINE_TASKS.md)** - 开发者任务清单
-   - Tasks A/B/C/D 详细实现需求
-   - 测试清单与完成标准
+### 场景4: 深入了解工具架构
 
-6. **实际操作流程**:
-   ```bash
-   # Step 1: 导出图片任务
-   python tools/images/export_image_jobs.py \
-       --files "content/exams/auto/<slug>/converted_exam.tex" \
-       --output "content/exams/auto/<slug>/image_jobs.jsonl"
-   
-   # Step 2: AI 生成 TikZ（手动或调用 API）
-   # 输出: generated_tikz.jsonl
-   
-   # Step 3: 写入 TikZ 片段
-   python3 tools/images/write_snippets_from_jsonl.py \
-       --jobs-file "content/exams/auto/<slug>/image_jobs.jsonl" \
-       --tikz-file "generated_tikz.jsonl"
-   
-   # Step 4: 回填到 TeX 文件
-   python tools/images/apply_tikz_snippets.py \
-       --tex-file "content/exams/auto/<slug>/converted_exam.tex"
-   
-   # Step 5: 编译
-   ./build.sh exam teacher
-   ```
+**工具文档**: [tools/README.md](../tools/README.md) ⭐  
+**重构报告**: [tools/docs/refactoring/REFACTORING_REPORT.md](../tools/docs/refactoring/REFACTORING_REPORT.md)
 
-### 场景4: 我需要深入了解某个具体规范
+**核心模块**:
+- `tools/core/` - 转换引擎（ocr_to_examx.py, agent_refine.py）
+- `tools/lib/` - 7个共享库（数学处理、文本清理等）
+- `tools/scripts/` - 实用脚本（run_pipeline.py, validate_tex.py）
 
-**按主题查阅**:
+### 场景5: 规范速查
 
-| 主题 | 文档 | 核心内容 |
-|------|------|---------|
-| 元信息映射 | [REFERENCE.md § 1](REFERENCE.md) | Markdown → LaTeX 映射表 |
-| IMAGE_TODO 格式 | [REFERENCE.md § 2](REFERENCE.md) | 占位符字段定义与示例 |
-| image_jobs.jsonl | [REFERENCE.md § 3](REFERENCE.md) 或 [IMAGE_JOBS_FULL.md](IMAGE_JOBS_FULL.md) | 核心 9 字段 vs 完整 15+ 字段 |
-| `\exstep` 详解语法 | [REFERENCE.md § 4](REFERENCE.md) | 快速参考 |
-| `\exstep` 详细示例 | [EXPLAIN_FULL.md](EXPLAIN_FULL.md) | 所有参数、技术细节 |
-| TikZ 生成规范 | [TIKZ_AGENT_PROMPT.md](TIKZ_AGENT_PROMPT.md) | AI Prompt 模板 |
-| 常见错误诊断 | [TROUBLESHOOTING.md § 四](TROUBLESHOOTING.md) | 8 大类、19 种错误详解 |
+| 主题 | 文档 |
+|------|------|
+| 元信息映射 | [REFERENCE.md § 1](REFERENCE.md) |
+| IMAGE_TODO 格式 | [REFERENCE.md § 2](REFERENCE.md) |
+| `\exstep` 详解 | [REFERENCE.md § 4](REFERENCE.md) / [EXPLAIN_FULL.md](EXPLAIN_FULL.md) |
+| TikZ 生成规范 | [TIKZ_AGENT_PROMPT.md](TIKZ_AGENT_PROMPT.md) |
 
-### 场景5: 我是开发者，想扩展功能
+### 场景6: 开发与扩展
 
-**开发者文档**:
-
-1. **[dev/IMAGE_PIPELINE_TASKS.md](dev/IMAGE_PIPELINE_TASKS.md)** - 图片流水线任务清单
-   - Tasks A/B/C/D/E 详细需求
-   - 单元测试与集成测试清单
-
-2. **[archive/CHANGELOG.md](archive/CHANGELOG.md)** - 版本历史
-   - v3.0-v3.4 完整演进记录
-   - 各版本核心特性与已知限制
-
-3. **关键脚本源码**:
-   - `tools/core/ocr_to_examx.py` - Markdown → TeX 核心转换
-   - `tools/core/validate_tex.py` - 预编译结构验证
-   - `tools/images/*.py` - 图片流水线工具集
-
-### 场景6: 我想查看项目演进历史
-
-**版本历史**:
-
-- **[archive/CHANGELOG.md](archive/CHANGELOG.md)** - 完整版本历史
-  - v3.4: MathStateMachine v1.8 + 图片流水线
-  - v3.3: OCR 错误自动修复 + 预处理管线标准化
-  - v3.2: examx 样式系统重构
-  - v3.1: OCR 转换管线首次实现
-  - v3.0: 基础 LaTeX 试卷编译
+**开发文档**: [dev/IMAGE_PIPELINE_TASKS.md](dev/IMAGE_PIPELINE_TASKS.md)  
+**版本历史**: [archive/CHANGELOG.md](archive/CHANGELOG.md)
 
 ---
 
 ## 📁 文档分类
 
-### 核心必读（按推荐顺序）
+## 📋 核心必读
+
+1. **[workflow.md](workflow.md)** - 标准格式工作流 ⭐⭐⭐
+2. **[WORKFLOW_ZHIXUE.md](WORKFLOW_ZHIXUE.md)** - 智学网格式工作流
+3. **[TROUBLESHOOTING.md](TROUBLESHOOTING.md)** - 错误诊断与修复
+4. **[tools/README.md](../tools/README.md)** - 工具架构与脚本使用
+
+## 📖 参考文档
+
+- [REFERENCE.md](REFERENCE.md) - 格式规范速查
+- [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md) - TikZ 图形转换
+- [IMAGE_JOBS_FULL.md](IMAGE_JOBS_FULL.md) - 图片任务字段
+- [EXPLAIN_FULL.md](EXPLAIN_FULL.md) - `\exstep` 详解
+
+## 🔧 开发文档
+
+- [tools/docs/refactoring/](../tools/docs/refactoring/) - 重构方案与报告
+- [dev/IMAGE_PIPELINE_TASKS.md](dev/IMAGE_PIPELINE_TASKS.md) - 图片流水线任务
+- [archive/CHANGELOG.md](archive/CHANGELOG.md) - 版本历史
+
+---
+
+## 💡 快速命令
 
 | 文档 | 作用 | 预计阅读时间 |
 |------|------|------------|
@@ -271,30 +248,19 @@ python tools/images/apply_tikz_snippets.py \
 **解决**: 删除空行或用 `%` 注释。  
 **详见**: [TROUBLESHOOTING.md § 4.4 问题 10](TROUBLESHOOTING.md)
 
-### Q2: 【分析】内容出现在 PDF 中
+## ❓ 常见问题速查
 
-**A**: `ocr_to_examx.py` 未正确过滤【分析】。  
-**解决**: 检查 `META_PATTERNS["analysis"]` 正则表达式。  
-**详见**: [TROUBLESHOOTING.md § 4.1 问题 2](TROUBLESHOOTING.md)
+| 问题 | 快速链接 |
+|------|----------|
+| 编译失败 "Runaway argument" | [TROUBLESHOOTING.md § 4.4 问题 10](TROUBLESHOOTING.md) |
+| 【分析】未过滤 | [TROUBLESHOOTING.md § 4.1 问题 2](TROUBLESHOOTING.md) |
+| 数学公式异常 | [TROUBLESHOOTING.md § 4.2](TROUBLESHOOTING.md) |
+| 图片路径错误 | [TROUBLESHOOTING.md § 4.5 问题 12](TROUBLESHOOTING.md) |
+| TikZ 片段未回填 | [IMAGE_JOBS_FULL.md § 目录推断逻辑](IMAGE_JOBS_FULL.md) |
 
-### Q3: 数学公式显示异常
+---
 
-**A**: 定界符不平衡或裸 $ 符号残留。  
-**解决**: 运行 `math_sm_comparison.py` 检查。  
-**详见**: [TROUBLESHOOTING.md § 4.2](TROUBLESHOOTING.md)
-
-### Q4: 图片路径错误
-
-**A**: Pandoc 提取的图片路径与 TeX 中的 `\includegraphics` 不匹配。  
-**解决**: 使用 `process_images_to_tikz.py` 自动处理路径。  
-**详见**: [TROUBLESHOOTING.md § 4.5 问题 12](TROUBLESHOOTING.md)
-
-### Q5: TikZ 片段未回填
-
-**A**: AI 未生成对应 id 的 TikZ 代码，或目录推断失败。  
-**解决**: 检查 `generated_tikz.jsonl` 和 `snippets_dir` 路径。  
-**详见**: [IMAGE_JOBS_FULL.md § 目录推断逻辑](IMAGE_JOBS_FULL.md)
-
+**版本**: v4.8 (2025-12-09) | 工具重构完成，文档优化
 ---
 
 ## 📞 获取帮助

@@ -12,6 +12,7 @@
 
 import sys
 import os
+import re
 
 # 添加 tools/core 到路径
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'core'))
@@ -71,7 +72,7 @@ def add_table_borders(text: str) -> str:
         lines = content.split('\n')
         new_lines = []
         
-        # 首行前添加 \hline
+        # 首行前添加 \hline（若首行已是 \hline 则不重复）
         has_content = False
         for i, line in enumerate(lines):
             stripped = line.strip()
@@ -83,7 +84,8 @@ def add_table_borders(text: str) -> str:
             
             # 第一个非空行前添加 \hline
             if not has_content and stripped:
-                new_lines.append('\\hline')
+                if stripped != '\\hline':
+                    new_lines.append('\\hline')
                 has_content = True
             
             # 添加当前行
@@ -160,6 +162,30 @@ A & B & C \\
     print(f"结果: {'✅ PASS' if test2_pass else '❌ FAIL'}")
     
     if test2_pass:
+        tests_passed += 1
+    else:
+        tests_failed += 1
+
+    # 测试 2.1：首行已有 \hline（不应重复添加）
+    test21_input = r"""
+\begin{tabular}{cc}
+\hline
+X & Y \\
+\hline
+0 & 1 \\
+\hline
+\end{tabular}
+"""
+    result21 = add_table_borders(test21_input)
+    double_top_hline = re.search(r'\\hline\s*\n\s*\\hline\s*\n\s*X', result21)
+    test21_pass = (not double_top_hline) and ('|c|c|' in result21)
+
+    print(f"\n测试 2.1: 首行已有 \\hline（避免重复）")
+    print(f"输入:\n{test21_input}")
+    print(f"输出:\n{result21}")
+    print(f"结果: {'✅ PASS' if test21_pass else '❌ FAIL'}")
+
+    if test21_pass:
         tests_passed += 1
     else:
         tests_failed += 1

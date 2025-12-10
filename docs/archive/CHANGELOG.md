@@ -1,12 +1,48 @@
 # 版本历史
 
 > **文档定位**: 项目演进记录，包含各版本的主要变更、优化和修复  
-> **当前版本**: v3.6  
+> **当前版本**: v4.7  
 > **配套文档**: [workflow.md](../workflow.md)
 
 ---
 
-## v3.6（当前版本）
+## v4.7（当前版本）
+
+**发布日期**: 2025-12-05
+
+### 核心更新
+
+#### 1. build.sh 重命名功能整合
+- 重命名功能直接整合到 `build.sh`，删除 `scripts/build_named_exam.sh`
+- 从源文件 `\examxtitle{}` 读取标题，不再依赖 `metadata.tex` 中的 `examDisplayName`
+- 删除 `metadata.tex` 中的 `\examDisplayName` 和 `\handoutDisplayName` 变量
+
+#### 2. synctex 正反向搜索修复
+- `latexmk` 命令添加 `-synctex=1` 参数
+- 重命名时同时复制 `.synctex.gz` 文件
+
+#### 3. 文档精简
+- `workflow.md` 精简至 ~80 行，版本历史移至本文件
+- 移除讲义相关内容（专注试卷工作流）
+
+#### 4. LaTeX Workshop 配置优化
+- 添加 `build-exam-*` 工具和配方
+- 支持从侧边栏直接调用 `build.sh`
+
+---
+
+## v4.6
+
+**发布日期**: 2025-12-03
+
+### 核心更新
+- `\examimage` 宏 + 相对路径，支持移动文件夹后仍能编译
+- `\setexamdir` 设置图片基准目录
+- `convert_to_examimage.py` 自动转换脚本
+
+---
+
+## v3.6
 
 **发布日期**: 2025-11-25
 

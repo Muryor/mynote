@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""
-ocr_to_examx_v1.9.py - v1.9.9 改进版
+ocr_to_examx_v1.9.py - v1.9.10 改进版
+
+🆕 v1.9.10 填空题横线自动修复（2025-12-05）：
+1. ✅ 新增 fix_fill_in_blanks() 函数
+   - 问题：Word 下划线样式在 docx→md 转换时丢失
+   - 修复：在填空题 section 内为题尾全角句号前自动插入 \fillin{}
+   - 逻辑：定位 \section{填空题}，遍历所有 question 环境
+   - 安全：跳过已有 \fillin 或 \choices 的题目，避免重复插入
+   - 集成：在 main() 中 output_tex.write_text() 前调用
 
 🆕 v1.9.9 粗体数学符号和希腊字母修复（2025-12-01）：
 1. ✅ 新增 fix_bold_math_symbols() 函数
@@ -1670,6 +1678,65 @@ def clean_residual_image_attrs(text: str) -> str:
     return text
 
 
+def fix_fill_in_blanks(text: str) -> str:
+    r"""🆕 v1.9.10：为填空题自动补充横线占位符
+    
+    问题：Word 下划线样式在 docx→md 转换时丢失，导致填空题没有空白横线
+    修复：在「填空题」section 内，为题尾全角句号前插入 \fillin{}
+    
+    逻辑：
+    1. 定位 \section{填空题} 到下一个 \section{ 之间的内容
+    2. 对每个 \begin{question}...\end{question} 块：
+       - 跳过已有 \fillin 或 \choices 的题目
+       - 查找 \topics 前最后一个全角句号 ．
+       - 在句号前插入 \fillin{}
+    
+    示例：
+        则公比为\n．\n\topics{...}
+        ↓
+        则公比为\fillin{}\n．\n\topics{...}
+    """
+    import re
+    
+    # 定位填空题 section
+    start = text.find("\\section{填空题}")
+    if start == -1:
+        return text
+    
+    end = text.find(r"\section{", start + 1)
+    if end == -1:
+        end = len(text)
+    
+    prefix, body, suffix = text[:start], text[start:end], text[end:]
+    
+    # 匹配所有 question 环境
+    question_re = re.compile(r"(\\begin\{question\}.*?\\end\{question\})", re.DOTALL)
+    
+    def fix_block(block: str) -> str:
+        # 跳过选择题或已有 fillin 的题目
+        if "\\fillin" in block or "\\choices" in block:
+            return block
+        
+        topics_idx = block.find(r"\topics")
+        if topics_idx == -1:
+            return block
+        
+        before_topics = block[:topics_idx]
+        dot_idx = before_topics.rfind("．")  # 全角句号
+        if dot_idx == -1:
+            return block
+        
+        # 避免重复插入
+        if before_topics[max(0, dot_idx - 10):dot_idx].find("\\fillin") != -1:
+            return block
+        
+        new_before = before_topics[:dot_idx] + r"\fillin{}" + before_topics[dot_idx:]
+        return new_before + block[topics_idx:]
+    
+    body = question_re.sub(lambda m: fix_block(m.group(1)), body)
+    return prefix + body + suffix
+
+
 # 🆕 v1.9.9: P2-8 删除未使用的 wrap_math_variables 函数（死代码清理）
 
 
@@ -2584,6 +2651,12 @@ def fix_right_boundary_errors(text: str) -> str:
     # 模式6: \right. 后直接跟中文文字（缺少 \)）
     text = re.sub(r'(\\right\.)\s*([\u4e00-\u9fa5])', r'\1\\)\2', text)
     
+    # 模式7: \right.\)，得\(  → \right.，得  (移除多余的 \) 和 \()
+    # 这是因为 \right. 后的中文标点应该在数学模式外
+    text = text.replace(r'\right.\)，得\(', r'\right.，得')
+    text = text.replace(r'\right.\)，则\(', r'\right.，则')
+    text = text.replace(r'\right.\)，\par', r'\right.，\par')
+    
     return text
 
 
@@ -2654,13 +2727,16 @@ def fix_unmatched_close_delimiters(text: str) -> str:
                 del text_chars[pos:pos+2]
         result = ''.join(text_chars)
     
-    # 注意：不再为未匹配的 \( 在行尾添加 \)
-    # 这是因为多行数学块的 \( 可能在后续行才闭合，逐行添加会造成错误
-    # 如果真的有未闭合的 \(，应该由其他后处理函数或手动修复
-    # （只记录警告，不自动添加）
+    # 如果仍有未匹配的 \(（开多闭少），追加对应数量的收尾 \)
+    # 只在全文级别处理，避免逐行补齐带来的误修复
     if stack:
-        # 可以选择打印警告，但不自动修复
-        pass
+        extra_closes = []
+        # 第一个直接补一个 \)
+        extra_closes.append('\\)')
+        # 其余的用注释分隔，避免出现 \)\) 被判定为“双重包裹”
+        for _ in range(len(stack) - 1):
+            extra_closes.append('% auto-close added by fix_unmatched_close_delimiters\n\\)')
+        result = result + ''.join(extra_closes)
     
     return result
 
@@ -3911,7 +3987,7 @@ def add_table_borders(text: str) -> str:
         lines = content.split('\n')
         new_lines = []
         
-        # 首行前添加 \hline
+        # 首行前添加 \hline（若首行已是 \hline 则不重复）
         has_content = False
         for i, line in enumerate(lines):
             stripped = line.strip()
@@ -3921,9 +3997,10 @@ def add_table_borders(text: str) -> str:
                 new_lines.append(line)
                 continue
             
-            # 第一个非空行前添加 \hline
+            # 第一个非空行前添加 \hline（避免重复）
             if not has_content and stripped:
-                new_lines.append('\\hline')
+                if stripped != '\\hline':
+                    new_lines.append('\\hline')
                 has_content = True
             
             # 添加当前行
@@ -4329,12 +4406,13 @@ def extract_meta_and_images(block: str, question_index: int = 0, slug: str = "")
     box_drawing_chars = re.compile(r"[│─┌┐└┘┼├┤┬┴]")  # Box-drawing 字符
 
     # 🆕 修复：将 META_PATTERNS 编译，分离 analysis 和 explain
+    # 🆕 v1.9.9: 添加【解析】支持（图片 OCR 试卷常用）
     meta_starts = [
         ("answer", re.compile(r"^【\s*答案\s*】[:：]?\s*(.*)$")),
         ("difficulty", re.compile(r"^【\s*难度\s*】[:：]?\s*([\d.]+).*")),
         ("topics", re.compile(r"^【\s*(知识点|考点)\s*】[:：]?\s*(.*)$")),
         ("analysis", re.compile(r"^【\s*分析\s*】[:：]?\s*(.*)$")),
-        ("explain", re.compile(r"^【\s*详解\s*】[:：]?\s*(.*)$")),
+        ("explain", re.compile(r"^【\s*(详解|解析)\s*】[:：]?\s*(.*)$")),  # 🆕 支持【解析】
         ("diangjing", re.compile(r"^【\s*点睛\s*】[:：]?\s*(.*)$")),
         ("dianjing_alt", re.compile(r"^【\s*点评\s*】[:：]?\s*(.*)$")),
     ]
@@ -5239,14 +5317,34 @@ def _is_cjk_char(ch: str) -> bool:
 
 
 def _split_trailing_punct(segment: str) -> Tuple[str, str]:
+    """分离数学内容尾部的标点符号。
+    
+    注意：需要保护 LaTeX 分隔符命令后的 `.`，如 \\right. \\left.
+    这些不是普通标点，而是 LaTeX 语法的一部分。
+    """
     idx = len(segment)
     while idx > 0 and segment[idx - 1].isspace():
         idx -= 1
     punct_end = idx
     while idx > 0 and segment[idx - 1] in TRAILING_MATH_PUNCT:
         idx -= 1
+    
+    # 🔥 保护 \right. \left. \big. 等分隔符命令
+    # 如果 core 以 \right, \left, \big, \Big, \bigg, \Bigg 结尾，
+    # 且 trailing 以 . 开头，则把 . 还给 core
     core = segment[:idx].rstrip()
     trailing = segment[idx:punct_end]
+    
+    if trailing.startswith('.') and core:
+        # 检查是否以分隔符命令结尾
+        delimiter_cmds = [r'\right', r'\left', r'\big', r'\Big', r'\bigg', r'\Bigg']
+        for cmd in delimiter_cmds:
+            if core.endswith(cmd):
+                # 把 . 还给 core
+                core = core + '.'
+                trailing = trailing[1:]
+                break
+    
     return core, trailing
 
 
@@ -6479,6 +6577,9 @@ def main():
         # 🆕 v1.6 P0 修复：后处理清理
         tex_text = fix_array_boundaries(tex_text)
         tex_text = clean_residual_image_attrs(tex_text)
+        
+        # 🆕 v1.9.10：填空题横线修复
+        tex_text = fix_fill_in_blanks(tex_text)
         
         # 🆕 v1.3：验证输出
         warnings = validate_latex_output(tex_text)

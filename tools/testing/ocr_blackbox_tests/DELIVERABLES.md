@@ -383,7 +383,7 @@ cat tools/testing/ocr_blackbox_tests/reports/gaokao_2025_national_1_preprocessed
 
 ### 项目内部
 - `tools/core/ocr_to_examx.py` - 被测试脚本
-- `tools/validate_tex.py` - TeX 验证工具
+- `tools/scripts/validate_tex.py` - TeX 验证工具
 - `tools/testing/math_sm_comparison.py` - 数学公式对比工具
 
 ### 外部参考

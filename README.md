@@ -283,44 +283,133 @@ output/                          — build artifacts (PDFs)
 
 ## Word→Examx Conversion
 
-This repository includes a streamlined pipeline to convert Microsoft Word exam documents (`.docx`) into the project's `examx` LaTeX format and verify compilation. The conversion pipeline is implemented in `tools/core/ocr_to_examx.py` (v1.8) with MathStateMachine-based math processing, and refined with `tools/core/agent_refine.py`.
+This repository includes a streamlined pipeline to convert Microsoft Word exam documents (`.docx`) into the project's `examx` LaTeX format and verify compilation. 
 
-Quick summary:
+**🆕 Major Update (2025-12-09)**: The conversion tools have been **fully refactored** for better modularity and maintainability:
+- 7013-line monolithic script → **7 modular libraries** (`tools/lib/`)
+- Improved code reuse and testing
+- All tests passing (100% success rate)
+- Backward compatible with existing workflows
 
-- Input: Word `.docx` files placed in `word_to_tex/input/`
-- Automated pipeline: `pandoc` → markdown preprocessing → `ocr_to_examx.py` → `agent_refine.py` → optional compilation
-- Scripts: `word_to_tex/scripts/preprocess_docx.sh` (primary helper script)
-- Outputs: `word_to_tex/output/` (intermediate), `content/exams/auto/<name>/converted_exam.tex` (refined)
+### Quick Start
 
-Basic commands (from project root):
+**One-click conversion** (recommended):
 
 ```bash
-# Convert a single .docx to examx TeX (pandoc → preprocess → converter → refine)
+# Standard format (Nanjing, Changzhou, etc.)
 ./word_to_tex/scripts/preprocess_docx.sh \
-  word_to_tex/input/your_exam.docx \
-  output_basename "Full Exam Title"
+  word_to_tex/input/exam.docx \
+  exam_2025 \
+  "2025年期末试卷"
 
-# Build teacher PDF (temporarily set exam source then run build)
-# (preprocess creates content/exams/auto/<output_basename>/converted_exam.tex)
-cp settings/metadata.tex settings/metadata.tex.bak
-python3 - <<'PY'
-from pathlib import Path
-fn=Path('settings/metadata.tex')
-txt=fn.read_text()
-txt=txt.replace('\\newcommand{\\examSourceFile}{content/exams/g2/g2_qidong_2024_sem1_month1.tex}', '\\newcommand{\\examSourceFile}{content/exams/auto/output_basename/converted_exam.tex}')
-fn.write_text(txt)
-PY
-./build.sh exam teacher
-mv settings/metadata.tex.bak settings/metadata.tex
+# Zhixuewang format (Shenzhen, etc.)
+./word_to_tex/scripts/preprocess_zx_docx.sh \
+  word_to_tex/input/exam.docx \
+  exam_2025 \
+  "深圳中学开学试卷"
+```
+
+Output: `content/exams/auto/exam_2025/converted_exam.tex`
+
+### Pipeline Overview
+
+The conversion pipeline uses:
+- `tools/core/ocr_to_examx.py` (v1.9.8) - Main converter with MathStateMachine-based processing
+- `tools/core/agent_refine.py` - TikZ placeholder refinement
+- `tools/lib/` - **7 modular libraries** for shared functionality:
+  - `math_processing.py` - Math formula processing (60KB)
+  - `text_cleaning.py` - Text cleaning and LaTeX escaping
+  - `meta_extraction.py` - Metadata extraction (答案/难度/知识点)
+  - `latex_utils.py` - LaTeX utilities
+  - `question_processing.py` - Question structure handling
+  - `validation.py` - Math integrity validation
+  - `image_handling.py` - Image path handling
+
+### Tools Directory Structure
+
+```
+tools/
+├── core/                    # Core conversion engines
+│   ├── ocr_to_examx.py     # Markdown → examx LaTeX
+│   └── agent_refine.py     # TeX refinement
+│
+├── lib/                     # Shared libraries (refactored)
+│   ├── math_processing.py       # Math formula processing
+│   ├── text_cleaning.py         # Text cleaning
+│   ├── meta_extraction.py       # Metadata extraction
+│   ├── latex_utils.py           # LaTeX utilities
+│   ├── question_processing.py   # Question processing
+│   ├── validation.py            # Validation
+│   └── image_handling.py        # Image handling
+│
+├── scripts/                 # Utility scripts
+│   ├── run_pipeline.py          # Quick conversion + validation
+│   ├── validate_tex.py          # TeX pre-compile validation
+│   └── apply_fixes.py           # Batch fixes
+│
+├── testing/                 # Test suites
+│   ├── quick_test_changes.py       # Quick function tests
+│   ├── test_ocr_fixes.py           # OCR fix tests
+│   └── ocr_blackbox_tests/         # Blackbox test suite
+│
+├── docs/                    # Documentation
+│   ├── refactoring/        # Refactoring documentation
+│   │   ├── REFACTORING_REPORT.md   # Complete refactoring report
+│   │   ├── README_REFACTORING.md   # Quick guide
+│   │   └── test_refactoring.py     # Refactoring tests (5/5 ✅)
+│   ├── OCR_TO_EXAMX_SUMMARY.md     # Feature summary
+│   └── V15_IMPLEMENTATION_REPORT.md
+│
+├── images/                  # Image processing tools
+├── utils/                   # Auxiliary utilities
+└── legacy/                  # Deprecated scripts
+```
+
+For detailed tool documentation, see [`tools/README.md`](tools/README.md).
+
+### Manual Conversion
+
+If you need more control:
+
+```bash
+# Step 1: docx → markdown
+pandoc input.docx -o output.md --extract-media=figures
+
+# Step 2: Preprocess markdown
+python3 tools/utils/preprocess_markdown.py output.md preprocessed.md
+
+# Step 3: Convert to examx
+python3 tools/core/ocr_to_examx.py \
+  preprocessed.md \
+  result.tex \
+  --title "试卷标题" \
+  --figures-dir figures
+
+# Step 4: Refine with agent
+python3 tools/core/agent_refine.py result.tex final.tex --create-tikz
+
+# Step 5: Validate (optional)
+python3 tools/scripts/validate_tex.py final.tex
+```
+
+### Quick Conversion with Validation
+
+```bash
+# Convert + validate in one step
+python3 tools/scripts/run_pipeline.py \
+  input.md \
+  --slug exam-2025 \
+  --title "2025年试卷"
 ```
 
 Notes and best practices:
 
-- `ocr_to_examx.py` v1.4 fixes double-wrapped math (`$$...$$` conflicts) and expands single-line choice quote blocks into `\begin{choices}`.
-- After conversion, expect a short manual pass (≈10–20 minutes) to fix rare `$...$` edge cases and finalize TikZ figures.
-- Deleted obsolete helpers (migrated to `tools/`): `convert_exam.sh`, `postprocess_exam.py`, `extract_images.py`.
+- `ocr_to_examx.py` v1.9.8 uses MathStateMachine for robust math processing
+- After conversion, expect a short manual pass (≈10–20 minutes) for edge cases
+- The refactored codebase makes future maintenance and feature additions easier
+- All existing workflows remain compatible (no breaking changes)
 
-See `word_to_tex/output/REGRESSION_TEST_v14.md` and `word_to_tex/output/TEST_REPORT_lishui_2026.md` for example reports and metrics.
+See conversion test reports in `word_to_tex/output/` for examples and metrics.
 
 ### Image → TikZ Automation Pipeline
 

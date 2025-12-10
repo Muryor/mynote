@@ -65,6 +65,35 @@
 			"problemMatcher": "$gcc"
 		},
 		{
+			"label": "Build: Exam (auto-rename)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"exam",
+				"both"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}",
+					"RENAME_OUTPUT": "1"
+				}
+			},
+			"group": "build",
+			"problemMatcher": {
+				"owner": "latex",
+				"fileLocation": [
+					"relative",
+					"${workspaceFolder}"
+				],
+				"pattern": {
+					"regexp": "^(.*?):(\\d+): (.+)$",
+					"file": 1,
+					"line": 2,
+					"message": 3
+				}
+			}
+		},
+		{
 			"label": "Build: Handout (teacher)",
 			"type": "shell",
 			"command": "./build.sh",
@@ -133,8 +162,74 @@
 		{
 			"label": "Run Quick Test",
 			"type": "shell",
-			"command": "cd word_to_tex/exam_converter && python3 quick_test.py",
+			"command": "python3 tools/testing/quick_test_changes.py",
 			"isBackground": false
+		},
+		{
+			"label": "Clean Build Artifacts",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"clean"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Test Batch Convert",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"test-batch",
+				"${input:docxFiles}"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}"
+				}
+			},
+			"problemMatcher": []
+		},
+		{
+			"label": "Build with Validation (Teacher)",
+			"type": "shell",
+			"command": "./build.sh",
+			"args": [
+				"exam",
+				"teacher"
+			],
+			"options": {
+				"env": {
+					"PATH": "/Library/TeX/texbin:${env:PATH}",
+					"VALIDATE_BEFORE_BUILD": "1"
+				}
+			},
+			"group": "build",
+			"problemMatcher": {
+				"owner": "latex",
+				"fileLocation": [
+					"relative",
+					"${workspaceFolder}"
+				],
+				"pattern": {
+					"regexp": "^(.*?):(\\d+): (.+)$",
+					"file": 1,
+					"line": 2,
+					"message": 3
+				}
+			}
+		}
+	],
+	"inputs": [
+		{
+			"id": "docxFiles",
+			"type": "promptString",
+			"description": "输入 docx 文件路径（支持通配符，如 word_to_tex/input/*.docx）",
+			"default": "word_to_tex/input/*.docx"
 		}
 	]
 }

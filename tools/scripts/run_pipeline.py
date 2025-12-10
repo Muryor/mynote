@@ -24,11 +24,14 @@ import argparse
 import sys
 from pathlib import Path
 
-# 将 tools 目录添加到 Python 路径
-sys.path.insert(0, str(Path(__file__).parent.parent))
+# 将仓库根目录添加到 Python 路径（确保 `import tools` 可用）
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from tools.core.ocr_to_examx import convert_md_to_examx
-from tools.validate_tex import TeXValidator
+# 新版模块化转换器
+from tools.converters import ExamConverter
+# 兼容保留：旧版转换函数（仅在 --legacy 时使用）
+from tools.core.ocr_to_examx import convert_md_to_examx as legacy_convert_md_to_examx
+from tools.scripts.validate_tex import TeXValidator
 
 
 def run_pipeline(
@@ -38,6 +41,7 @@ def run_pipeline(
     out_tex: str,
     do_validate: bool,
     enable_issue_detection: bool,
+    use_legacy: bool,
 ) -> int:
     """运行完整的转换和校验管道
 
@@ -73,31 +77,39 @@ def run_pipeline(
     print(f"📝 Output: {out_path}")
     print(f"🏷️  Slug:   {slug}")
     print(f"📌 Title:  {title}")
+    print(f"🚀 Mode:   {'Legacy' if use_legacy else 'Modular (ExamConverter)'}")
     print()
 
-    # Step 1: 读取 Markdown 文件
-    try:
-        md_text = md_path.read_text(encoding="utf-8")
-    except Exception as e:
-        print(f"❌ Failed to read Markdown file: {e}", file=sys.stderr)
-        return 1
-
-    # Step 2: 转换 Markdown → TeX
+    # Step 1: 转换 Markdown → TeX
     print("🔄 Converting Markdown to TeX...")
     try:
-        tex_content = convert_md_to_examx(
-            md_text,
-            title=title,
-            slug=slug,
-            enable_issue_detection=enable_issue_detection,
-        )
+        if use_legacy:
+            md_text = md_path.read_text(encoding="utf-8")
+            tex_content = legacy_convert_md_to_examx(
+                md_text,
+                title=title,
+                slug=slug,
+                enable_issue_detection=enable_issue_detection,
+            )
+        else:
+            converter = ExamConverter(
+                input_md=md_path,
+                output_tex=out_path,
+                title=title,
+                slug=slug,
+                enable_issue_detection=enable_issue_detection,
+            )
+            result = converter.convert()
+            tex_content = result.tex
+            # Out path already written by converter; align path for downstream validation
+            out_path = result.output_path or out_path
     except Exception as e:
         print(f"❌ Failed to convert Markdown: {e}", file=sys.stderr)
         import traceback
         traceback.print_exc()
         return 1
 
-    # Step 3: 写入 TeX 文件
+    # Step 2: 写入 TeX 文件（legacy 模式需要写；modular 已写好但保持幂等）
     try:
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(tex_content, encoding="utf-8")
@@ -185,6 +197,12 @@ Examples:
         help="Disable issue detection in ocr_to_examx",
     )
 
+    parser.add_argument(
+        "--legacy",
+        action="store_true",
+        help="Use legacy converter (tools/core/ocr_to_examx.py) instead of modular ExamConverter",
+    )
+
     args = parser.parse_args(argv)
 
     return run_pipeline(
@@ -194,6 +212,7 @@ Examples:
         out_tex=args.out_tex,
         do_validate=not args.no_validate,
         enable_issue_detection=not args.no_issue_detection,
+        use_legacy=args.legacy,
     )
 
 

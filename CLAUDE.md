@@ -205,17 +205,107 @@ MyNote supports two authoring patterns for multiple-choice questions:
 
 5. **Font Fallbacks**: The font system is designed to be robust. When adding new fonts, always provide fallback chains using `\IfFontExistsTF`.
 
-## Conversion Tools
+6. **Tool Script Paths**: After the December 2025 reorganization:
+   - Utility scripts are in `tools/scripts/` (e.g., `validate_tex.py`, `run_pipeline.py`)
+   - Test scripts are in `tools/testing/` (e.g., `quick_test_changes.py`)
+   - Core converters remain in `tools/core/` (e.g., `ocr_to_examx.py`)
+   - Always use full paths from project root when referencing tools
+   - Example: `python3 tools/scripts/validate_tex.py` NOT `python3 tools/validate_tex.py`
 
-The `tools/` directory contains Python scripts for converting external content:
+## Refactoring Update (2025-12-09)
 
-- `convert_tex_exam.py` - Converts formatted text files to exam LaTeX format
-- Supports format with markers like `【答案】`, `【难度】`, `【知识点】`, `【详解】`
+The `tools/` directory contains a comprehensive pipeline for converting Word documents to examx LaTeX format.
 
-Usage:
-```bash
-python3 tools/convert_tex_exam.py input.txt output.tex
+### Directory Structure
+
 ```
+tools/
+├── core/                    # Core conversion engines
+│   ├── ocr_to_examx.py     # Markdown → examx (v1.9.8)
+│   └── agent_refine.py     # TeX refinement + TikZ
+│
+├── lib/                     # Shared libraries (NEW!)
+│   ├── math_processing.py       # Math formula processing
+│   ├── text_cleaning.py         # Text cleaning
+│   ├── meta_extraction.py       # Metadata extraction
+│   ├── latex_utils.py           # LaTeX utilities
+│   ├── question_processing.py   # Question processing
+│   ├── validation.py            # Integrity validation
+│   └── image_handling.py        # Image path handling
+│
+├── scripts/                 # Utility scripts
+│   ├── run_pipeline.py          # Quick conversion + validation
+│   ├── validate_tex.py          # TeX validation
+│   └── apply_fixes.py           # Batch fixes
+│
+├── testing/                 # Test suites
+│   ├── quick_test_changes.py       # Quick tests
+│   ├── test_ocr_fixes.py           # OCR tests
+│   └── ocr_blackbox_tests/         # Full test suite
+│
+├── images/                  # Image processing
+├── utils/                   # Auxiliary utilities
+└── docs/                    # Tool documentation
+    └── refactoring/        # Refactoring docs
+```
+
+### Quick Conversion
+
+**One-click scripts** (recommended):
+
+```bash
+# Standard format (Nanjing, Changzhou, etc.)
+./word_to_tex/scripts/preprocess_docx.sh \
+  input.docx exam_2025 "2025年期末试卷"
+
+# Zhixuewang format (Shenzhen, etc.)
+./word_to_tex/scripts/preprocess_zx_docx.sh \
+  input.docx exam_2025 "深圳试卷"
+```
+
+Output: `content/exams/auto/exam_2025/converted_exam.tex`
+
+### Core Tools
+
+**Main converter**:
+```bash
+python3 tools/core/ocr_to_examx.py \
+  input.md output.tex \
+  --title "试卷标题" \
+  --figures-dir path/to/images
+```
+
+**Validation**:
+```bash
+python3 tools/scripts/validate_tex.py output.tex
+```
+
+**Quick pipeline**:
+```bash
+python3 tools/scripts/run_pipeline.py \
+  input.md --slug exam-2025
+```
+
+### Refactoring Update (2025-12-09)
+
+The conversion system was refactored from a 7013-line monolithic script into **7 modular libraries**:
+
+**Benefits**:
+- ✅ Better code reuse (54 functions/classes extracted)
+- ✅ Easier testing (5/5 test suites passing)
+- ✅ Improved maintainability
+- ✅ Backward compatible (no breaking changes)
+
+**Testing**:
+```bash
+# Run refactoring tests
+python3 tools/docs/refactoring/test_refactoring.py
+
+# Run quick function tests
+python3 tools/testing/quick_test_changes.py
+```
+
+See `tools/README.md` and `tools/docs/refactoring/REFACTORING_REPORT.md` for details.
 
 ## System Requirements
 

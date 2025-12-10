@@ -160,7 +160,7 @@ extract_errors() {
       echo ""
       echo "【建议操作】"
       echo "  • 运行: VALIDATE_BEFORE_BUILD=1 ./build.sh ${TYPE} ${role}"
-      echo "    （会调用 tools/validate_tex.py 进行预检查）"
+      echo "    （会调用 tools/scripts/validate_tex.py 进行预检查）"
       echo "  • 或单独运行: tools/locate_error.sh ${logfile}"
       echo ""
     fi
@@ -228,8 +228,8 @@ compile() {
   
   # ---------- 新增：预编译 LaTeX 语法检查 ----------
   if [[ -n "${VALIDATE_BEFORE_BUILD:-}" ]]; then
-    echo "🔍 运行预编译检查 (tools/validate_tex.py)..."
-    if command -v python3 &>/dev/null && [[ -f "${ROOT}/tools/validate_tex.py" ]]; then
+    echo "🔍 运行预编译检查 (tools/scripts/validate_tex.py)..."
+    if command -v python3 &>/dev/null && [[ -f "${ROOT}/tools/scripts/validate_tex.py" ]]; then
       # 从 metadata.tex 中提取 \examSourceFile
       local meta_file="${ROOT}/settings/metadata.tex"
       local source_file=""
@@ -238,14 +238,14 @@ compile() {
       fi
       if [[ -n "$source_file" && -f "${ROOT}/${source_file}" ]]; then
         # 这里的 source_file 就是 content/exams/auto/.../converted_exam.tex
-        if ! python3 "${ROOT}/tools/validate_tex.py" "${ROOT}/${source_file}"; then
+        if ! python3 "${ROOT}/tools/scripts/validate_tex.py" "${ROOT}/${source_file}"; then
           echo "⚠️  预检查发现问题，继续尝试编译，但很可能失败（建议先修复上述错误）"
         fi
       else
         echo "ℹ️  未能从 metadata.tex 中解析 examSourceFile，跳过预检查"
       fi
     else
-      echo "ℹ️  未找到 python3 或 tools/validate_tex.py，跳过预检查"
+      echo "ℹ️  未找到 python3 或 tools/scripts/validate_tex.py，跳过预检查"
     fi
   fi
   # ---------- 预检查结束 ----------
@@ -378,27 +378,82 @@ case "${MODE}" in
   *) usage ;;
 esac
 
-# Optional: if RENAME_OUTPUT is set, call the naming wrapper to copy/rename PDFs
-# This keeps behavior backward-compatible: only triggers when RENAME_OUTPUT=1 is provided.
-if [[ -n "${RENAME_OUTPUT-}" ]]; then
-  # Extract examSourceFile from metadata.tex to pass as EXAM_TEX
-  META_FILE="${ROOT}/settings/metadata.tex"
-  if [[ -f "$META_FILE" ]]; then
-    EXAM_TEX=$(grep "^\\\\newcommand{\\\\examSourceFile}" "$META_FILE" | sed -n 's/.*{\(.*\)}/\1/p' | head -1)
-    if [[ -n "$EXAM_TEX" && -f "${ROOT}/${EXAM_TEX}" ]]; then
-      SCRIPTS_DIR="$(cd "$(dirname "$0")/scripts" && pwd)"
-      NAMER="$SCRIPTS_DIR/build_named_exam.sh"
-      if [[ -x "$NAMER" ]]; then
-        if [[ "${MODE}" == "teacher" || "${MODE}" == "both" ]]; then
-          EXAM_TEX="${ROOT}/${EXAM_TEX}" SKIP_BUILD=1 "$NAMER" exam teacher || echo "Warning: build_named_exam.sh (teacher) failed" >&2
-        fi
-        if [[ "${MODE}" == "student" || "${MODE}" == "both" ]]; then
-          EXAM_TEX="${ROOT}/${EXAM_TEX}" SKIP_BUILD=1 "$NAMER" exam student || echo "Warning: build_named_exam.sh (student) failed" >&2
-        fi
-      else
-        echo "Warning: build_named_exam.sh not found or not executable at $NAMER" >&2
+# ---------------------------------------------------------------
+# 重命名功能（当 RENAME_OUTPUT=1 时启用）
+# ---------------------------------------------------------------
+# 从源文件的 \examxtitle{} 或 \title{} 提取标题
+# ---------------------------------------------------------------
+rename_pdf() {
+  local role="$1"   # teacher | student
+  local src_pdf="${OUT}/wrap-${TYPE}-${role}.pdf"
+  
+  if [[ ! -f "$src_pdf" ]]; then
+    echo "⚠️  源文件不存在，跳过重命名: $src_pdf"
+    return 1
+  fi
+  
+  # 从 metadata.tex 获取源文件路径
+  local meta_file="${ROOT}/settings/metadata.tex"
+  local display_name=""
+  local source_file=""
+  
+  if [[ -f "$meta_file" ]]; then
+    if [[ "${TYPE}" == "exam" ]]; then
+      source_file=$(grep "^\\\\newcommand{\\\\examSourceFile}" "$meta_file" 2>/dev/null | sed -n 's/.*{\(.*\)}/\1/p' | head -1)
+    else
+      source_file=$(grep "^\\\\newcommand{\\\\handoutSourceFile}" "$meta_file" 2>/dev/null | sed -n 's/.*{\(.*\)}/\1/p' | head -1)
+    fi
+    
+    # 从源文件提取 \examxtitle{...} 或 \title{...}
+    if [[ -n "$source_file" && -f "${ROOT}/${source_file}" ]]; then
+      display_name=$(grep -o '\\examxtitle{[^}]*}' "${ROOT}/${source_file}" 2>/dev/null | head -1 | sed 's/\\examxtitle{\(.*\)}/\1/')
+      if [[ -z "$display_name" ]]; then
+        display_name=$(grep -o '\\title{[^}]*}' "${ROOT}/${source_file}" 2>/dev/null | head -1 | sed 's/\\title{\(.*\)}/\1/')
       fi
     fi
+  fi
+  
+  # 最终 fallback：使用默认名称
+  if [[ -z "$display_name" ]]; then
+    display_name="${TYPE}"
+  fi
+  
+  # 构造目标文件名
+  local suffix=""
+  if [[ "$role" == "teacher" ]]; then suffix="（教师版）"; fi
+  if [[ "$role" == "student" ]]; then suffix="（学生版）"; fi
+  
+  local dest_name="${display_name}${suffix}.pdf"
+  local dest_pdf="${OUT}/${dest_name}"
+  
+  # 如果目标文件已存在，添加序号
+  if [[ -f "$dest_pdf" ]]; then
+    local i=1
+    while [[ -f "${OUT}/${display_name}${suffix}-$i.pdf" ]]; do
+      i=$((i+1))
+    done
+    dest_name="${display_name}${suffix}-$i.pdf"
+    dest_pdf="${OUT}/${dest_name}"
+  fi
+  
+  cp -a "$src_pdf" "$dest_pdf"
+  echo "📄 已重命名: ${dest_name}"
+  
+  # 同时复制 synctex.gz 文件
+  local src_synctex="${OUT}/wrap-${TYPE}-${role}.synctex.gz"
+  if [[ -f "$src_synctex" ]]; then
+    cp -a "$src_synctex" "${dest_pdf%.pdf}.synctex.gz"
+  fi
+}
+
+if [[ -n "${RENAME_OUTPUT-}" ]]; then
+  echo ""
+  echo "📝 自动重命名 PDF..."
+  if [[ "${MODE}" == "teacher" || "${MODE}" == "both" ]]; then
+    rename_pdf teacher || true
+  fi
+  if [[ "${MODE}" == "student" || "${MODE}" == "both" ]]; then
+    rename_pdf student || true
   fi
 fi
 

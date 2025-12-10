@@ -45,12 +45,29 @@ content/exams/auto/*/figures/
 
 # Settings that change frequently
 settings/metadata.tex
+settings/metadata.tex.bak
 
 # word_to_tex: keep source, ignore build artifacts
 word_to_tex/venv/
 word_to_tex/figures/raw/
 word_to_tex/input/
 word_to_tex/output/
+
+# Auto-generated exam directories (except committed ones)
+content/exams/auto/hn9_2025_1/
+content/exams/auto/huaian_2026/
+content/exams/auto/jinan_2025_mock/
+content/exams/auto/shiti_huibian_2025/
+content/exams/auto/szzx_2025_stage3/
+content/exams/auto/xian_xc_2026_final/
+content/exams/auto/xian_xc_2026_mock1/
+content/exams/auto/xian_xc_2026_mod/
+content/exams/auto/zhenjiang_2025/
+content/exams/auto/江西省南昌市2025-2026学年高三上学期开学考试数学试卷/
+
+# Temporary test files
+content/exams/g3/mytest.tex
+content/exams/g3/mytest2.tex
 
 # Temporary backups
 tmp/

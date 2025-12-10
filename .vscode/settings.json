@@ -6,22 +6,34 @@
     "**/output/**": true
   },
 
-  // ===== PDF 查看器配置 =====
-  // 使用外部查看器（Skim）
+  // ===== 指定 LaTeX 根文件 =====
+  "latex-workshop.latex.rootFile.indicator": "\\documentclass",
+  "latex-workshop.latex.search.rootFiles.include": ["main-exam.tex", "main-handout.tex"],
+
+  // ===== PDF 查看器配置（Skim + 正反向搜索） =====
   "latex-workshop.view.pdf.viewer": "external",
   
-  // 修复后的 Skim 正向搜索配置（简化参数避免 AppleScript 错误）
+  // ⚠️ 禁用 VS Code 对 PDF 的默认处理
+  "workbench.editorAssociations": {
+    "*.pdf": "latex-workshop-pdf-hook",
+    "*.copilotmd": "vscode.markdown.preview.editor"
+  },
+  
+  // 正向搜索：从 TeX 跳转到 PDF（Cmd+Option+J）
+  "latex-workshop.view.pdf.external.synctex.command": "/Applications/Skim.app/Contents/SharedSupport/displayline",
+  "latex-workshop.view.pdf.external.synctex.args": [
+    "-r",
+    "%LINE%",
+    "%PDF%",
+    "%TEX%"
+  ],
+  
+  // 打开 PDF 查看器
   "latex-workshop.view.pdf.external.viewer.command": "/Applications/Skim.app/Contents/SharedSupport/displayline",
   "latex-workshop.view.pdf.external.viewer.args": [
     "0",
     "%PDF%"
   ],
-  
-  // 引用跳转配置
-  "latex-workshop.view.pdf.ref.viewer": "external",
-
-  // 禁用内置 PDF 标签
-  "latex-workshop.view.pdf.tab.openAfterBuild": false,
 
   // ===== 输出目录配置 =====
   "latex-workshop.latex.outDir": "%DIR%/output",
@@ -54,14 +66,66 @@
         "-outdir=%OUTDIR%",
         "%DOC%"
       ]
+    },
+    {
+      "name": "build-exam-both",
+      "command": "./build.sh",
+      "args": ["exam", "both"],
+      "env": {
+        "PATH": "/Library/TeX/texbin:${env:PATH}"
+      }
+    },
+    {
+      "name": "build-exam-both-rename",
+      "command": "./build.sh",
+      "args": ["exam", "both"],
+      "env": {
+        "PATH": "/Library/TeX/texbin:${env:PATH}",
+        "RENAME_OUTPUT": "1"
+      }
+    },
+    {
+      "name": "build-exam-teacher",
+      "command": "./build.sh",
+      "args": ["exam", "teacher"],
+      "env": {
+        "PATH": "/Library/TeX/texbin:${env:PATH}"
+      }
+    },
+    {
+      "name": "build-exam-student",
+      "command": "./build.sh",
+      "args": ["exam", "student"],
+      "env": {
+        "PATH": "/Library/TeX/texbin:${env:PATH}"
+      }
     }
   ],
   
   // ===== LaTeX 编译配方 =====
   "latex-workshop.latex.recipes": [
     {
+      "name": "Build Exam (both)",
+      "tools": ["build-exam-both"]
+    },
+    {
+      "name": "Build Exam (auto-rename)",
+      "tools": ["build-exam-both-rename"]
+    },
+    {
+      "name": "Build Exam (teacher)",
+      "tools": ["build-exam-teacher"]
+    },
+    {
+      "name": "Build Exam (student)",
+      "tools": ["build-exam-student"]
+    },
+    {
       "name": "latexmk (XeLaTeX)",
       "tools": ["latexmk-xelatex"]
     }
-  ]
+  ],
+
+  // 使用第一个配方作为默认
+  "latex-workshop.latex.recipe.default": "first"
 }

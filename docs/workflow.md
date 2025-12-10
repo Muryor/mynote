@@ -1,152 +1,189 @@
-# LaTeX 试卷流水线指南 (v4.6)
+# 试卷工作流 (v4.8)
 
-> v4.6 (2025-12-03) | PNG 优先 | `\examimage` 宏 | TikZ 流程见 [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md)
+> **快速参考** | [详细规范](REFERENCE.md) | [问题排查](TROUBLESHOOTING.md) | [更新日志](archive/CHANGELOG.md) | [工具文档](../tools/README.md)
 
-## 快速导航
+## 快速开始
 
-| 文档 | 用途 |
-|------|------|
-| [REFERENCE.md](REFERENCE.md) | 格式规范（IMAGE_TODO、表格） |
-| [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | 错误诊断（19种问题） |
-| [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md) | TikZ 转换流程 |
-
----
-
-## 一、路径约定
-
-```
-输入 Word:     word_to_tex/input/<name>.docx
-中间 Markdown: word_to_tex/output/<prefix>_preprocessed.md
-输出 TeX:      content/exams/auto/<prefix>/converted_exam.tex
-输出图片:      content/exams/auto/<prefix>/images/media/
-输出 PDF:      output/wrap-exam-*.pdf
-```
-
-## 二、元信息映射
-
-| Markdown | LaTeX | 备注 |
-|----------|-------|------|
-| `【答案】` | `\answer{}` | 直接映射 |
-| `【难度】` | `\difficulty{}` | 直接映射 |
-| `【知识点】`/`【考点】` | `\topics{}` | 合并 |
-| `【详解】`/`【点睛】` | `\explain{}` | ✅ 唯一来源 |
-| `【分析】` | **丢弃** | ⚠️ 严禁 |
-
----
-
-## 三、标准工作流
-
-### 3.1 一键转换
+### 一键转换
 
 ```bash
-# 1. Word → TeX（自动复制图片）
-word_to_tex/scripts/preprocess_docx.sh \
-    "word_to_tex/input/exam.docx" "exam_2025" "2025年试卷"
+# 标准格式
+./word_to_tex/scripts/preprocess_docx.sh input.docx exam_name "试卷标题"
 
-# 2. IMAGE_TODO → includegraphics（PNG优先）
+# 智学网格式- 详见 WORKFLOW_ZHIXUE.md
+./word_to_tex/scripts/preprocess_zx_docx.sh input.docx exam_name "试卷标题"
+```
+
+**输出**: `content/exams/auto/<exam_name>/converted_exam.tex`
+
+### 完整流程
+
+```bash
+# 1. 转换 Word → LaTeX
+./word_to_tex/scripts/preprocess_docx.sh <docx> <name> "<title>"
+
+# 2. 插入图片（必须）
 python3 tools/images/process_images_to_tikz.py --mode include \
-    --files content/exams/auto/exam_2025/converted_exam.tex
+    --files content/exams/auto/<name>/converted_exam.tex
 
-# 3. 修改 metadata.tex 并编译
-# \newcommand{\examSourceFile}{content/exams/auto/exam_2025/converted_exam.tex}
-./build.sh exam both
-```
+# 3. 配置编译 (编辑 settings/metadata.tex)
+\newcommand{\examSourceFile}{content/exams/auto/<name>/converted_exam.tex}
 
-### 3.2 编译命令
+# 4. 编译测试
+VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher
 
-```bash
-./build.sh exam teacher/student/both      # 标准编译
-VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher  # 带预检查
-#自动重命名（可选）
-# 在单次构建时设置源 TeX（脚本会尝试重命名输出）
-EXAM_TEX='content/exams/auto/exam_2025/converted_exam.tex' ./build.sh exam both
-
-# 仅运行重命名脚本（跳过实际编译）
-EXAM_TEX='content/exams/auto/exam_2025/converted_exam.tex' SKIP_BUILD=1 ./scripts/build_named_exam.sh exam both
+# 5. 正式输出
+RENAME_OUTPUT=1 ./build.sh exam both
 ```
 
 ---
 
-## 四、质量保证
+## 核心命令
 
-### 4.1 验证命令
+| 命令 | 功能 |
+|------|------|
+| `preprocess_docx.sh <docx> <name> "<title>"` | Word → LaTeX 转换 |
+| `process_images_to_tikz.py --mode include` | 插入图片 ⚠️ 必须 |
+| `VALIDATE_BEFORE_BUILD=1 ./build.sh exam teacher` | 预检查编译 |
+| `RENAME_OUTPUT=1 ./build.sh exam both` | 输出最终 PDF |
+| `tools/scripts/validate_tex.py <tex>` | TeX 结构验证 |
 
-```bash
-python3 tools/validate_tex.py <tex_file>                    # 结构验证
-python3 tools/validate_tex.py <tex_file> --strict --warn-text-i  # 严格模式
-python3 tools/core/ocr_to_examx.py --selftest               # 自测
-tools/test_compile.sh                                        # 回归测试
+---
+
+## 路径约定
+
 ```
-
-### 4.2 调试命令
-
-```bash
-tools/locate_error.sh output/.aux/wrap-exam-teacher.log     # 错误定位
-cat output/last_error.log                                    # 查看错误
-cat word_to_tex/output/debug/*_issues.log | grep "CRITICAL\|ERROR"
+输入:  word_to_tex/input/<name>.docx
+输出:  content/exams/auto/<name>/converted_exam.tex
+图片:  content/exams/auto/<name>/images/media/
+PDF:   output/<试卷名>（教师版/学生版）.pdf
 ```
 
 ---
 
-## 五、图片处理
+## 元信息映射
 
-### 5.1 `\examimage` 宏（推荐）
-
-试卷中的图片统一使用 `\examimage` 宏 + 相对路径，支持移动文件夹后仍能编译。
-
-**试卷文件结构**：
-```tex
-\setexamdir{content/exams/auto/exam_2025}  % 设置图片基准目录
-
-\examxtitle{2025年试卷}
-...
-\examimage{images/media/image1.png}{0.4}   % 相对路径
-```
-
-**宏定义**（`settings/preamble.sty`）：
-```tex
-\setexamdir{path}           % 设置试卷目录（路径会自动拼接）
-\examimage{relpath}{width}  % 居中图片
-\examimageinline{relpath}{width}  % 行内图片
-```
-
-**优势**：
-- ✅ 移动整个试卷目录后仍能编译（只需更新 `\setexamdir`）
-- ✅ 组卷时只需更改 `\setexamdir` 即可
-- ✅ 图片路径简洁明了
-
-### 5.2 转换脚本
-
-```bash
-# 预览
-python3 tools/images/convert_to_examimage.py --dry-run <tex_file>
-
-# 执行转换（自动插入 \setexamdir + 转换路径）
-python3 tools/images/convert_to_examimage.py <tex_file>
-
-# 批量转换所有试卷
-python3 tools/images/convert_to_examimage.py content/exams/auto/*/converted_exam.tex
-```
-
-### 5.3 IMAGE_TODO 处理（旧流程）
-
-```bash
-# 替换为 includegraphics
-python3 tools/images/process_images_to_tikz.py --mode include --files <tex_file>
-
-# 生成 TikZ 模板
-python3 tools/images/process_images_to_tikz.py --mode template --files <tex_file>
-```
-
-> TikZ 转换流程见 [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md)
+| Markdown | LaTeX | 说明 |
+|----------|-------|------|
+| 【答案】 | `\answer{}` | 直接映射 |
+| 【难度】 | `\difficulty{}` | 小数 0-1 |
+| 【知识点】/【考点】 | `\topics{}` | 分号分隔 |
+| 【详解】/【点睛】 | `\explain{}` | 合并为详解 |
+| 【分析】 | — | ⚠️ 丢弃 |
 
 ---
 
-## 六、版本历史
+## 故障排查
 
-| 版本 | 日期 | 更新 |
-|------|------|------|
-| v4.6 | 2025-12-03 | `\examimage` 宏 + 相对路径，支持移动文件夹 |
-| v4.5 | 2025-01-15 | 精简文档，TikZ 流程外链 |
-| v4.4 | 2025-01-15 | convert_images_to_tikz_templates.py v2.0 |
-| v4.2 | 2025-12-01 | 图片自动复制、路径修复 |
+```bash
+# 查看错误日志
+cat output/last_error.log
+
+# TeX 结构检查
+python3 tools/scripts/validate_tex.py <tex_file>
+```
+
+详见 [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
+
+---
+
+## 图片与 TikZ
+
+**PNG 图片** (自动):
+```bash
+python3 tools/images/process_images_to_tikz.py --mode include --files <tex>
+```
+
+**TikZ 图形** (手动):
+- 流程: [TIKZ_WORKFLOW.md](TIKZ_WORKFLOW.md)
+- 提示词: [TIKZ_AGENT_PROMPT.md](TIKZ_AGENT_PROMPT.md)
+
+---
+
+## 工具架构
+
+### 核心组件
+- `tools/core/ocr_to_examx.py` - Markdown → LaTeX 主引擎
+- `tools/core/agent_refine.py` - TeX 精修工具
+- `tools/lib/` - 7个共享库模块（重构完成）
+
+### 重构成果 (v4.8)
+- ✅ 7013行 → 7个模块（54个导出项）
+- ✅ 100% 测试通过
+- ✅ 向后兼容
+
+详见: [重构报告](../tools/docs/refactoring/REFACTORING_REPORT.md) | [工具文档](../tools/README.md)
+
+---
+
+## VS Code 任务
+
+`Cmd+Shift+B` 或 `Cmd+Shift+P` → "Run Task":
+- **Build: Exam (both)** - 默认构建
+- **Build: Exam (auto-rename)** - 自动重命名
+- **Build with Validation** - 带预检查
+    │   └── test_refactoring.py         # 重构测试
+    ├── OCR_TO_EXAMX_SUMMARY.md         # 功能总结
+    └── V15_IMPLEMENTATION_REPORT.md
+```
+
+### 一键脚本工作流
+
+```mermaid
+word_to_tex/scripts/preprocess_docx.sh
+    ↓
+1. pandoc (docx → markdown)
+    ↓
+2. tools/utils/preprocess_markdown.py (预处理)
+    ↓
+3. tools/core/ocr_to_examx.py (markdown → examx)
+    ↓  使用 tools/lib/ 共享库:
+    ↓  - math_processing.py (数学处理)
+    ↓  - text_cleaning.py (文本清理)
+    ↓  - meta_extraction.py (元数据提取)
+    ↓  - question_processing.py (题目处理)
+    ↓  - validation.py (完整性验证)
+    ↓
+4. tools/core/agent_refine.py (TikZ 占位符)
+    ↓
+5. 复制图片到 content/exams/auto/<name>/images/
+```
+
+### 重构成果
+
+| 模块 | 大小 | 导出项 | 功能 |
+|------|------|--------|------|
+| `math_processing.py` | 60KB | 17 | 数学公式、状态机、OCR修复 |
+| `text_cleaning.py` | 17KB | 10 | LaTeX转义、文本清理 |
+| `meta_extraction.py` | 18KB | 4 | 答案/难度/知识点提取 |
+| `latex_utils.py` | 11KB | 5 | 填空题、表格边框 |
+| `question_processing.py` | 23KB | 7 | 题目合并、结构处理 |
+| `validation.py` | 14KB | 4 | 数学完整性检查 |
+| `image_handling.py` | 8KB | 7 | 图片路径处理 |
+
+### 测试验证
+
+```bash
+# 重构测试套件（5/5 通过）
+python3 tools/docs/refactoring/test_refactoring.py
+
+# 快速功能测试（3/3 通过）
+python3 tools/testing/quick_test_changes.py
+
+# 完整转换测试（683行, 19题）
+python3 tools/core/ocr_to_examx.py test.md test.tex
+```
+
+详见：
+- 完整报告：[tools/docs/refactoring/REFACTORING_REPORT.md](../tools/docs/refactoring/REFACTORING_REPORT.md)
+- 快速指南：[tools/docs/refactoring/README_REFACTORING.md](../tools/docs/refactoring/README_REFACTORING.md)
+- 工具文档：[tools/README.md](../tools/README.md)
+
+---
+
+## 九、VS Code 任务
+
+按 `Cmd+Shift+B` 运行默认编译，或 `Cmd+Shift+P` → "Run Task"：
+- Build: Exam (both) - 默认
+- Build: Exam (auto-rename) - 编译并重命名
+- Build: Exam (teacher/student)

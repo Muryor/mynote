@@ -7,6 +7,7 @@ import subprocess
 import re
 import sys
 import json
+import os
 from pathlib import Path
 from datetime import datetime
 from dataclasses import dataclass, field
@@ -56,8 +57,9 @@ class OCRBlackboxTester:
         slug = self.md_file.stem.replace('_preprocessed', '').replace('_raw', '')
         self.tex_file = self.output_dir / f"{slug}_converted.tex"
 
+        converter = "tools/core/ocr_to_examx_modular.py" if os.getenv("USE_MODULAR", "1") == "1" else "tools/core/ocr_to_examx.py"
         cmd = [
-            "python3", "tools/core/ocr_to_examx.py",
+            "python3", converter,
             str(self.md_file),
             str(self.tex_file),
             "--title", f"测试试卷 - {slug}"
